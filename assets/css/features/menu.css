@@ -1,0 +1,122 @@
+/* menu.css - 主按钮菜单样式 */
+
+.menu {
+    padding: 0.5rem;
+    background-color: var(--card-bg);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    border-radius: 40px;
+    box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.075);
+    gap: 8px;
+}
+
+.link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 40px;
+    border-radius: 8px;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    transform-origin: center left;
+    transition: width 0.2s ease-in;
+    text-decoration: none;
+    color: var(--text);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.link:active {
+    transform: none;
+    box-shadow: none;
+}
+
+#deepParseMainBtn,
+#vocabMainBtn,
+#historyMainBtn {
+    border-radius: 50px;
+}
+
+.link:before {
+    position: absolute;
+    z-index: -1;
+    content: "";
+    display: block;
+    border-radius: 50px;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease-in;
+    transform-origin: center left;
+    background-color: var(--accent);
+}
+
+.link:hover,
+.link:focus,
+.link.active {
+    outline: 0;
+    width: 120px;
+    color: white;
+}
+
+.link:hover:before,
+.link:focus:before,
+.link.active:before,
+.link:hover .link-title,
+.link:focus .link-title,
+.link.active .link-title {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.link-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+    flex-shrink: 0;
+    left: 16px;
+    position: absolute;
+}
+
+.link-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--accent);
+    transition: color 0.2s ease-in;
+}
+
+.link:hover .link-icon svg,
+.link:focus .link-icon svg,
+.link.active .link-icon svg {
+    color: white;
+}
+
+.link-title {
+    transform: translateX(100%);
+    transition: transform 0.2s ease-in;
+    transform-origin: center right;
+    display: block;
+    text-align: center;
+    text-indent: 28px;
+    width: 100%;
+    opacity: 0;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .menu {
+    background-color: var(--card-bg);
+    box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .link {
+    color: var(--text);
+}

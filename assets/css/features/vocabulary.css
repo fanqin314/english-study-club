@@ -1,0 +1,890 @@
+/* vocabulary.css - 生词本界面样式 */
+
+.vocab-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    padding: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vocab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.vocab-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.vocab-stats {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vocab-stats span {
+    margin: 0 8px;
+}
+
+.stats-text {
+    margin-right: 8px;
+}
+
+/* 选中生词本徽章样式 */
+.selected-notebook-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.selected-notebook-badge.fade-in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.selected-notebook-badge.fade-out {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+.selected-notebook-badge .badge-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.selected-notebook-badge .badge-name {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notebook-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.notebook-tab {
+    background: var(--btn-bg);
+    color: var(--text);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 40px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.notebook-tab.active {
+    background: var(--accent);
+    color: white;
+}
+
+/* 单词列表容器 */
+.words-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+/* 单词项 */
+.word-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    flex: 1 1 calc(25% - 10px);
+    max-width: calc(25% - 10px);
+    min-height: 70px;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.word-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.word-detail {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.word-detail strong {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.word-detail small {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: 4px;
+    display: block;
+}
+
+.word-actions {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%) translateX(100%) scaleX(0);
+    transform-origin: right center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    padding: 6px;
+    z-index: 10;
+}
+
+.word-item.active .word-actions {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scaleX(1);
+}
+
+.edit-word-btn,
+.delete-word-btn {
+    background: transparent;
+    color: var(--text-light);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    height: 39px;
+}
+
+.edit-word-btn:hover {
+    background: var(--warning);
+    color: white;
+    border-color: var(--warning);
+}
+
+.delete-word-btn:hover {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
+/* 生词本标签页包装器 */
+.notebook-tab-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 0 12px 12px 0;
+    position: relative;
+    width: 84px;
+}
+
+/* 生词本操作按钮 */
+.notebook-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    opacity: 1;
+    visibility: visible;
+}
+
+.notebook-action-btn {
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+}
+
+.notebook-action-btn:hover {
+    background: var(--border);
+    transform: translateY(-1px);
+}
+
+.notebook-action-btn.delete {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.notebook-action-btn.delete:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* 创建生词本区域 */
+.create-notebook-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 500px;
+    opacity: 1;
+}
+
+.create-notebook-section.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+}
+
+.notebook-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 500px;
+    opacity: 1;
+}
+
+.notebook-tabs.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+}
+
+.notebook-name-input {
+    flex: 1;
+    min-width: 150px;
+}
+
+.notebook-form {
+    flex: 1;
+    min-width: 150px;
+    margin-top: 9px;
+    margin-bottom: 9px;
+    height: 37px;
+}
+
+/* 添加单词区域 */
+.add-word-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.word-input,
+.meaning-input,
+.context-input {
+    flex: 1;
+    min-width: 120px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--bg-page);
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+textarea.meaning-input,
+textarea.context-input {
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.meaning-input:focus,
+.context-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.meaning-input::placeholder,
+.context-input::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+/* 工具栏 */
+.words-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0 12px;
+    background: var(--bg-page);
+    border-radius: 30px;
+}
+
+div#vocabInterface > div.words-toolbar {
+    background-color: transparent;
+}
+
+/* 批量操作按钮 */
+.batch-mode-btn.active {
+    background: var(--accent);
+    color: white;
+}
+
+/* 导入导出按钮组 */
+.import-export-btns {
+    display: flex;
+    gap: 8px;
+}
+
+/* 批量操作栏 */
+.batch-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-page);
+    border-radius: 30px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.35s ease, opacity 0.35s ease, transform 0.35s ease, padding-top 0.35s ease, padding-bottom 0.35s ease;
+}
+
+.batch-actions-bar.show {
+    max-height: 60px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+div#vocabInterface > div.batch-actions-bar.show {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.selected-count {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.batch-delete-btn {
+    margin-left: auto;
+}
+
+.batch-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 单词详情 */
+.word-context {
+    display: block;
+    margin-top: 4px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.word-example {
+    display: block;
+    margin-top: 4px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    color: var(--accent);
+}
+
+/* 编辑表单 */
+.edit-form {
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.2s ease;
+    transform: translateY(-5px);
+}
+
+.form-group {
+    margin-bottom: 8px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    background: var(--bg-page);
+    color: var(--text);
+    transition: border-color 0.2s;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+.form-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.save-btn,
+.cancel-btn {
+    padding: 5px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-btn {
+    background: var(--accent);
+    color: white;
+}
+
+.save-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.cancel-btn {
+    background: var(--bg-page);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.cancel-btn:hover {
+    background: var(--border);
+    transform: translateY(-1px);
+}
+
+.edit-word-btn:hover,
+.delete-word-btn:hover {
+    background: var(--border);
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-light);
+    margin-left: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.empty-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    max-width: 418px;
+}
+
+.collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+    z-index: 10;
+    position: relative;
+}
+
+.collapse-btn:hover {
+    background: var(--btn-hover-bg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.collapse-btn:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* 新架构组件样式 */
+.stats-text {
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.collapse-btn-container {
+    display: flex;
+    align-items: center;
+}
+
+.vocab-stats {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 导入帮助弹窗样式 */
+.import-help-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.import-help-dialog {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.import-help-dialog h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.3rem;
+    color: var(--text);
+}
+
+.import-help-content p {
+    color: var(--text-light);
+    margin: 0 0 16px 0;
+}
+
+.file-formats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.format-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--btn-bg);
+    border-radius: 8px;
+}
+
+.format-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.format-badge.json {
+    background: #2ECC71;
+    color: white;
+}
+
+.format-badge.md {
+    background: #3498DB;
+    color: white;
+}
+
+.format-badge.txt {
+    background: #95A5A6;
+    color: white;
+}
+
+.format-item div {
+    flex: 1;
+}
+
+.format-item strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.format-item p {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.format-item pre {
+    margin: 0;
+    padding: 10px;
+    background: var(--card-bg);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.import-help-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.import-help-actions button {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.import-help-actions .secondary {
+    background: var(--btn-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.import-help-actions .secondary:hover {
+    background: var(--border);
+}
+
+.import-help-actions .primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+}
+
+.import-help-actions .primary:hover {
+    background: var(--accent-dark);
+}
+
+/* 导出弹窗样式 */
+.export-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.export-dialog {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.export-dialog h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.3rem;
+    color: var(--text);
+}
+
+.export-content p {
+    color: var(--text-light);
+    margin: 0 0 16px 0;
+}
+
+.export-formats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.format-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.format-option:hover {
+    background: var(--border);
+    border-color: var(--accent);
+    transform: translateX(4px);
+}
+
+.format-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.format-option div {
+    flex: 1;
+}
+
+.format-option strong {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--text);
+    font-size: 15px;
+}
+
+.format-option p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.export-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.export-actions button {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.export-actions .secondary {
+    background: var(--btn-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.export-actions .secondary:hover {
+    background: var(--border);
+}

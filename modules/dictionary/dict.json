@@ -1,0 +1,17 @@
+{
+    "quick": {"pos": "adj", "meaning": "快速的"},
+    "brown": {"pos": "adj", "meaning": "棕色的"},
+    "fox": {"pos": "n", "meaning": "狐狸"},
+    "jump": {"pos": "v", "meaning": "跳跃"},
+    "over": {"pos": "prep", "meaning": "在...上方"},
+    "lazy": {"pos": "adj", "meaning": "懒惰的"},
+    "dog": {"pos": "n", "meaning": "狗"},
+    "although": {"pos": "conj", "meaning": "虽然"},
+    "rain": {"pos": "v", "meaning": "下雨"},
+    "decide": {"pos": "v", "meaning": "决定"},
+    "go": {"pos": "v", "meaning": "去"},
+    "walk": {"pos": "n", "meaning": "散步"},
+    "enjoy": {"pos": "v", "meaning": "享受"},
+    "fresh": {"pos": "adj", "meaning": "新鲜的"},
+    "air": {"pos": "n", "meaning": "空气"}
+}

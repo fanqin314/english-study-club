@@ -1,0 +1,191 @@
+/* specific.css - 特定元素样式 */
+
+/* ========== 生词本界面特定按钮样式 ========== */
+
+/* 顶部导航栏卡片去除底边距 */
+header#app-header > div.card {
+    margin-bottom: 0px;
+}
+
+div#vocabInterface > div.add-word-section > button.secondary {
+    height: 37px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: 121px;
+}
+
+div#vocabInterface > div.create-notebook-section > button.secondary {
+    height: 37px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+div#vocabInterface > div.create-notebook-section {
+    width: 100%;
+    margin: 0;
+}
+
+div#vocabInterface > div.memory-mode-section {
+    width: 116px;
+}
+
+div#vocabInterface > div.memory-mode-section > button.secondary {
+    position: absolute;
+    top: auto;
+    z-index: auto;
+    left: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* ========== 单词列表操作按钮 ========== */
+
+div#vocabWordsList > div.word-item > div.word-actions {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* ========== 句子卡片图标位置调整 ========== */
+
+#sentencesContainer > .sentence-card:nth-child(1) > .sentence-buttons > button:nth-child(4) > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+#sentencesContainer > .sentence-card:nth-child(1) > .sentence-buttons > button:nth-child(3) > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+#sentencesContainer > .sentence-card:nth-child(1) > .sentence-buttons > button:nth-child(2) > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+#sentencesContainer > .sentence-card:nth-child(1) > .sentence-buttons > button:nth-child(1) > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+button#parseBtn > span > span:nth-child(1) > svg {
+    margin-top: -3px;
+    margin-bottom: -3px;
+}
+
+button#saveAnalysisBtn > span > span:nth-child(1) > svg {
+    margin-top: -3px;
+    margin-bottom: -3px;
+}
+
+button#highlightToggleBtn > span > span:nth-child(1) {
+    margin-top: -3px;
+    margin-bottom: -3px;
+}
+
+button#loadExampleBtn > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+button#highlightToggleBtn > span > span:nth-child(1) > svg {
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+/* ========== 记忆模式界面特定按钮样式 ========== */
+
+div#memoryModeInterface {
+    background-color: transparent;
+    box-shadow: none;
+    border-width: 0px;
+    border-style: solid;
+    border-color: #000000;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+div#memoryModeInterface::-webkit-scrollbar {
+    display: none;
+}
+
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-header-buttons {
+    height: 38px;
+}
+
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-header-buttons > button.section-btn:nth-child(1) {
+    width: 90px;
+}
+
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-header-buttons > button.section-btn:nth-child(2) {
+    height: 37px;
+    width: 90px;
+}
+
+div#memoryModeInterface > div.mode-select-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+}
+
+/* 记忆模式标签栏 */
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0;
+    flex: 1;
+    height: 46px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+div#memoryModeInterface .memory-mode-tab {
+    padding: 6px 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-light);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+div#memoryModeInterface .memory-mode-tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+div#memoryModeInterface .memory-mode-tab:hover:not(.active) {
+    background: var(--hover-bg);
+}
+
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-tabs > button.memory-mode-tab:nth-child(1) {
+    flex: 1;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+div#memoryModeInterface > div.memory-mode-header > div.memory-mode-tabs > button.memory-mode-tab:nth-child(2) {
+    flex: 1;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* ========== 刷新按钮位置 ========== */
+
+#sentencesContainer > .sentence-card > .sentence-buttons > button.refresh-button > svg {
+    position: absolute;
+}

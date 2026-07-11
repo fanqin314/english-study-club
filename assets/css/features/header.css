@@ -1,0 +1,48 @@
+/* header.css - 头部样式 */
+
+.app-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 17px 16px;
+}
+
+.api-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+/* 主按钮组 */
+.main-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0.5rem;
+    background-color: var(--card-bg);
+    position: relative;
+    justify-content: center;
+    border-radius: 40px;
+    box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.075);
+}
+
+/* 操作按钮组 */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}

@@ -1,0 +1,41 @@
+/* menus.css - 菜单组件样式 */
+
+/* ========== 自定义菜单 ========== */
+
+.custom-menu {
+    position: fixed;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1) !important;
+    padding: 8px 0 !important;
+    z-index: 9999 !important;
+    min-width: 160px !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.custom-menu.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.custom-menu-item {
+    padding: 8px 16px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    color: var(--text) !important;
+}
+
+.custom-menu-item:hover { 
+    background: var(--border) !important;
+}
+
+.menu-divider {
+    height: 1px !important;
+    background: var(--border) !important;
+    margin: 4px 0 !important;
+}

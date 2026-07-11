@@ -1,0 +1,92 @@
+/* sort.css - 排序控件组件样式 */
+
+/* ========== 排序控件 ========== */
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+}
+
+.custom-sort-select {
+    position: relative;
+    display: inline-block;
+}
+
+.sort-select-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sort-select-trigger:hover {
+    border-color: var(--accent);
+}
+
+.sort-select-trigger.active {
+    border-color: var(--accent);
+    background: var(--bg-page);
+}
+
+.sort-select-trigger svg {
+    transition: transform 0.2s;
+}
+
+.sort-select-trigger.active svg {
+    transform: rotate(180deg);
+}
+
+.sort-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 120px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s, visibility 0.2s;
+    overflow: hidden;
+}
+
+.sort-dropdown.show {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+.sort-option {
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sort-option:hover {
+    background: var(--bg-page);
+}
+
+.sort-option.selected {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.sort-option:first-child {
+    border-radius: 11px 11px 0 0;
+}
+
+.sort-option:last-child {
+    border-radius: 0 0 11px 11px;
+}

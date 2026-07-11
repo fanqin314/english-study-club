@@ -1,0 +1,487 @@
+/* layout.css - 布局样式 */
+
+/* 模块化容器样式 */
+.app-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.app-header {
+    width: 100%;
+    position: sticky;
+    top: 6px;
+    z-index: 100;
+}
+
+.main-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.main-content::-webkit-scrollbar {
+    display: none;
+}
+
+.deep-parse-section {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+.content-section {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-area {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.secondary-panel {
+    width: 100%;
+}
+
+.global-components {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.global-components > * {
+    pointer-events: auto;
+}
+
+template {
+    display: none;
+}
+
+/* 两栏布局 */
+.two-column-container {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+}
+
+.left-column {
+    flex: 1 1 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    transition: flex 0.3s ease;
+}
+
+.right-column {
+    flex: 0 0 0%;
+    min-width: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+    padding-left: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, flex 0.3s ease;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.right-column::-webkit-scrollbar {
+    display: none;
+}
+
+.right-column.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.two-column-container.show-right .left-column {
+    flex: 0 0 50%;
+}
+
+.two-column-container.show-right .right-column,
+.two-column-container.show-right .sentences-panel-section {
+    flex: 0 0 50%;
+    opacity: 1;
+    visibility: visible;
+}
+
+.right-column::-webkit-scrollbar-track {
+    background: var(--bg-page);
+    border-radius: 4px;
+}
+
+.right-column::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.right-column::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
+/* 输入面板区域 */
+.input-panel {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 14px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+}
+
+/* 输入面板内容区域 - 处理滚动 */
+.input-panel-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.input-panel-content::-webkit-scrollbar {
+    display: none;
+}
+
+/* 面板切换按钮 — 单按钮双位置动画 */
+.panel-toggle-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: calc(50% - 14px);
+    width: 28px;
+    height: 56px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    transition: left 0.4s ease-in-out;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+/* 解析后显示按钮 */
+.two-column-container.has-sentences .panel-toggle-btn {
+    display: flex;
+}
+
+/* 折叠状态：按钮移到左侧 */
+.two-column-container.collapsed .panel-toggle-btn {
+    left: -14px;
+}
+
+.panel-toggle-btn:hover {
+    background: var(--btn-hover-bg);
+}
+
+/* 禁用点击时的缩放动效 */
+.panel-toggle-btn:active {
+    transform: translateY(-50%) !important;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 按钮提示文字 */
+.panel-toggle-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    white-space: nowrap;
+    background: var(--text);
+    color: var(--bg-page);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 200;
+}
+
+/* 默认状态（折叠按钮位置在右侧）：提示文字在左侧 */
+.panel-toggle-btn::after {
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 折叠状态（展开按钮位置在左侧）：提示文字在右侧 */
+.two-column-container.collapsed .panel-toggle-btn::after {
+    right: auto;
+    left: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.panel-toggle-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.input-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.input-panel-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sentences-panel-section {
+    flex: 0 0 0%;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.two-column-container.has-sentences .sentences-panel-section {
+    flex: 0 0 50%;
+    opacity: 1;
+    visibility: visible;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 折叠状态 */
+.two-column-container.collapsed .input-panel-section {
+    flex: 0 0 0%;
+    opacity: 0;
+    visibility: hidden;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.two-column-container.collapsed .sentences-panel-section {
+    flex: 0 0 100%;
+}
+
+.two-column-container.collapsed.has-sentences .sentences-panel-section {
+    flex: 0 0 100%;
+}
+
+/* 句子面板区域 */
+#deepParseSentencesContainer {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#deepParseSentencesContainer::-webkit-scrollbar {
+    display: none;
+}
+
+/* 内容区域 */
+.content-area {
+    width: 100%;
+    height: 100%;
+}
+
+.sentences-list {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sentences-list::-webkit-scrollbar {
+    display: none;
+}
+
+/* 二级分析面板 */
+.secondary-analysis {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.secondary-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-page);
+}
+
+.collapse-info-btn {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.collapse-info-btn.collapsed svg {
+    transform: rotate(180deg);
+}
+
+/* 折叠信息区的平滑过渡动画 */
+.original-text,
+.secondary-translation {
+    transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    max-height: 300px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.secondary-analysis.collapsed .original-text,
+.secondary-analysis.collapsed .secondary-translation {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    border-bottom-width: 0;
+}
+
+.secondary-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.original-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-page);
+    border-bottom: 1px solid var(--border);
+}
+
+.text-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.text-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.text-body {
+    color: var(--text);
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.secondary-translation {
+    padding: 16px;
+    background: var(--bg-page);
+    border-bottom: 1px solid var(--border);
+}
+
+.translation-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.translation-content {
+    color: var(--text-light);
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.secondary-sentences {
+    padding: 16px;
+    height: calc(100% - 200px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.secondary-sentences::-webkit-scrollbar {
+    display: none;
+}
+
+.full-translation {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-page);
+    border-radius: 12px;
+}
+
+#fullTranslationArea {
+    display: none;
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-page);
+    border-radius: 12px;
+}
+
+#fullTranslationArea strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+#fullTranslationArea span {
+    color: var(--text-light);
+    line-height: 1.6;
+}

@@ -1,0 +1,18 @@
+/* style.css - 主样式文件（模块化拆分版本）
+ * 为保持向后兼容，此文件通过 @import 引入所有模块化CSS文件
+ * 如需修改样式，请修改对应的模块文件
+ */
+
+/* ========== 模块化CSS文件 ========== */
+@import url('css/variables.css');
+@import url('css/reset.css');
+@import url('css/base.css');
+@import url('css/layout.css');
+@import url('css/components.css');
+@import url('css/features.css');
+@import url('css/responsive.css');
+@import url('css/specific.css');
+
+/* ========== 外部CSS文件 ========== */
+@import url('../features/deep_parse/pos_highlight/pos_highlight.css');
+@import url('./css/features/flashcard_mode.css');

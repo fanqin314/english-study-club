@@ -1,0 +1,364 @@
+/* checkboxes.css - 复选框组件样式 */
+
+/* ========== 复选框样式 ========== */
+
+.custom-checkbox,
+.select-all-checkbox {
+    --primary-color: #1677ff;
+    --secondary-color: #fff;
+    --primary-hover-color: #4096ff;
+    --checkbox-diameter: 20px;
+    --checkbox-border-radius: 5px;
+    --checkbox-border-color: #d9d9d9;
+    --checkbox-border-width: 1px;
+    --checkbox-border-style: solid;
+    --checkmark-size: 1.2;
+}
+
+.custom-checkbox,
+.select-all-checkbox,
+.custom-checkbox *,
+.select-all-checkbox *,
+.custom-checkbox *::before,
+.select-all-checkbox *::before,
+.custom-checkbox *::after,
+.select-all-checkbox *::after {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.custom-checkbox,
+.select-all-checkbox {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: var(--checkbox-diameter);
+    height: var(--checkbox-diameter);
+    border-radius: var(--checkbox-border-radius);
+    background: var(--secondary-color);
+    border: var(--checkbox-border-width) var(--checkbox-border-style) var(--checkbox-border-color);
+    -webkit-transition: all 0.3s;
+    -o-transition: all 0.3s;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+
+.select-all-checkbox {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.custom-checkbox::after,
+.select-all-checkbox::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    -webkit-box-shadow: 0 0 0 calc(var(--checkbox-diameter) / 2.5) var(--primary-color);
+    box-shadow: 0 0 0 calc(var(--checkbox-diameter) / 2.5) var(--primary-color);
+    border-radius: inherit;
+    opacity: 0;
+    -webkit-transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+    -o-transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+    transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+}
+
+.custom-checkbox::before,
+.select-all-checkbox::before {
+    top: 40%;
+    left: 50%;
+    content: "";
+    position: absolute;
+    width: 4px;
+    height: 7px;
+    border-right: 2px solid var(--secondary-color);
+    border-bottom: 2px solid var(--secondary-color);
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    -ms-transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    opacity: 0;
+    -webkit-transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+    -o-transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+    transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+}
+
+.custom-checkbox:hover,
+.select-all-checkbox:hover {
+    border-color: var(--primary-color);
+}
+
+.custom-checkbox:checked,
+.select-all-checkbox:checked {
+    background: var(--primary-color);
+    border-color: transparent;
+}
+
+.custom-checkbox:checked::before,
+.select-all-checkbox:checked::before {
+    opacity: 1;
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    -ms-transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    -webkit-transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+    -o-transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+}
+
+.custom-checkbox:active:not(:checked)::after,
+.select-all-checkbox:active:not(:checked)::after {
+    -webkit-transition: none;
+    -o-transition: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    transition: none;
+    opacity: 1;
+}
+
+.select-all-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.select-all-label::after {
+    content: "全选";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-page);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 11px;
+}
+
+.select-all-label:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-1px);
+}
+
+/* 词性复选框样式 */
+#posCheckboxGroup {
+    background-color: rgba(245, 247, 251, 0);
+    color: var(--text);
+    display: flex;
+    gap: 20px;
+}
+
+[data-theme="dark"] #posCheckboxGroup {
+    background-color: rgba(30, 41, 59, 0);
+}
+
+#posCheckboxGroup .checkbox-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#posCheckboxGroup > div.checkbox-column:nth-child(1) {
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+#posCheckboxGroup > div.checkbox-column:nth-child(2) {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+#posCheckboxGroup input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    padding-left: 1px;
+    padding-right: 1px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    border-radius: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#posCheckboxGroup input[type="checkbox"]:checked {
+    background-color: currentColor;
+    border-color: currentColor;
+}
+
+#posCheckboxGroup label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 139px;
+    position: relative;
+    color: var(--text);
+}
+
+#posCheckboxGroup label input[type="checkbox"] {
+    color: var(--text);
+}
+
+#posCheckboxGroup label:has(input[type="checkbox"]:checked) input[type="checkbox"] {
+    color: inherit;
+}
+
+#posCheckboxGroup label span.color-sample {
+    margin-left: auto;
+}
+
+/* 词性复选框动画 */
+#posCheckboxGroup input[type="checkbox"] {
+    --secondary-color: #fff;
+    --checkbox-diameter: 20px;
+    --checkbox-border-radius: 5px;
+    --checkbox-border-width: 2px;
+    --checkbox-border-style: solid;
+    --checkmark-size: 1.2;
+    
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: var(--checkbox-diameter);
+    height: var(--checkbox-diameter);
+    border-radius: var(--checkbox-border-radius);
+    background: var(--secondary-color);
+    border: var(--checkbox-border-width) var(--checkbox-border-style) currentColor;
+    -webkit-transition: all 0.3s;
+    -o-transition: all 0.3s;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    color: inherit;
+}
+
+#posCheckboxGroup input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    -webkit-box-shadow: 0 0 0 calc(var(--checkbox-diameter) / 2.5) currentColor;
+    box-shadow: 0 0 0 calc(var(--checkbox-diameter) / 2.5) currentColor;
+    border-radius: inherit;
+    opacity: 0;
+    -webkit-transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+    -o-transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+    transition: all 0.5s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+}
+
+#posCheckboxGroup input[type="checkbox"]::before {
+    top: 40%;
+    left: 50%;
+    content: "";
+    position: absolute;
+    width: 4px;
+    height: 7px;
+    border-right: 2px solid var(--secondary-color);
+    border-bottom: 2px solid var(--secondary-color);
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    -ms-transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    transform: translate(-50%, -50%) rotate(45deg) scale(0);
+    opacity: 0;
+    -webkit-transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+    -o-transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+    transition: all 0.1s cubic-bezier(0.71, -0.46, 0.88, 0.6),opacity 0.1s;
+}
+
+#posCheckboxGroup input[type="checkbox"]:hover {
+    border-color: currentColor;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+#posCheckboxGroup input[type="checkbox"]:checked {
+    background: currentColor;
+    border-color: transparent;
+    color: inherit;
+}
+
+#posCheckboxGroup input[type="checkbox"]:checked::before {
+    opacity: 1;
+    -webkit-transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    -ms-transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    transform: translate(-50%, -50%) rotate(45deg) scale(var(--checkmark-size));
+    -webkit-transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+    -o-transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s;
+}
+
+#posCheckboxGroup input[type="checkbox"]:active:not(:checked)::after {
+    -webkit-transition: none;
+    -o-transition: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    transition: none;
+    opacity: 1;
+}
+
+.checkbox-group label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+/* 单词复选框 */
+.word-checkbox {
+    margin-right: 12px;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: 20px;
+    height: 20px;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 2px solid #3b82f6;
+    background-color: white;
+    transition: opacity 0.25s ease, transform 0.25s ease, width 0.25s ease, margin 0.25s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.word-checkbox--hidden {
+    opacity: 0;
+    transform: scale(0.5);
+    width: 0;
+    margin-right: 0;
+    pointer-events: none;
+}
+
+.word-checkbox:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}

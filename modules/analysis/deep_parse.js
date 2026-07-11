@@ -1,0 +1,243 @@
+// deep_parse.js - 深度解析功能
+(function() {
+    ModuleRegistry.register('DeepParse', ['ErrorHandler', 'Performance', 'EventBus', 'Security'], function(ErrorHandler, Performance, EventBus, Security) {
+        // 注意：不再使用模块级变量存储展开状态
+        // 改为基于 DOM 查询，确保页面切换后状态正确
+        
+        // 防抖标志：防止连续点击触发多次异步操作
+        let isToggling = false;
+        const TOGGLE_DEBOUNCE_MS = 300;
+        
+        /**
+         * 检查句子区域是否展开
+         * 基于 DOM 状态而非内存变量，避免页面切换后状态不一致
+         */
+        function isSentencesSectionExpanded() {
+            const twoColumnContainer = document.querySelector('.two-column-container');
+            if (!twoColumnContainer) {
+                console.warn('[isSentencesSectionExpanded] twoColumnContainer 未找到');
+                return false;
+            }
+            const isExpanded = twoColumnContainer.classList.contains('show-right');
+            console.log('[isSentencesSectionExpanded] 状态:', isExpanded, 'classes:', twoColumnContainer.className);
+            return isExpanded;
+        }
+        
+        // 搜索图标
+        const SEARCH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+        
+        // 向右箭头图标（收起时显示）
+        const BACK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        
+        // 更新解析按钮图标
+        function updateParseButtonIcon(isBack) {
+            const parseBtn = document.getElementById('parseBtn');
+            if (!parseBtn) return;
+            
+            const iconSpan = parseBtn.querySelector('span span:first-child');
+            if (iconSpan) {
+                iconSpan.innerHTML = isBack ? BACK_ICON : SEARCH_ICON;
+            }
+            
+            const textSpan = parseBtn.querySelector('span span:last-child');
+            if (textSpan) {
+                textSpan.textContent = isBack ? '收起' : '解析';
+            }
+        }
+        
+        // 切换句子区域显示状态
+        function toggleSentencesSection() {
+            // 防抖：如果正在执行切换操作，忽略后续点击
+            if (isToggling) {
+                console.log('[toggleSentencesSection] 操作进行中，忽略重复点击');
+                return;
+            }
+            
+            const twoColumnContainer = document.querySelector('.two-column-container');
+            const sentencesContainer = document.getElementById('deepParseSentencesContainer');
+
+            // 基于 DOM 状态判断，而非内存变量
+            const isExpanded = isSentencesSectionExpanded();
+            
+            if (isExpanded) {
+                // 折叠（同步操作）
+                console.log('[toggleSentencesSection] 执行折叠操作');
+                isToggling = true; // 设置标志防止并发
+                try {
+                    if (twoColumnContainer) {
+                        console.log('[toggleSentencesSection] 移除 show-right, has-sentences');
+                        twoColumnContainer.classList.remove('show-right', 'has-sentences');
+                        const rightColumn = twoColumnContainer.querySelector('.right-column');
+                        if (rightColumn) rightColumn.classList.remove('visible');
+                    }
+                    if (sentencesContainer) {
+                        sentencesContainer.style.display = 'none';
+                    }
+                    updateParseButtonIcon(false);
+                    console.log('[toggleSentencesSection] 折叠完成');
+                } finally {
+                    isToggling = false; // 同步操作完成，重置标志
+                }
+            } else {
+                // 展开 - 需要重新解析（异步操作）
+                isToggling = true;
+                deepParse().then(() => {
+                    // 操作成功完成
+                }).catch((err) => {
+                    console.error('[toggleSentencesSection] 展开失败:', err);
+                    // 失败时也要重置标志
+                    isToggling = false;
+                    // 恢复按钮状态
+                    updateParseButtonIcon(false);
+                }).finally(() => {
+                    // 延迟重置，确保 UI 更新完成
+                    setTimeout(() => {
+                        isToggling = false;
+                    }, TOGGLE_DEBOUNCE_MS);
+                });
+            }
+        }
+
+        // 折叠图标（左箭头）
+        const COLLAPSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+        
+        // 展开图标（右箭头）
+        const EXPAND_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+
+        // 切换输入面板显示状态
+        function toggleInputPanel() {
+            const twoColumnContainer = document.querySelector('.two-column-container');
+            const toggleBtn = document.getElementById('panelToggleBtn');
+            
+            if (!twoColumnContainer) return;
+            
+            const isCollapsed = twoColumnContainer.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                twoColumnContainer.classList.remove('collapsed');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = COLLAPSE_ICON;
+                    toggleBtn.setAttribute('aria-label', '折叠输入面板');
+                    toggleBtn.setAttribute('data-tooltip', '折叠输入面板');
+                }
+            } else {
+                twoColumnContainer.classList.add('collapsed');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = EXPAND_ICON;
+                    toggleBtn.setAttribute('aria-label', '展开输入面板');
+                    toggleBtn.setAttribute('data-tooltip', '展开输入面板');
+                }
+            }
+        }
+
+        // 绑定折叠按钮事件 - 已迁移到 event_delegation.js 统一处理
+        // 注意：panelToggleBtn 的点击事件由 ui/event_delegation.js 处理
+        function bindCollapseButton() {
+            // 按钮事件已由事件委托处理，此处无需重复绑定
+            console.log('[DeepParse] panelToggleBtn 事件由 event_delegation.js 统一处理');
+        }
+        
+        function deepParse() {
+            return ErrorHandler.wrapAsyncFunction(async function() {
+                const textarea = document.getElementById('articleInput');
+                if (!textarea) {
+                    throw new Error('未找到文本输入框');
+                }
+                const text = textarea.value.trim();
+                if (!text) {
+                    ErrorHandler.handleValidationError('请输入文章');
+                    return;
+                }
+                if (!window.SentenceSplitter) {
+                    throw new Error('分句模块未加载，请刷新页面重试');
+                }
+                if (!window.SentenceRenderer) {
+                    throw new Error('渲染模块未加载，请刷新页面重试');
+                }
+                
+                const sentences = window.SentenceSplitter.split(text);
+                console.log('[deepParse] 分句结果:', sentences.length);
+                
+                // 保存句子数据和原始文本到缓存管理器
+                if (window.CacheManager) {
+                    window.CacheManager.setSentences(sentences);
+                    window.CacheManager.setOriginalText(text);
+                }
+                
+                // 深度解析模式：使用新的容器
+                let container = document.getElementById('deepParseSentencesContainer');
+                if (!container) {
+                    // 降级处理
+                    container = document.getElementById('sentencesContainer');
+                }
+                if (container) {
+                    window.SentenceRenderer.setContainer(container);
+                    container.style.display = '';
+                } else {
+                    throw new Error('sentencesContainer 元素未找到');
+                }
+                window.SentenceRenderer.setSentencesData(sentences, {});
+                window.SentenceRenderer.renderAll();
+
+                // 显示右栏（句子卡片）
+                const twoColumnContainer = document.querySelector('.two-column-container');
+                if (twoColumnContainer) {
+                    twoColumnContainer.classList.add('show-right', 'has-sentences');
+                    const rightColumn = twoColumnContainer.querySelector('.right-column');
+                    if (rightColumn) rightColumn.classList.add('visible');
+                }
+
+                // 调用全文翻译
+                if (window.FullTranslation) {
+                    await window.FullTranslation.fetch(text);
+                }
+                
+                // 更新按钮图标为向左箭头
+                updateParseButtonIcon(true);
+                
+                // 绑定折叠按钮事件
+                bindCollapseButton();
+                
+                // 不再触发 analysisCompleted 事件，避免自动保存历史记录
+                // EventBus.emit('analysisCompleted', { text });
+            })();
+        }
+
+        // 句子详情加载处理
+        function onLoadSentenceDetail(idx, type) {
+            const panel = document.getElementById(`${type}-panel-${idx}`);
+            if (!panel) {
+                console.error(`面板 ${type}-panel-${idx} 未找到`);
+                return;
+            }
+            
+            // 触发 EventBus 事件
+            if (typeof EventBus !== 'undefined' && EventBus && EventBus.emit) {
+                EventBus.emit('loadSentenceDetail', { idx, type, panel });
+            }
+        }
+
+        // 导出全局接口（保持向后兼容）
+        window.deepParse = deepParse;
+        window.toggleSentencesSection = toggleSentencesSection;
+        window.toggleInputPanel = toggleInputPanel;
+        window.onLoadSentenceDetail = onLoadSentenceDetail;
+
+        // 监听分析模式切换事件，重新绑定按钮事件
+        if (typeof EventBus !== 'undefined' && EventBus && EventBus.on) {
+            EventBus.on('showAnalysisMode', function() {
+                // 延迟确保 DOM 已更新
+                setTimeout(function() {
+                    bindCollapseButton();
+                }, 50);
+            });
+        }
+
+        return {
+            deepParse,
+            toggleSentencesSection,
+            toggleInputPanel,
+            onLoadSentenceDetail
+        };
+    });
+})();

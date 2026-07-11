@@ -1,0 +1,36 @@
+/* variables.css - CSS变量和主题 */
+:root {
+    --bg-page: #f5f7fb;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    --btn-bg: #f1f5f9;
+    --btn-color: #1e293b;
+    --btn-hover-bg: #e2e8f0;
+    --btn-hover-color: #1e293b;
+    --btn-active-bg: #3b82f6;
+    --example-border: #e2e8f0;
+    --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] {
+    --bg-page: #0f172a;
+    --card-bg: #1e293b;
+    --text: #f1f5f9;
+    --text-light: #94a3b8;
+    --border: #334155;
+    --btn-bg: #334155;
+    --btn-color: #f1f5f9;
+    --btn-hover-bg: #475569;
+    --btn-hover-color: #f1f5f9;
+    --btn-active-bg: #3b82f6;
+    --example-border: #475569;
+    --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08);
+}

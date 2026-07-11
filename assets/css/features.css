@@ -1,0 +1,16 @@
+/* features.css - 功能模块样式入口 */
+@import url('features/header.css');
+@import url('features/vocabulary.css');
+@import url('features/history.css');
+@import url('features/memory-mode.css');
+@import url('features/cloze-mode.css');
+@import url('features/fill-practice.css');
+@import url('features/spell-practice.css');
+@import url('features/listen-practice.css');
+@import url('features/choice-practice.css');
+@import url('features/review-modes.css');
+@import url('features/stats-plan.css');
+@import url('features/deep-parse.css');
+@import url('features/menu.css');
+@import url('features/copy.css');
+@import url('features/sidebar.css');

@@ -1,0 +1,10 @@
+/* deep-parse.css - 深度解析功能样式 */
+
+/* 二级分析界面样式 */
+#secondaryAnalysisContainer {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    padding: 14px;
+}

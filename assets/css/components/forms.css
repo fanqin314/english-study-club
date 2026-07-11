@@ -1,0 +1,22 @@
+/* forms.css - 表单组件样式 */
+
+/* ========== 表单样式 ========== */
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    margin: 8px 0;
+    background: var(--bg-page);
+    color: var(--text);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+input:focus {
+    outline: none;
+}

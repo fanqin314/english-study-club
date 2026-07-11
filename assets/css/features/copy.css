@@ -1,0 +1,126 @@
+/* copy.css - 复制按钮样式 */
+
+.copy-btn {
+    --button-bg: var(--accent);
+    --button-hover-bg: var(--accent-hover);
+    --button-text-color: white;
+    --button-hover-text-color: white;
+    --button-border-radius: 10px;
+    --button-diameter: 36px;
+    --button-outline-width: 1px;
+    --button-outline-color: var(--accent);
+    --tooltip-bg: var(--card-bg);
+    --toolptip-border-radius: 4px;
+    --tooltip-font-family: Menlo, Roboto Mono, monospace;
+    --tooltip-font-size: 12px;
+    --tootip-text-color: var(--text);
+    --tooltip-padding-x: 7px;
+    --tooltip-padding-y: 7px;
+    --tooltip-offset: 8px;
+}
+
+.copy-btn {
+    box-sizing: border-box;
+    width: var(--button-diameter);
+    height: var(--button-diameter);
+    border-radius: var(--button-border-radius);
+    background-color: var(--button-bg);
+    color: var(--button-text-color);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.copy-btn .tooltip {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 27px;
+    white-space: nowrap;
+    font: var(--tooltip-font-size) var(--tooltip-font-family);
+    color: var(--tootip-text-color);
+    background: var(--tooltip-bg);
+    padding: var(--tooltip-padding-y) var(--tooltip-padding-x);
+    border-radius: var(--toolptip-border-radius);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.copy-btn .tooltip::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--tooltip-padding-y) / 2 * -1);
+    width: var(--tooltip-padding-y);
+    height: var(--tooltip-padding-y);
+    background: inherit;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    z-index: -999;
+    pointer-events: none;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-right: none;
+}
+
+.copy-btn svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.2s ease;
+}
+
+.copy-btn .checkmark {
+    display: none;
+}
+
+.copy-btn:hover .tooltip,
+.copy-btn:focus:not(:focus-visible) .tooltip {
+    opacity: 1;
+    visibility: visible;
+    top: calc(100% + var(--tooltip-offset));
+}
+
+.copy-btn:focus:not(:focus-visible) .clipboard {
+    display: none;
+}
+
+.copy-btn:focus:not(:focus-visible) .checkmark {
+    display: block;
+}
+
+.copy-btn:hover,
+.copy-btn:focus {
+    background-color: var(--button-hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.copy-btn:active {
+    outline: var(--button-outline-width) solid var(--button-outline-color);
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.copy-btn:hover svg {
+    color: var(--button-hover-text-color);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+[data-theme="dark"] .copy-btn {
+    --button-bg: var(--accent);
+    --button-hover-bg: var(--accent-hover);
+    --button-outline-color: var(--accent);
+}
+
+[data-theme="dark"] .copy-btn .tooltip {
+    --tooltip-bg: var(--card-bg);
+    --tootip-text-color: var(--text);
+}

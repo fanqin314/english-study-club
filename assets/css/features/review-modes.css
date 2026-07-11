@@ -1,0 +1,317 @@
+/* ================================================================
+   全文回顾模式
+   ================================================================ */
+
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.review-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+.review-tts-btn,
+.sent-tts-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: var(--btn-bg);
+    color: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.review-tts-btn:hover,
+.sent-tts-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.review-tts-btn.speaking {
+    background: var(--accent);
+    color: #fff;
+    animation: tts-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.review-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: var(--btn-bg);
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.review-info-item {
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.review-info-sep {
+    color: var(--border);
+}
+
+.review-vocab-word {
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px dotted var(--accent);
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.review-vocab-word:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom-style: solid;
+}
+
+.review-word-bubble {
+    position: fixed;
+    z-index: 10000;
+    padding: 6px 14px;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    animation: bubbleIn 0.15s ease;
+}
+
+.review-word-bubble::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #1e293b;
+}
+
+[data-theme="dark"] .review-word-bubble {
+    background: #334155;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .review-word-bubble::after {
+    border-bottom-color: #334155;
+}
+
+@keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.review-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.review-text {
+    line-height: 2.2;
+    font-size: 15px;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.review-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+}
+
+.review-trans-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.review-translation {
+    line-height: 2;
+    font-size: 14px;
+    color: var(--text-light);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ================================================================
+   逐句精读模式
+   ================================================================ */
+
+.sentence-review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sentence-review-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+.sent-progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 3px;
+    margin: -8px 0 16px;
+    overflow: hidden;
+}
+
+.sent-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #6366f1);
+    border-radius: 3px;
+    transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sentence-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.sentence-index {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 6px 14px;
+    background: var(--btn-bg);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.sentence-nav-btn {
+    padding: 7px 18px;
+    font-size: 13px;
+}
+
+.sentence-review-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.sentence-review-text {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.8;
+    color: var(--text);
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sentence-review-analysis {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sentence-analysis-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.analysis-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(59, 130, 246, 0.08);
+    padding: 3px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 44px;
+    text-align: center;
+}
+
+.analysis-value {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+}
+
+.pos-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pos-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: var(--btn-bg);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.pos-tag.pos-vocab {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    cursor: help;
+}
+
+.pos-tag em {
+    font-style: normal;
+    font-size: 11px;
+    color: var(--text-light);
+}
+
+.sent-nav-hint {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-left: 4px;
+    opacity: 0.6;
+}
+
+.sentence-analysis-empty {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 13px;
+    padding: 20px 0;
+}

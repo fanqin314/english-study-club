@@ -1,0 +1,48 @@
+/* inputs.css - 输入区域组件样式 */
+
+/* ========== 输入区域 ========== */
+
+#textareaContainer {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+}
+
+#textareaWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+#textareaWrapper textarea {
+    flex: 1;
+    min-width: 0;
+    resize: vertical;
+    min-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#textareaWrapper textarea::-webkit-scrollbar {
+    display: none;
+}
+
+#secondRowContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#secondRowContainer .secondary {
+    padding: 10px 14px;
+    white-space: nowrap;
+}
+
+#secondRowContainer .secondary span:last-child {
+    display: none;
+}

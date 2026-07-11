@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>英语精读实验室 | 模块化版本</title>
+    <!-- 模块化CSS -->
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/features.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/specific.css">
+    <!-- 第三方CSS -->
+    <link rel="stylesheet" href="features/deep_parse/pos_highlight/pos_highlight.css">
+    <link rel="stylesheet" href="assets/css/features/flashcard_mode.css">
+</head>
+<body>
+    <div id="app-container" class="app-container">
+        <!-- Header Section -->
+        <header id="app-header" class="app-header">
+            <div class="card">
+                <div class="card-left">
+                    <div class="card-header">
+                        <h1 class="app-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                            </svg>
+                            <span>英语精读实验室</span>
+                        </h1>
+                    </div>
+                    <nav id="mainButtonContainer" class="button-group main-buttons"></nav>
+                    <div class="card-body"></div>
+                </div>
+                <div class="header-actions">
+                    <div class="api-status">
+                        <span id="apiStatusDot" class="status-dot status-red"></span>
+                        <span id="apiStatusText">未配置</span>
+                    </div>
+                    <button id="settingsBtn" class="icon-btn settings-btn" aria-label="设置">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="main-content">
+            <!-- Deep Parse Layout -->
+            <section id="deep-parse-section" class="deep-parse-section">
+                <div class="two-column-container">
+                    <button id="panelToggleBtn" class="panel-toggle-btn" aria-label="折叠输入面板" data-tooltip="折叠输入面板">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <section class="input-panel-section">
+                        <div id="inputPanel" class="input-panel">
+                            <div id="inputPanelContent" class="input-panel-content">
+                                <div id="textareaContainer">
+                                    <div id="textareaWrapper"></div>
+                                    <div id="secondRowContainer" class="button-group action-buttons"></div>
+                                </div>
+                                <figure id="fullTranslationArea" class="full-translation">
+                                    <strong class="translation-label">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="2" y1="12" x2="22" y2="12"/>
+                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                        </svg>
+                                        全文翻译
+                                    </strong>
+                                    <span id="fullTranslationText" class="translation-content"></span>
+                                </figure>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="sentences-panel-section">
+                        <section id="deepParseSentencesContainer" class="sentences-container"></section>
+                    </section>
+                </div>
+            </section>
+
+            <!-- Secondary Analysis Container -->
+            <section id="secondaryAnalysisContainer" class="secondary-analysis">
+                <header class="secondary-header">
+                    <button id="backButton" class="icon-only-btn back-btn" aria-label="返回">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="margin-right: 6px; vertical-align: middle;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>分析结果</h2>
+                    <button id="collapseInfoBtn" class="icon-only-btn collapse-info-btn" aria-label="折叠信息区">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                            <polyline points="18 15 12 9 6 15"></polyline>
+                        </svg>
+                    </button>
+                    <button id="copyOriginalTextBtn" class="copy-btn" aria-label="复制原文">
+                        <svg class="clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                        </svg>
+                        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                        </svg>
+                        <span class="tooltip">复制原文</span>
+                    </button>
+                </header>
+                
+                <div id="originalTextArea" class="original-text">
+                    <div class="text-content">
+                        <strong class="text-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right: 6px; vertical-align: middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>英文原文</strong>
+                        <span id="originalTextContent" class="text-body">The quick brown fox jumps over the lazy dog. Despite the rain, she decided to go for a walk and enjoyed the fresh air.</span>
+                    </div>
+                </div>
+
+                <div id="secondaryFullTranslationArea" class="secondary-translation">
+                    <strong class="translation-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        全文翻译
+                    </strong>
+                    <span id="secondaryFullTranslationText" class="translation-content">敏捷的棕毛狐狸从懒狗身上跃过。尽管下着雨，她还是决定去散步，并且享受了清新的空气。</span>
+                </div>
+
+                <div id="secondarySentencesContainer" class="secondary-sentences"></div>
+            </section>
+
+            <!-- Content Area (Shared) -->
+            <section id="content-section" class="content-section">
+                <div id="contentArea" class="content-area">
+                    <div id="sentencesContainer" class="sentences-list"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Secondary Analysis Panel -->
+        <aside id="secondary-panel" class="secondary-panel">
+        </aside>
+    </div>
+
+    <!-- Global UI Components -->
+    <div id="customMenu" class="custom-menu"></div>
+    <div id="settingsModal" class="modal"></div>
+    <div id="posSettingsModal" class="modal"></div>
+    <div id="editWordModal" class="modal"></div>
+    <div id="toast" class="toast"></div>
+
+    <!-- Script Loading -->
+    <script src="core/module_registry.js"></script>
+    <script src="core/module_interface_spec.js"></script>
+    <script src="core/di_container.js"></script>
+    <script src="core/event_bus.js"></script>
+    <script src="core/error_handler.js"></script>
+    <script src="core/security.js"></script>
+    <script src="core/cache.js"></script>
+    <script src="core/performance.js"></script>
+    <script src="core/utils.js"></script>
+    <script src="core/code_quality.js"></script>
+    <script src="core/extension_manager.js"></script>
+    <script src="core/base_analysis_button.js"></script>
+    <script src="core/global_manager.js"></script>
+    <script src="core/service_registration.js"></script>
+
+    <script src="modules/dictionary/dict.js"></script>
+
+    <script src="ui/settings/settings_ui.js"></script>
+    <script src="ui/settings/api_config.js"></script>
+    <script src="ui/settings/dark_mode.js"></script>
+    <script src="ui/settings/memory_bg.js"></script>
+
+    <script src="ui/main_button.js"></script>
+    <script src="ui/event_delegation.js"></script>
+
+    <script src="features/deep_parse/sentence_analysis/split.js"></script>
+    <script src="core/api_request.js"></script>
+    <script src="features/deep_parse/sentence_analysis/sentence_card_render.js"></script>
+    <script src="features/deep_parse/full_translation/full_translation_logic.js"></script>
+    
+    <!-- History Manager -->
+    <script src="features/history/history_manager.js"></script>
+
+    <script src="features/deep_parse/sentence_analysis/pos_button.js"></script>
+    <script src="features/deep_parse/sentence_analysis/syntax_button.js"></script>
+    <script src="features/deep_parse/sentence_analysis/knowledge_button.js"></script>
+    <script src="features/deep_parse/sentence_analysis/sentence_translate_button.js"></script>
+    <script src="ui/second_row/reload_button.js"></script>
+    <script src="modules/analysis/sentence_detail_handler.js"></script>
+    <script src="modules/analysis/deep_parse.js"></script>
+    <script src="features/history/history_analysis_renderer.js"></script>
+
+    <script src="ui/second_row/save_analysis.js"></script>
+    <script src="ui/second_row/load_example.js"></script>
+    <script src="ui/analysis/second_row_ui.js"></script>
+
+    <script src="history.js"></script>
+    <script src="features/history/history_data.js"></script>
+    <script src="features/history/history_list_ui.js"></script>
+    <script src="features/history/history_detail_ui.js"></script>
+
+    <script src="features/deep_parse/pos_highlight/highlight_service.js"></script>
+    <script src="features/deep_parse/pos_highlight/highlight_controller.js"></script>
+    <script src="features/deep_parse/pos_highlight/highlight_render.js"></script>
+    <script src="features/deep_parse/pos_highlight/highlight_switch.js"></script>
+    <script src="features/deep_parse/pos_highlight/highlight_settings.js"></script>
+    <script src="features/deep_parse/pos_highlight/add_all_pos.js"></script>
+
+    <script src="features/vocabulary/vocab_data.js"></script>
+    <script src="features/vocabulary/vocab_card.js"></script>
+    <script src="features/vocabulary/notebook_tab_ui.js"></script>
+    <script src="features/stats_tracker.js"></script>
+    <script src="features/memory_mode/practice_fill_ui.js"></script>
+    <script src="features/memory_mode/practice_spell_ui.js"></script>
+    <script src="features/memory_mode/practice_choice_ui.js"></script>
+    <script src="features/memory_mode/cloze_mode_ui.js"></script>
+    <script src="features/memory_mode/article_review_ui.js"></script>
+    <script src="features/memory_mode/stats_detail_ui.js"></script>
+    <script src="features/memory_mode/plan_detail_ui.js"></script>
+    <script src="features/memory_mode/memory_mode_ui.js"></script>
+    <script src="features/vocabulary/vocab_ui.js"></script>
+    <script src="features/memory_mode/learning_stats/learning_stats_ui.js"></script>
+    <script src="features/memory_mode/learning_plan/learning_plan_ui.js"></script>
+    <script src="features/memory_mode/flashcard_mode/flashcard_mode.js"></script>
+    <script src="features/memory_mode/flashcard_mode/flashcard_ui.js"></script>
+    <script src="features/vocabulary/word_context_menu.js"></script>
+    <script src="ui/memory_mode/memory_button.js"></script>
+    <script src="ui/vocabulary/vocab_button.js"></script>
+
+    <!-- 新架构脚本 -->
+    <script src="src/components/BaseComponent.js"></script>
+    <script src="src/core/StateManager.js"></script>
+    <script src="src/core/ComponentRegistry.js"></script>
+    <script src="src/components/vocabulary/CollapseButtonComponent.js"></script>
+    <script src="src/components/vocabulary/VocabStatsComponent.js"></script>
+    <script src="src/init-new-architecture.js"></script>
+
+    <script>
+        window.EnglishLab = window.EnglishLab || {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM 加载完成，开始初始化应用...');
+
+            if (window.ModuleRegistry) {
+                console.log('当前注册的模块:', Object.keys(window.ModuleRegistry._modules || {}));
+                try {
+                    window.ModuleRegistry.initializeAll();
+                    console.log('所有模块初始化完成');
+                } catch (error) {
+                    console.error('初始化模块时出错:', error);
+                }
+            }
+
+            if (window.MainButtonManager) {
+                try {
+                    window.MainButtonManager.init();
+                    console.log('主按钮初始化完成');
+                } catch (error) {
+                    console.error('初始化主按钮时出错:', error);
+                }
+            } else {
+                console.error('MainButtonManager 未加载');
+            }
+
+            const GlobalManager = ModuleRegistry.get('GlobalManager');
+            if (GlobalManager) {
+                GlobalManager.initialize({
+                    VocabData: window.VocabData,
+                    HistoryManager: window.HistoryManager,
+                    APIRequest: window.APIRequest,
+                    SentenceRenderer: window.SentenceRenderer,
+                    CacheManager: window.CacheManager,
+                    MainButtonManager: window.MainButtonManager,
+                    HighlightService: window.HighlightService,
+                    FlashcardMode: window.FlashcardMode,
+                    FlashcardUI: window.FlashcardUI,
+                    NotebookTabUI: window.NotebookTabUI
+                });
+                console.log('GlobalManager 初始化完成');
+            }
+
+            const copyBtn = document.getElementById('copyOriginalTextBtn');
+            if (copyBtn) {
+                const tooltip = copyBtn.querySelector('.tooltip');
+                
+                // 备用复制方法：使用文本区域选择
+                function fallbackCopy(text) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    textArea.style.top = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    
+                    try {
+                        const successful = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        return successful;
+                    } catch (err) {
+                        document.body.removeChild(textArea);
+                        return false;
+                    }
+                }
+                
+                copyBtn.addEventListener('click', async () => {
+                    const content = document.getElementById('originalTextContent');
+                    if (!content) return;
+                    
+                    const textToCopy = content.textContent;
+                    let success = false;
+                    
+                    // 首先尝试使用 Clipboard API
+                    if (navigator.clipboard && window.isSecureContext) {
+                        try {
+                            await navigator.clipboard.writeText(textToCopy);
+                            success = true;
+                        } catch (err) {
+                            console.warn('Clipboard API 失败，尝试备用方法:', err);
+                        }
+                    }
+                    
+                    // 如果 Clipboard API 失败或不可用，使用备用方法
+                    if (!success) {
+                        success = fallbackCopy(textToCopy);
+                    }
+                    
+                    if (success) {
+                        // 切换按钮状态
+                        copyBtn.classList.add('copied');
+                        if (tooltip) {
+                            tooltip.textContent = '已复制';
+                        }
+                        
+                        // 3秒后恢复原始状态
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            if (tooltip) {
+                                tooltip.textContent = '复制原文';
+                            }
+                        }, 3000);
+                        
+                        const toast = document.getElementById('toast');
+                        if (toast) {
+                            toast.innerText = '文本已复制到剪贴板';
+                            toast.style.opacity = '1';
+                            setTimeout(() => toast.style.opacity = '0', 2000);
+                        }
+                    } else {
+                        const toast = document.getElementById('toast');
+                        if (toast) {
+                            toast.innerText = '复制失败，请手动复制';
+                            toast.style.opacity = '1';
+                            setTimeout(() => toast.style.opacity = '0', 2000);
+                        }
+                    }
+                });
+            }
+
+            window.EnglishLab = {
+                ModuleRegistry: window.ModuleRegistry,
+                MainButtonManager: window.MainButtonManager,
+                SentenceRenderer: window.SentenceRenderer,
+                CacheManager: window.CacheManager,
+                APIRequest: window.APIRequest,
+                VocabData: window.VocabData,
+                HistoryManager: window.HistoryManager,
+                HighlightService: window.HighlightService,
+                FlashcardMode: window.FlashcardMode,
+                FlashcardUI: window.FlashcardUI,
+                GlobalManager: GlobalManager
+            };
+        });
+    </script>
+</body>
+</html>

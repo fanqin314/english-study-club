@@ -1,0 +1,406 @@
+/* responsive.css - 响应式布局 */
+
+/* ========== 响应式布局 ========== */
+
+@media (max-width: 768px) {
+    .two-column-container {
+        flex-direction: column;
+    }
+    
+    .left-column,
+    .right-column {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .api-status {
+        order: 2;
+    }
+    
+    .original-text {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 640px) {
+    body {
+        padding: 8px;
+    }
+    
+    .sentence-text {
+        font-size: 0.95rem;
+    }
+    
+    .button-group button {
+        padding: 5px 10px;
+    }
+    
+    .vocab-card {
+        padding: 10px;
+    }
+    
+    .vocab-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .vocab-stats {
+        font-size: 0.85rem;
+    }
+    
+    .words-toolbar {
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    .search-box,
+    .sort-controls {
+        width: auto;
+    }
+    
+    .search-input,
+    .sort-select-trigger {
+        width: auto;
+    }
+    
+    .create-notebook-section,
+    .add-word-section {
+        flex-direction: row;
+    }
+    
+    .notebook-name-input,
+    .word-input,
+    .meaning-input,
+    .context-input {
+        width: 100%;
+    }
+    
+    .word-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .word-actions {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .batch-actions-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .batch-delete-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .notebook-tabs {
+        flex-direction: row;
+    }
+    
+    .notebook-tab-wrapper {
+        width: auto;
+        margin: 0 8px 8px 0;
+    }
+    
+    .notebook-tab {
+        flex: 1;
+        text-align: left;
+    }
+    
+    .notebook-actions {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .sidebar {
+        width: 100%;
+        max-width: 320px;
+    }
+    
+    .sidebar-toggle-btn {
+        top: 12px;
+        left: 12px;
+        width: 44px;
+        height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+    
+    .app-container {
+        gap: 8px;
+        padding: 0 4px;
+    }
+    
+    .card-header {
+        padding: 6px 12px;
+    }
+    
+    .app-title {
+        font-size: 1rem;
+    }
+    
+    .app-title svg {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .vocab-card.memory-mode-card {
+        padding: 12px;
+    }
+    
+    .back-btn {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .mode-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .mode-card {
+        padding: 16px 12px;
+        min-height: 90px;
+    }
+    
+    .mode-card .mode-card-label {
+        font-size: 13px;
+    }
+    
+    .mode-card .mode-card-desc {
+        font-size: 10px;
+    }
+    
+    .section-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .stats-content,
+    .plan-content {
+        padding: 10px;
+    }
+    
+    .stat-label,
+    .stat-value {
+        font-size: 12px;
+    }
+    
+    .save-plan-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========== 单词项响应式布局 ========== */
+
+/* 超大屏幕 (1920px及以上) - 4个/行 */
+@media (max-width: 1920px) {
+    .word-item {
+        flex: 1 1 calc(25% - 12px);
+        max-width: calc(25% - 12px);
+    }
+}
+
+/* 大屏幕 (1366px - 1919px) - 4个/行 */
+@media (max-width: 1366px) {
+    .word-item {
+        flex: 1 1 calc(33.333% - 12px);
+        max-width: calc(33.333% - 12px);
+    }
+}
+
+/* 中等屏幕 (768px - 1365px) - 3个/行 */
+@media (max-width: 768px) {
+    .word-item {
+        flex: 1 1 calc(50% - 12px);
+        max-width: calc(50% - 12px);
+    }
+    
+    .two-column-container {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .left-column,
+    .right-column {
+        width: 100%;
+    }
+    
+    .right-column {
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+    
+    .input-panel {
+        height: auto;
+        max-height: 50vh;
+    }
+    
+    .vocab-card.memory-mode-card {
+        padding: 15px;
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
+    }
+    
+    .memory-mode-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+    
+    .memory-mode-header h3 {
+        font-size: 16px;
+    }
+    
+    .mode-select-section h4,
+    .memory-stats-section h4,
+    .memory-plan-section h4 {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .mode-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .mode-card {
+        padding: 18px 14px;
+        min-height: 100px;
+    }
+
+    .section-btn {
+        padding: 7px 12px;
+        font-size: 13px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .goal-setting {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .review-content {
+        padding: 16px;
+    }
+
+    .review-text {
+        font-size: 14px;
+    }
+
+    .sentence-review-content {
+        padding: 16px;
+    }
+
+    .sentence-review-text {
+        font-size: 16px;
+    }
+
+    .sentence-nav {
+        flex-wrap: wrap;
+    }
+
+    .fill-card,
+    .spell-card,
+    .listen-card {
+        padding: 24px 20px;
+        gap: 18px;
+    }
+
+    .fill-meaning,
+    .spell-hint {
+        font-size: 18px;
+    }
+
+    .fill-input-row {
+        max-width: 100%;
+    }
+
+    .fill-input,
+    .spell-input,
+    .listen-input {
+        max-width: 100%;
+        font-size: 15px;
+    }
+
+    .fill-sentence {
+        font-size: 18px;
+        padding: 14px 18px;
+    }
+
+    .fill-bottom {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .letter-box {
+        width: 34px;
+        height: 42px;
+        font-size: 19px;
+    }
+
+    .listen-choice-area {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .listen-choice-btn {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .fill-summary-stats,
+    .spell-summary-stats,
+    .listen-summary-stats {
+        gap: 14px;
+    }
+
+    .fill-summary-val,
+    .spell-summary-val,
+    .listen-summary-val {
+        font-size: 22px;
+    }
+}
+
+/* 小屏幕 (480px - 767px) - 2个/行 */
+@media (max-width: 480px) {
+    .word-item {
+        flex: 1 1 calc(50% - 12px);
+        max-width: calc(50% - 12px);
+    }
+}
+
+/* 超小屏幕 (375px及以下) - 1个/行 */
+@media (max-width: 375px) {
+    .word-item {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}

@@ -1,0 +1,122 @@
+/* switches.css - 开关组件样式 */
+
+/* ========== 开关样式 ========== */
+
+.glass-toggle {
+    position: relative;
+}
+
+.glass-toggle input {
+    display: none;
+}
+
+.glass-toggle .toggle-label {
+    display: block;
+    width: 72px;
+    height: 36px;
+    background: rgba(226, 232, 240, 0.55);
+    backdrop-filter: blur(8px);
+    border: 1px solid #fafafa;
+    border-radius: 60px;
+    box-shadow: 0px 5px 6px 0px rgba(0, 0, 0, 0.25);
+    transition: background-color 0.25s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    position: relative;
+}
+
+.glass-toggle .toggle-label:hover {
+    background: rgba(203, 213, 225, 0.65);
+    transform: translateY(-1px);
+}
+
+.glass-toggle .toggle-label:active {
+    transform: translateY(1px);
+    box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.2);
+}
+
+.glass-toggle .toggle-slider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glass-toggle input:checked + .toggle-label {
+    background: rgba(203, 213, 225, 0.75);
+}
+
+.glass-toggle input:checked + .toggle-label .toggle-slider {
+    transform: translateX(38px);
+}
+
+.glass-toggle .toggle-icon {
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    transition: opacity 0.3s ease;
+}
+
+.glass-toggle .rainbow-on-icon {
+    opacity: 0;
+    color: #e94822;
+}
+
+.glass-toggle .rainbow-off-icon {
+    opacity: 1;
+    color: #64748b;
+}
+
+.glass-toggle input:checked + .toggle-label .rainbow-on-icon {
+    opacity: 1;
+}
+
+.glass-toggle input:checked + .toggle-label .rainbow-off-icon {
+    opacity: 0;
+}
+
+.glass-toggle .light-icon {
+    opacity: 1;
+    color: #fbbf24;
+}
+
+.glass-toggle .dark-icon {
+    opacity: 0;
+    color: #3b82f6;
+}
+
+.glass-toggle input:checked + .toggle-label .light-icon {
+    opacity: 0;
+}
+
+.glass-toggle input:checked + .toggle-label .dark-icon {
+    opacity: 1;
+}
+
+/* ========== 深色模式切换 View Transition ========== */
+
+::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+    animation: ripple-reveal 0.45s ease-in-out;
+    mix-blend-mode: normal;
+}
+
+@keyframes ripple-reveal {
+    from {
+        clip-path: circle(0 at var(--ripple-x, 50%) var(--ripple-y, 50%));
+    }
+    to {
+        clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+    }
+}

@@ -1,0 +1,350 @@
+(function() {
+    let _showToast = null;
+    let _getVocabData = null;
+
+    ModuleRegistry.register('PlanDetailUI', ['GlobalManager'], function(GlobalManager) {
+
+        function getWordPlanData() {
+            const savedWordGoal = parseInt(localStorage.getItem('dailyWordGoal') || '10');
+            const savedTimeGoal = parseInt(localStorage.getItem('dailyTimeGoal') || '15');
+            const todayLearned = parseInt(localStorage.getItem('stats_today_learned') || '0');
+            const streakDays = parseInt(localStorage.getItem('stats_streak_days') || '0');
+            const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
+            let totalWords = 0;
+            for (const nb of Object.values(allNotebooks)) {
+                if (nb.words) totalWords += nb.words.length;
+            }
+            return {
+                dailyWordGoal: savedWordGoal,
+                dailyTimeGoal: savedTimeGoal,
+                todayLearned,
+                streakDays,
+                totalWords,
+                wordProgressPct: savedWordGoal > 0 ? Math.min(100, Math.round((todayLearned / savedWordGoal) * 100)) : 0
+            };
+        }
+
+        function getArticlePlanData() {
+            const dailyArticleGoal = parseInt(localStorage.getItem('dailyArticleGoal') || '1');
+            const dailyArticleTimeGoal = parseInt(localStorage.getItem('dailyArticleTimeGoal') || '20');
+            const todayArticles = parseInt(localStorage.getItem('stats_today_articles') || '0');
+            const articleStreakDays = parseInt(localStorage.getItem('stats_article_streak_days') || '0');
+            const reviewInterval = parseInt(localStorage.getItem('articleReviewInterval') || '3');
+            const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
+            const todayStr = new Date().toDateString();
+            const todayArticleIds = JSON.parse(localStorage.getItem('stats_today_article_ids') || '[]');
+            return {
+                dailyArticleGoal,
+                dailyArticleTimeGoal,
+                todayArticles,
+                articleStreakDays,
+                reviewInterval,
+                totalArticles: historyList.length,
+                articleProgressPct: dailyArticleGoal > 0 ? Math.min(100, Math.round((todayArticles / dailyArticleGoal) * 100)) : 0,
+                todayArticleIds,
+                todayDateStr: todayStr
+            };
+        }
+
+        function showPlanDetailInterface(container) {
+            const planAppHeader = document.getElementById('app-header');
+            const planCardHeader = document.querySelector('.card-header');
+            const planCardBody = document.querySelector('.card-body');
+            if (planAppHeader) planAppHeader.style.display = 'none';
+            if (planCardHeader) planCardHeader.style.display = 'none';
+            if (planCardBody) planCardBody.style.display = 'none';
+
+            container.innerHTML = '';
+
+            const header = document.createElement('div');
+            header.className = 'memory-mode-header';
+
+            const backBtn = document.createElement('button');
+            backBtn.className = 'back-btn';
+            backBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+            backBtn.onclick = () => {
+                const MemoryModeUI = ModuleRegistry.get('MemoryModeUI');
+                if (MemoryModeUI) { MemoryModeUI.show(container); }
+            };
+            header.appendChild(backBtn);
+
+            const title = document.createElement('h3');
+            title.textContent = '📅 学习计划';
+            header.appendChild(title);
+
+            const planTabBar = document.createElement('div');
+            planTabBar.className = 'memory-mode-tabs stats-sub-tabs';
+            planTabBar.innerHTML = `
+                <div class="memory-mode-tab active" data-plan-tab="word">单词计划</div>
+                <div class="memory-mode-tab" data-plan-tab="article">文章计划</div>
+            `;
+            header.appendChild(planTabBar);
+
+            container.appendChild(header);
+
+            const planContainer = document.createElement('div');
+            planContainer.className = 'plan-detail-container';
+
+            const wordPlanPanel = buildWordPlanPanel();
+            wordPlanPanel.className = 'memory-mode-tab-content word-tab-content';
+            wordPlanPanel.style.display = 'block';
+            planContainer.appendChild(wordPlanPanel);
+
+            const articlePlanPanel = buildArticlePlanPanel();
+            articlePlanPanel.className = 'memory-mode-tab-content article-tab-content';
+            articlePlanPanel.style.display = 'none';
+            planContainer.appendChild(articlePlanPanel);
+
+            planTabBar.addEventListener('click', (e) => {
+                const tab = e.target.closest('.memory-mode-tab');
+                if (!tab) return;
+                planTabBar.querySelectorAll('.memory-mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabName = tab.dataset.planTab;
+                planContainer.querySelectorAll('.memory-mode-tab-content').forEach(c => c.style.display = 'none');
+                if (tabName === 'word') {
+                    wordPlanPanel.style.display = 'block';
+                } else {
+                    articlePlanPanel.style.display = 'block';
+                }
+            });
+
+            container.appendChild(planContainer);
+
+            bindPlanEvents();
+        }
+
+        function buildWordPlanPanel() {
+            const planData = getWordPlanData();
+            const panel = document.createElement('div');
+
+            const savedEnableReminder = localStorage.getItem('enableReminder') === 'true';
+            const savedReminderTime = localStorage.getItem('reminderTime') || '09:00';
+
+            const dailyGoalCard = document.createElement('div');
+            dailyGoalCard.className = 'plan-section-card';
+            dailyGoalCard.innerHTML = `
+                <h4>🎯 每日单词目标</h4>
+                <div class="plan-progress-wrap">
+                    <div class="plan-progress-ring">
+                        <svg viewBox="0 0 100 100" class="plan-progress-svg">
+                            <circle cx="50" cy="50" r="42" class="plan-progress-bg"></circle>
+                            <circle cx="50" cy="50" r="42" class="plan-progress-fg" id="wordPlanRing" stroke-dasharray="${planData.wordProgressPct * 2.64}, 264"></circle>
+                        </svg>
+                        <span class="plan-progress-text" id="wordPlanPct">${planData.wordProgressPct}%</span>
+                    </div>
+                    <div class="plan-progress-info">
+                        <span>今日已学 <strong>${planData.todayLearned} / ${planData.dailyWordGoal}</strong> 个单词</span>
+                        <span class="plan-progress-sub">连续学习 ${planData.streakDays} 天 · 共 ${planData.totalWords} 词</span>
+                    </div>
+                </div>
+                <div class="goal-setting" style="margin-top:16px;">
+                    <span class="goal-label">每日单词数</span>
+                    <input type="number" value="${planData.dailyWordGoal}" min="1" max="200" class="goal-input" id="dailyWordGoal">
+                    <span class="goal-unit">个</span>
+                    <span class="goal-label" style="margin-left:12px">学习时长</span>
+                    <input type="number" value="${planData.dailyTimeGoal}" min="1" max="180" class="goal-input" id="dailyTimeGoal">
+                    <span class="goal-unit">分钟</span>
+                    <button class="save-plan-btn" id="saveDailyGoalBtn">保存</button>
+                </div>
+            `;
+            panel.appendChild(dailyGoalCard);
+
+            const remindCard = document.createElement('div');
+            remindCard.className = 'plan-section-card';
+            remindCard.innerHTML = `
+                <h4>🔔 单词学习提醒</h4>
+                <div class="reminder-setting">
+                    <div class="reminder-item">
+                        <input type="checkbox" id="enableReminder" ${savedEnableReminder ? 'checked' : ''}>
+                        <label for="enableReminder">启用学习提醒</label>
+                    </div>
+                    <div class="reminder-item" id="reminderTimeContainer" style="display: ${savedEnableReminder ? 'flex' : 'none'};">
+                        <span>提醒时间</span>
+                        <input type="time" id="reminderTime" value="${savedReminderTime}" class="goal-input" style="width:auto;margin-left:8px;">
+                    </div>
+                    <button class="save-plan-btn" id="saveReminderBtn">保存</button>
+                </div>
+            `;
+            panel.appendChild(remindCard);
+
+            return panel;
+        }
+
+        function buildArticlePlanPanel() {
+            const planData = getArticlePlanData();
+            const panel = document.createElement('div');
+
+            const savedArtReminder = localStorage.getItem('enableArticleReminder') === 'true';
+            const savedArtReminderTime = localStorage.getItem('articleReminderTime') || '20:00';
+
+            const dailyGoalCard = document.createElement('div');
+            dailyGoalCard.className = 'plan-section-card';
+            dailyGoalCard.innerHTML = `
+                <h4>📰 每日文章目标</h4>
+                <div class="plan-progress-wrap">
+                    <div class="plan-progress-ring">
+                        <svg viewBox="0 0 100 100" class="plan-progress-svg">
+                            <circle cx="50" cy="50" r="42" class="plan-progress-bg"></circle>
+                            <circle cx="50" cy="50" r="42" class="plan-progress-fg" id="articlePlanRing" stroke-dasharray="${planData.articleProgressPct * 2.64}, 264" style="stroke:#10b981;"></circle>
+                        </svg>
+                        <span class="plan-progress-text" id="articlePlanPct" style="color:#10b981;">${planData.articleProgressPct}%</span>
+                    </div>
+                    <div class="plan-progress-info">
+                        <span>今日已读 <strong>${planData.todayArticles} / ${planData.dailyArticleGoal}</strong> 篇文章</span>
+                        <span class="plan-progress-sub">连续阅读 ${planData.articleStreakDays} 天 · 共 ${planData.totalArticles} 篇</span>
+                    </div>
+                </div>
+                <div class="goal-setting" style="margin-top:16px;">
+                    <span class="goal-label">每日文章数</span>
+                    <input type="number" value="${planData.dailyArticleGoal}" min="1" max="20" class="goal-input" id="dailyArticleGoal">
+                    <span class="goal-unit">篇</span>
+                    <span class="goal-label" style="margin-left:12px">阅读时长</span>
+                    <input type="number" value="${planData.dailyArticleTimeGoal}" min="1" max="180" class="goal-input" id="dailyArticleTimeGoal">
+                    <span class="goal-unit">分钟</span>
+                    <button class="save-plan-btn" id="saveArticleGoalBtn">保存</button>
+                </div>
+            `;
+            panel.appendChild(dailyGoalCard);
+
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'plan-section-card';
+            reviewCard.innerHTML = `
+                <h4>🔄 文章复习计划</h4>
+                <div class="plan-review-info">
+                    <div class="plan-review-item">
+                        <span class="review-item-label">复习间隔</span>
+                        <div class="review-interval-set">
+                            <input type="number" value="${planData.reviewInterval}" min="1" max="30" class="goal-input" id="articleReviewInterval" style="width:56px;">
+                            <span class="goal-unit">天</span>
+                        </div>
+                    </div>
+                    <div class="plan-review-item">
+                        <span class="review-item-label">待复习文章</span>
+                        <span class="review-item-value" id="pendingReviewCount">${getPendingReviewCount(planData)}</span>
+                    </div>
+                </div>
+                <button class="save-plan-btn" id="saveReviewBtn" style="margin-top:12px;">保存</button>
+            `;
+            panel.appendChild(reviewCard);
+
+            const remindCard = document.createElement('div');
+            remindCard.className = 'plan-section-card';
+            remindCard.innerHTML = `
+                <h4>🔔 文章阅读提醒</h4>
+                <div class="reminder-setting">
+                    <div class="reminder-item">
+                        <input type="checkbox" id="enableArticleReminder" ${savedArtReminder ? 'checked' : ''}>
+                        <label for="enableArticleReminder">启用阅读提醒</label>
+                    </div>
+                    <div class="reminder-item" id="articleReminderTimeContainer" style="display: ${savedArtReminder ? 'flex' : 'none'};">
+                        <span>提醒时间</span>
+                        <input type="time" id="articleReminderTime" value="${savedArtReminderTime}" class="goal-input" style="width:auto;margin-left:8px;">
+                    </div>
+                    <button class="save-plan-btn" id="saveArticleReminderBtn">保存</button>
+                </div>
+            `;
+            panel.appendChild(remindCard);
+
+            return panel;
+        }
+
+        function getPendingReviewCount(planData) {
+            const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
+            const interval = parseInt(localStorage.getItem('articleReviewInterval') || '3');
+            const now = Date.now();
+            const intervalMs = interval * 24 * 60 * 60 * 1000;
+            let count = 0;
+            historyList.forEach(h => {
+                const lastReview = parseInt(localStorage.getItem('article_last_review_' + h.id) || '0');
+                if (!lastReview || (now - lastReview) > intervalMs) {
+                    count++;
+                }
+            });
+            return count;
+        }
+
+        function bindPlanEvents() {
+            setTimeout(() => {
+                const enableReminderEl = document.getElementById('enableReminder');
+                const reminderTimeContainerEl = document.getElementById('reminderTimeContainer');
+                if (enableReminderEl && reminderTimeContainerEl) {
+                    enableReminderEl.onchange = () => {
+                        reminderTimeContainerEl.style.display = enableReminderEl.checked ? 'flex' : 'none';
+                    };
+                }
+
+                const enableArticleReminderEl = document.getElementById('enableArticleReminder');
+                const articleReminderTimeEl = document.getElementById('articleReminderTimeContainer');
+                if (enableArticleReminderEl && articleReminderTimeEl) {
+                    enableArticleReminderEl.onchange = () => {
+                        articleReminderTimeEl.style.display = enableArticleReminderEl.checked ? 'flex' : 'none';
+                    };
+                }
+
+                const saveDailyGoalBtn = document.getElementById('saveDailyGoalBtn');
+                if (saveDailyGoalBtn) {
+                    saveDailyGoalBtn.onclick = () => {
+                        const wordGoal = document.getElementById('dailyWordGoal').value;
+                        const timeGoal = document.getElementById('dailyTimeGoal').value;
+                        localStorage.setItem('dailyWordGoal', wordGoal);
+                        localStorage.setItem('dailyTimeGoal', timeGoal);
+                        _showToast('每日单词目标已保存');
+                    };
+                }
+
+                const saveReminderBtn = document.getElementById('saveReminderBtn');
+                if (saveReminderBtn) {
+                    saveReminderBtn.onclick = () => {
+                        const enableReminder = document.getElementById('enableReminder').checked;
+                        const reminderTime = document.getElementById('reminderTime').value;
+                        localStorage.setItem('enableReminder', enableReminder);
+                        localStorage.setItem('reminderTime', reminderTime);
+                        _showToast('单词提醒设置已保存');
+                    };
+                }
+
+                const saveArticleGoalBtn = document.getElementById('saveArticleGoalBtn');
+                if (saveArticleGoalBtn) {
+                    saveArticleGoalBtn.onclick = () => {
+                        const articleGoal = document.getElementById('dailyArticleGoal').value;
+                        const articleTimeGoal = document.getElementById('dailyArticleTimeGoal').value;
+                        localStorage.setItem('dailyArticleGoal', articleGoal);
+                        localStorage.setItem('dailyArticleTimeGoal', articleTimeGoal);
+                        _showToast('每日文章目标已保存');
+                    };
+                }
+
+                const saveReviewBtn = document.getElementById('saveReviewBtn');
+                if (saveReviewBtn) {
+                    saveReviewBtn.onclick = () => {
+                        const interval = document.getElementById('articleReviewInterval').value;
+                        localStorage.setItem('articleReviewInterval', interval);
+                        _showToast('复习计划已保存');
+                    };
+                }
+
+                const saveArticleReminderBtn = document.getElementById('saveArticleReminderBtn');
+                if (saveArticleReminderBtn) {
+                    saveArticleReminderBtn.onclick = () => {
+                        const enableReminder = document.getElementById('enableArticleReminder').checked;
+                        const reminderTime = document.getElementById('articleReminderTime').value;
+                        localStorage.setItem('enableArticleReminder', enableReminder);
+                        localStorage.setItem('articleReminderTime', reminderTime);
+                        _showToast('文章提醒设置已保存');
+                    };
+                }
+            }, 0);
+        }
+
+        function init(utils) {
+            _showToast = utils.showToast;
+            _getVocabData = utils.getVocabData;
+        }
+
+        return {
+            show: showPlanDetailInterface,
+            init: init
+        };
+    });
+})();

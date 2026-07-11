@@ -1,0 +1,400 @@
+/* ================================================================
+   语境填空模式
+   ================================================================ */
+
+.cloze-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.cloze-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+.cloze-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cloze-hint {
+    font-size: 13px;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cloze-progress {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(59, 130, 246, 0.08);
+    padding: 3px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.cloze-progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: -8px 0 16px;
+    overflow: hidden;
+}
+
+.cloze-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #6366f1);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cloze-input-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    vertical-align: baseline;
+}
+
+.cloze-speak-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.cloze-input-wrapper:hover .cloze-speak-btn {
+    opacity: 1;
+}
+
+.cloze-speak-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.cloze-complete-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    border-radius: 16px;
+    z-index: 10;
+    animation: fadeIn 0.3s ease;
+}
+
+.cloze-complete-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cloze-complete-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.cloze-complete-desc {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 20px;
+}
+
+.cloze-complete-btn {
+    background: #fff;
+    color: #1e293b;
+    border: none;
+    padding: 10px 32px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cloze-complete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.cloze-content {
+    line-height: 2.3;
+    font-size: 15px;
+    color: var(--text);
+    padding: 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    position: relative;
+}
+
+.cloze-text {
+    color: var(--text);
+    font-weight: 400;
+    line-height: inherit;
+}
+
+.cloze-input-wrapper {
+    display: inline;
+    position: relative;
+}
+
+.cloze-input {
+    display: inline-block;
+    width: 100px;
+    padding: 2px 8px;
+    border: none;
+    border-bottom: 2.5px dashed var(--accent);
+    background: rgba(59, 130, 246, 0.04);
+    border-radius: 4px 4px 0 0;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    text-align: center;
+    outline: none;
+    transition: all 0.2s ease;
+    vertical-align: baseline;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.cloze-input:focus {
+    border-bottom-style: solid;
+    border-bottom-color: var(--accent);
+    background: rgba(59, 130, 246, 0.10);
+    width: 120px;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.1);
+}
+
+.cloze-input-wrapper.correct .cloze-input {
+    border-bottom-color: #22c55e;
+    background: rgba(34, 197, 94, 0.08);
+    color: #16a34a;
+    border-bottom-style: solid;
+}
+
+.cloze-input-wrapper.incorrect .cloze-input {
+    border-bottom-color: #ef4444;
+    background: rgba(239, 68, 68, 0.06);
+    color: #dc2626;
+    border-bottom-style: solid;
+    animation: shake 0.4s ease;
+}
+
+.cloze-input-wrapper.revealed .cloze-input {
+    border-bottom-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.06);
+    border-bottom-style: solid;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+.cloze-correct-answer {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 12px;
+    color: #22c55e;
+    font-weight: 600;
+    animation: fadeIn 0.3s ease;
+}
+
+.cloze-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cloze-check-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cloze-check-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+
+.cloze-reveal-btn {
+    background: var(--btn-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cloze-reveal-btn:hover {
+    background: var(--btn-hover-bg);
+    transform: translateY(-1px);
+}
+
+.cloze-result {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-left: auto;
+    padding: 6px 14px;
+    background: rgba(59, 130, 246, 0.06);
+    border-radius: 8px;
+}
+
+.cloze-trans-btn {
+    background: var(--btn-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cloze-trans-btn:hover {
+    background: var(--btn-hover-bg);
+    transform: translateY(-1px);
+}
+
+.cloze-translation {
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    background: rgba(59, 130, 246, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    line-height: 1.8;
+    font-size: 14px;
+    color: var(--text);
+    box-sizing: border-box;
+    animation: fadeSlideIn 0.25s ease;
+}
+
+.cloze-translation-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.cloze-translation-empty {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 13px;
+    padding: 10px 0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ================================================================
+   暗色模式适配
+   ================================================================ */
+
+[data-theme="dark"] .cloze-content {
+    box-shadow: none;
+    background: rgba(30, 41, 59, 0.4);
+}
+
+[data-theme="dark"] .cloze-translation {
+    background: rgba(59, 130, 246, 0.04);
+}
+
+[data-theme="dark"] .cloze-result {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="dark"] .cloze-reveal-btn,
+[data-theme="dark"] .cloze-trans-btn {
+    background: rgba(51, 65, 85, 0.6);
+}
+
+[data-theme="dark"] .cloze-input {
+    background: rgba(59, 130, 246, 0.06);
+}
+
+[data-theme="dark"] .cloze-progress {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="dark"] .cloze-speak-btn {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+[data-theme="dark"] .cloze-complete-overlay {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+/* ================================================================
+   响应式适配
+   ================================================================ */
+
+@media (max-width: 640px) {
+    .cloze-input {
+        width: 80px;
+    }
+
+    .cloze-input:focus {
+        width: 96px;
+    }
+}
