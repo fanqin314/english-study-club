@@ -102,7 +102,7 @@
             ErrorHandler.showError('测试中...', 'info');
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             
             try {
                 const url = useProxy ? apiConfig.proxyUrl : `${apiConfig.baseUrl}/chat/completions`;

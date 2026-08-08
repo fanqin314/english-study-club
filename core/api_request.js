@@ -79,7 +79,7 @@
                     
                     // 添加请求超时设置
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000);
+                    const timeoutId = setTimeout(() => controller.abort(), options.timeout || 60000);
                     
                     // 通过代理时不需要 Authorization 头
                     const headers = {
