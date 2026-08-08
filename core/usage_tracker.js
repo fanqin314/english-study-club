@@ -4,7 +4,7 @@
     'use strict';
 
     const STORAGE_KEY = 'erl_daily_usage';
-    const FREE_LIMIT = 5;
+    const FREE_LIMIT = 200;
 
     /**
      * 获取今日日期字符串 YYYY-MM-DD
