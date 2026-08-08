@@ -8,7 +8,11 @@
         function updateApiStatus() {
             const dot = document.getElementById('apiStatusDot');
             const text = document.getElementById('apiStatusText');
-            if (apiConfig.apiKey && apiConfig.apiKey.trim() !== '') {
+            if (!dot || !text) return;
+            // 使用代理时也算已配置
+            const hasProxy = apiConfig.proxyUrl && apiConfig.proxyUrl.trim() !== '';
+            const hasKey = apiConfig.apiKey && apiConfig.apiKey.trim() !== '';
+            if (hasKey || hasProxy) {
                 dot.className = 'status-dot status-green';
                 text.innerText = '已配置';
             } else {
@@ -249,7 +253,7 @@
             return Security.getApiConfig();
         };
         
-        // 更新API状态（页面加载时调用）
-        document.addEventListener('DOMContentLoaded', updateApiStatus);
+        // 页面加载时立即更新API状态（factory 在 initializeAll 中调用，此时 DOM 已就绪）
+        updateApiStatus();
     });
 })();
