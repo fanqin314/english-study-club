@@ -65,7 +65,7 @@
             return {
                 baseUrl: encryptedBaseUrl ? decrypt(encryptedBaseUrl) : 'https://api-inference.modelscope.cn/v1',
                 apiKey: getApiKey(),
-                model: encryptedModelName ? decrypt(encryptedModelName) : 'Qwen/Qwen2.5-32B-Instruct',
+                model: encryptedModelName ? decrypt(encryptedModelName) : 'Qwen/Qwen3.5-27B',
                 proxyUrl: getProxyUrl()
             };
         }
