@@ -8,11 +8,6 @@ const DAILY_LIMIT = 20; // 每个 IP 每天最多 20 次（硬限制，防滥用
 
 export default {
   async fetch(request, env, ctx) {
-    // 只允许 POST
-    if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
-    }
-
     // CORS 头
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
@@ -20,8 +15,14 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type',
     };
 
+    // OPTIONS 预检请求必须最先处理，否则浏览器 CORS 会失败
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
+    }
+
+    // 只允许 POST
+    if (request.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405 });
     }
 
     // IP 速率限制
