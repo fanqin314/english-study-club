@@ -1,4 +1,4 @@
-// render.js - 句子卡片渲染
+// sentence_card_render.js - 句子卡片渲染
 (function() {
     ModuleRegistry.register('SentenceRenderer', ['Security', 'Performance'], function(Security, Performance) {
         let sentences = [];

@@ -69,7 +69,7 @@
             header.appendChild(backBtn);
 
             const title = document.createElement('h3');
-            title.textContent = '📅 学习计划';
+            title.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 学习计划';
             header.appendChild(title);
 
             const planTabBar = document.createElement('div');
@@ -102,6 +102,7 @@
                 tab.classList.add('active');
                 const tabName = tab.dataset.planTab;
                 planContainer.querySelectorAll('.memory-mode-tab-content').forEach(c => c.style.display = 'none');
+                planContainer.dataset.planType = tabName;
                 if (tabName === 'word') {
                     wordPlanPanel.style.display = 'block';
                 } else {
@@ -122,9 +123,15 @@
             const savedReminderTime = localStorage.getItem('reminderTime') || '09:00';
 
             const dailyGoalCard = document.createElement('div');
-            dailyGoalCard.className = 'plan-section-card';
+            dailyGoalCard.className = 'plan-section-card stats-animate-in';
+            dailyGoalCard.style.animationDelay = '0.05s';
             dailyGoalCard.innerHTML = `
-                <h4>🎯 每日单词目标</h4>
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    每日单词目标
+                </h4>
                 <div class="plan-progress-wrap">
                     <div class="plan-progress-ring">
                         <svg viewBox="0 0 100 100" class="plan-progress-svg">
@@ -138,7 +145,7 @@
                         <span class="plan-progress-sub">连续学习 ${planData.streakDays} 天 · 共 ${planData.totalWords} 词</span>
                     </div>
                 </div>
-                <div class="goal-setting" style="margin-top:16px;">
+                <div class="goal-setting" style="margin-top:16px;padding-top:8px;border-top:1px solid var(--border);">
                     <span class="goal-label">每日单词数</span>
                     <input type="number" value="${planData.dailyWordGoal}" min="1" max="200" class="goal-input" id="dailyWordGoal">
                     <span class="goal-unit">个</span>
@@ -151,9 +158,15 @@
             panel.appendChild(dailyGoalCard);
 
             const remindCard = document.createElement('div');
-            remindCard.className = 'plan-section-card';
+            remindCard.className = 'plan-section-card stats-animate-in';
+            remindCard.style.animationDelay = '0.15s';
             remindCard.innerHTML = `
-                <h4>🔔 单词学习提醒</h4>
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    单词学习提醒
+                </h4>
                 <div class="reminder-setting">
                     <div class="reminder-item">
                         <input type="checkbox" id="enableReminder" ${savedEnableReminder ? 'checked' : ''}>
@@ -179,23 +192,30 @@
             const savedArtReminderTime = localStorage.getItem('articleReminderTime') || '20:00';
 
             const dailyGoalCard = document.createElement('div');
-            dailyGoalCard.className = 'plan-section-card';
+            dailyGoalCard.className = 'plan-section-card stats-animate-in';
+            dailyGoalCard.style.animationDelay = '0.05s';
             dailyGoalCard.innerHTML = `
-                <h4>📰 每日文章目标</h4>
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9"/>
+                        <path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/>
+                    </svg>
+                    每日文章目标
+                </h4>
                 <div class="plan-progress-wrap">
                     <div class="plan-progress-ring">
                         <svg viewBox="0 0 100 100" class="plan-progress-svg">
                             <circle cx="50" cy="50" r="42" class="plan-progress-bg"></circle>
-                            <circle cx="50" cy="50" r="42" class="plan-progress-fg" id="articlePlanRing" stroke-dasharray="${planData.articleProgressPct * 2.64}, 264" style="stroke:#10b981;"></circle>
+                            <circle cx="50" cy="50" r="42" class="plan-progress-fg" id="articlePlanRing" stroke-dasharray="${planData.articleProgressPct * 2.64}, 264"></circle>
                         </svg>
-                        <span class="plan-progress-text" id="articlePlanPct" style="color:#10b981;">${planData.articleProgressPct}%</span>
+                        <span class="plan-progress-text" id="articlePlanPct">${planData.articleProgressPct}%</span>
                     </div>
                     <div class="plan-progress-info">
                         <span>今日已读 <strong>${planData.todayArticles} / ${planData.dailyArticleGoal}</strong> 篇文章</span>
                         <span class="plan-progress-sub">连续阅读 ${planData.articleStreakDays} 天 · 共 ${planData.totalArticles} 篇</span>
                     </div>
                 </div>
-                <div class="goal-setting" style="margin-top:16px;">
+                <div class="goal-setting" style="margin-top:16px;padding-top:8px;border-top:1px solid var(--border);">
                     <span class="goal-label">每日文章数</span>
                     <input type="number" value="${planData.dailyArticleGoal}" min="1" max="20" class="goal-input" id="dailyArticleGoal">
                     <span class="goal-unit">篇</span>
@@ -208,9 +228,15 @@
             panel.appendChild(dailyGoalCard);
 
             const reviewCard = document.createElement('div');
-            reviewCard.className = 'plan-section-card';
+            reviewCard.className = 'plan-section-card stats-animate-in';
+            reviewCard.style.animationDelay = '0.15s';
             reviewCard.innerHTML = `
-                <h4>🔄 文章复习计划</h4>
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    文章复习计划
+                </h4>
                 <div class="plan-review-info">
                     <div class="plan-review-item">
                         <span class="review-item-label">复习间隔</span>
@@ -229,9 +255,15 @@
             panel.appendChild(reviewCard);
 
             const remindCard = document.createElement('div');
-            remindCard.className = 'plan-section-card';
+            remindCard.className = 'plan-section-card stats-animate-in';
+            remindCard.style.animationDelay = '0.25s';
             remindCard.innerHTML = `
-                <h4>🔔 文章阅读提醒</h4>
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    文章阅读提醒
+                </h4>
                 <div class="reminder-setting">
                     <div class="reminder-item">
                         <input type="checkbox" id="enableArticleReminder" ${savedArtReminder ? 'checked' : ''}>

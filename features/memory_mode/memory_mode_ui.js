@@ -34,7 +34,7 @@
             // 标题
             const title = document.createElement('div');
             title.className = 'memory-mode-title';
-            title.innerText = '🧠 记忆模式';
+            title.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;flex-shrink:0"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.2 4.5 3 5.5V21l4-2 4 2v-6.5c1.8-1 3-3 3-5.5a7 7 0 0 0-7-7z"/></svg> 记忆模式';
             header.appendChild(title);
 
             // 标签切换栏（放在header内，作为第2个子元素）
@@ -55,7 +55,7 @@
             tabBar.appendChild(articleTab);
             header.appendChild(tabBar);
             
-            // 功能按钮容器
+            // 功能按钮容器（统一放在 header 中，两个 tab 共用）
             const headerButtons = document.createElement('div');
             headerButtons.className = 'memory-mode-header-buttons';
             
@@ -90,12 +90,11 @@
             // 生词本选择器
             const notebookSelector = document.createElement('div');
             notebookSelector.className = 'memory-notebook-selector';
+            notebookSelector.appendChild(headerButtons);
 
             const currentNotebookId = window.VocabData ? window.VocabData.getCurrentNotebookId() : null;
             const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
             const currentNotebook = currentNotebookId ? allNotebooks[currentNotebookId] : null;
-
-            notebookSelector.appendChild(headerButtons);
 
             const selectorCurrent = document.createElement('div');
             selectorCurrent.className = 'memory-notebook-current';
@@ -229,6 +228,11 @@
             const modeGrid = document.createElement('div');
             modeGrid.className = 'mode-grid';
 
+            // 获取模块统计数据，用于卡片显示学习进度
+            const allModuleStats = window.StatsTracker ? window.StatsTracker.getModuleAllTimeStats() : [];
+            const statsMap = {};
+            allModuleStats.forEach(s => { statsMap[s.key] = s.count; });
+
             modeButtons.forEach(mode => {
                 const card = document.createElement('div');
                 card.className = 'mode-card';
@@ -256,6 +260,17 @@
                 card.appendChild(iconDiv);
                 card.appendChild(label);
                 card.appendChild(desc);
+
+                // 学习进度提示
+                if (mode.available) {
+                    const statCount = statsMap[mode.id] || 0;
+                    if (statCount > 0) {
+                        const stat = document.createElement('div');
+                        stat.className = 'mode-card-stat';
+                        stat.textContent = `已学 ${statCount} 次`;
+                        card.appendChild(stat);
+                    }
+                }
 
                 if (!mode.available) {
                     const badge = document.createElement('span');
@@ -304,9 +319,17 @@
             articleContent.className = 'memory-mode-tab-content article-tab-content';
             articleContent.style.display = 'none';
 
+            // 文章tab也显示功能按钮
+            const articleHeaderButtons = headerButtons.cloneNode(true);
+            // 重新绑定点击事件（cloneNode不会复制事件）
+            const statsBtn = articleHeaderButtons.querySelector('.section-btn:first-child');
+            const planBtn = articleHeaderButtons.querySelector('.section-btn:last-child');
+            statsBtn.onclick = () => { showStatsDetailInterface(memoryModeDiv); };
+            planBtn.onclick = () => { showPlanDetailInterface(memoryModeDiv); };
             // 文章选择器
             const articleSelector = document.createElement('div');
             articleSelector.className = 'memory-article-selector';
+            articleSelector.appendChild(articleHeaderButtons);
 
             const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
             let selectedArticleId = historyList.length > 0 ? historyList[0].id : null;
@@ -374,23 +397,6 @@
             const articleArrow = document.createElement('span');
             articleArrow.className = 'memory-article-arrow';
             articleArrow.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
-            // 文章标签的功能按钮
-            const articleHeaderButtons = document.createElement('div');
-            articleHeaderButtons.className = 'memory-mode-header-buttons';
-
-            const articleStatsBtn = document.createElement('button');
-            articleStatsBtn.innerText = '学习统计';
-            articleStatsBtn.className = 'section-btn header-section-btn';
-            articleStatsBtn.onclick = () => { showStatsDetailInterface(memoryModeDiv); };
-            articleHeaderButtons.appendChild(articleStatsBtn);
-
-            const articlePlanBtn = document.createElement('button');
-            articlePlanBtn.innerText = '学习计划';
-            articlePlanBtn.className = 'section-btn header-section-btn';
-            articlePlanBtn.onclick = () => { showPlanDetailInterface(memoryModeDiv); };
-            articleHeaderButtons.appendChild(articlePlanBtn);
-
-            articleSelector.appendChild(articleHeaderButtons);
 
             articleCurrent.appendChild(articleArrow);
 
@@ -624,11 +630,24 @@
                     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>`,
                     available: true,
                     color: '#8b5cf6'
+                },
+                {
+                    id: 'vocabQuiz',
+                    text: '生词测验',
+                    desc: '拖拽填空，检验词汇掌握',
+                    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z"/></svg>`,
+                    available: true,
+                    color: '#ef4444'
                 }
             ];
 
             const articleModeGrid = document.createElement('div');
             articleModeGrid.className = 'mode-grid';
+
+            // 获取模块统计数据
+            const articleStatsMap = {};
+            const articleModuleStats = window.StatsTracker ? window.StatsTracker.getModuleAllTimeStats() : [];
+            articleModuleStats.forEach(s => { articleStatsMap[s.key] = s.count; });
 
             articleModeButtons.forEach(mode => {
                 const card = document.createElement('div');
@@ -658,6 +677,17 @@
                 card.appendChild(label);
                 card.appendChild(desc);
 
+                // 学习进度提示
+                if (mode.available) {
+                    const statCount = articleStatsMap[mode.id] || 0;
+                    if (statCount > 0) {
+                        const stat = document.createElement('div');
+                        stat.className = 'mode-card-stat';
+                        stat.textContent = `已学 ${statCount} 次`;
+                        card.appendChild(stat);
+                    }
+                }
+
                 if (!mode.available) {
                     const badge = document.createElement('span');
                     badge.className = 'mode-card-badge';
@@ -680,6 +710,8 @@
                         showArticleReviewInterface(memoryModeDiv, selectedArticleId);
                     } else if (mode.id === 'sentence') {
                         showSentenceReviewInterface(memoryModeDiv, selectedArticleId);
+                    } else if (mode.id === 'vocabQuiz') {
+                        showVocabQuizInterface(memoryModeDiv, selectedArticleId, selectedNotebookIds);
                     }
                 };
 
@@ -731,6 +763,12 @@
             function showSentenceReviewInterface(container, articleId) {
                 const ArticleReviewUI = ModuleRegistry.get('ArticleReviewUI');
                 if (ArticleReviewUI) { ArticleReviewUI.showSentence(container, articleId); }
+            }
+
+            // ========== 生词测验模式 ==========
+            function showVocabQuizInterface(container, articleId, selectedNotebookIds) {
+                const VocabQuizUI = ModuleRegistry.get('VocabQuizUI');
+                if (VocabQuizUI) { VocabQuizUI.show(container, articleId, selectedNotebookIds); }
             }
 
             // tab 切换事件

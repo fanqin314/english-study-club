@@ -1,4 +1,4 @@
-// 闪卡模式.js - 闪卡模式的核心模块
+// flashcard_mode.js - 闪卡模式的核心模块
 
 (function() {
     function showToast(msg) {

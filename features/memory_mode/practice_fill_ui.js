@@ -28,16 +28,21 @@
 
             container.innerHTML = '';
 
+            const _cleanupFns = [];
+
             const fillHeader = document.createElement('div');
             fillHeader.className = 'fill-header';
 
             const backBtn = document.createElement('button');
             backBtn.className = 'back-btn';
             backBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
-            backBtn.onclick = () => {
+            const onBackClick = (e) => {
+                e.stopPropagation();
                 const MemoryModeUI = ModuleRegistry.get('MemoryModeUI');
                 if (MemoryModeUI) { MemoryModeUI.show(container); }
             };
+            backBtn.addEventListener('click', onBackClick);
+            _cleanupFns.push(() => backBtn.removeEventListener('click', onBackClick));
             fillHeader.appendChild(backBtn);
 
             const fillTitle = document.createElement('h3');
@@ -55,37 +60,30 @@
             const fillBottom = document.createElement('div');
             fillBottom.className = 'fill-bottom';
 
-            const resetBtn = document.createElement('button');
-            resetBtn.className = 'fill-reset-btn';
-            resetBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 重来`;
-            resetBtn.onclick = () => {
-                renderFillWord(fillCurrentIndex);
-            };
-            fillBottom.appendChild(resetBtn);
-
             const hintBtn = document.createElement('button');
             hintBtn.className = 'fill-hint-btn';
             hintBtn.id = 'fillHintBtn';
             hintBtn.title = '逐字母提示（-3分/个）';
             hintBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="8" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="16"/><line x1="8" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="16" y2="12"/></svg>';
-            hintBtn.onclick = () => { revealNextLetter(); };
+            const onHintClick = (e) => {
+                e.stopPropagation();
+                revealNextLetter();
+            };
+            hintBtn.addEventListener('click', onHintClick);
+            _cleanupFns.push(() => hintBtn.removeEventListener('click', onHintClick));
             fillBottom.appendChild(hintBtn);
 
             const skipBtn = document.createElement('button');
             skipBtn.className = 'fill-skip-btn';
             skipBtn.title = '跳过';
             skipBtn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
-            skipBtn.onclick = doFillSkip;
+            const onSkipClick = (e) => {
+                e.stopPropagation();
+                doFillSkip();
+            };
+            skipBtn.addEventListener('click', onSkipClick);
+            _cleanupFns.push(() => skipBtn.removeEventListener('click', onSkipClick));
             fillBottom.appendChild(skipBtn);
-
-            const fillCheckBtn = document.createElement('button');
-            fillCheckBtn.className = 'fill-check-btn';
-            fillCheckBtn.id = 'fillCheckBtn';
-            fillCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
-            fillCheckBtn.onclick = doFillCheck;
-            fillBottom.appendChild(fillCheckBtn);
-
-            container.appendChild(fillBottom);
 
             const fillCard = document.createElement('div');
             fillCard.className = 'fill-card';
@@ -111,6 +109,13 @@
             fillLetterGrid.id = 'fillLetterGrid';
             fillCard.appendChild(fillLetterGrid);
 
+            const fillCheckBtn = document.createElement('button');
+            fillCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+            fillCheckBtn.id = 'fillCheckBtn';
+            fillCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+            fillCheckBtn.onclick = doFillCheck;
+            fillCard.appendChild(fillCheckBtn);
+
             const fillHiddenInput = document.createElement('input');
             fillHiddenInput.type = 'text';
             fillHiddenInput.className = 'fill-hidden-input';
@@ -130,13 +135,14 @@
                 updateAllBoxHighlights();
             });
 
-            fillCard.addEventListener('click', (e) => {
+            const onFillCardClick = (e) => {
                 if (e.target.closest('.fill-hint-btn')) return;
+                e.stopPropagation();
                 fillHiddenInput.focus();
-            });
+            };
+            fillCard.addEventListener('click', onFillCardClick);
+            _cleanupFns.push(() => fillCard.removeEventListener('click', onFillCardClick));
             fillCard.appendChild(fillHiddenInput);
-
-
 
             const fillResult = document.createElement('div');
             fillResult.className = 'fill-result';
@@ -149,6 +155,7 @@
             fillCard.appendChild(fillStreak);
 
             container.appendChild(fillCard);
+            fillCard.appendChild(fillBottom);
 
             const fillProgressWrap = document.createElement('div');
             fillProgressWrap.className = 'fill-progress-wrap';
@@ -173,6 +180,16 @@
             let fillSkipped = new Set();
             let fillMaxStreak = 0;
             let fillTotalWrongAttempts = 0;
+
+            const fillEscHandler = (e) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    backBtn.click();
+                }
+            };
+            document.addEventListener('keydown', fillEscHandler);
+            _cleanupFns.push(() => document.removeEventListener('keydown', fillEscHandler));
 
             function updateFillScore() {
                 const scoreEl = document.getElementById('fillScoreNum');
@@ -448,9 +465,8 @@
                         const regex = new RegExp(word.word, 'gi');
                         const highlighted = exampleText.replace(regex, '<span class="fill-blank">______</span>');
                         fillSentenceEl.innerHTML = highlighted;
-                        fillSentenceEl.style.display = 'block';
                     } else {
-                        fillSentenceEl.style.display = 'none';
+                        fillSentenceEl.innerHTML = '<span class="fill-no-sentence">（无例句）</span>';
                     }
                 }
 
@@ -470,6 +486,13 @@
                     fillLetterHintEl.classList.remove('show');
                 }
                 if (hintBtnEl) hintBtnEl.disabled = false;
+
+                // 恢复检查按钮
+                const checkBtnEl = document.getElementById('fillCheckBtn');
+                if (checkBtnEl) {
+                    checkBtnEl.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+                    checkBtnEl.onclick = doFillCheck;
+                }
 
                 updateFillProgress();
             }
@@ -540,6 +563,11 @@
                     fillResultEl.innerHTML = `<span class="fill-wrong">✗ 正确答案：<strong>${word.word}</strong></span>`;
                     fillResultEl.className = 'fill-result fill-result-wrong';
                     if (card) card.classList.add('fill-card-wrong');
+                    const progressWrap = document.querySelector('.fill-progress-wrap');
+                    if (progressWrap) {
+                        progressWrap.classList.add('shake');
+                        setTimeout(() => progressWrap.classList.remove('shake'), 450);
+                    }
 
                     const boxes = document.querySelectorAll('#fillLetterGrid .letter-box');
                     boxes.forEach((box, i) => {
@@ -559,10 +587,15 @@
                         fillRetryQueue.push(fillCurrentIndex);
                     }
 
-                    setTimeout(() => {
-                        fillCheckDisabled = false;
-                        hiddenInput.focus();
-                    }, 1500);
+                    // 将检查按钮改为重来按钮
+                    const checkBtn = document.getElementById('fillCheckBtn');
+                    if (checkBtn) {
+                        checkBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 重来`;
+                        checkBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            renderFillWord(fillCurrentIndex);
+                        };
+                    }
                 }
             }
 
@@ -676,7 +709,16 @@
 
                     const retryBtn = fillCardEl.querySelector('.summary-retry-btn');
                     if (retryBtn) {
-                        retryBtn.onclick = () => {
+                        const onRetryClick = (e) => {
+                            e.stopPropagation();
+
+                            _cleanupFns.forEach(fn => fn());
+                            _cleanupFns.length = 0;
+
+                            // 重新注册返回按钮
+                            backBtn.addEventListener('click', onBackClick);
+                            _cleanupFns.push(() => backBtn.removeEventListener('click', onBackClick));
+
                             fillCardEl.innerHTML = '';
 
                             const fillMeaning = document.createElement('div');
@@ -698,6 +740,13 @@
                             fillLetterGrid.className = 'fill-letter-grid';
                             fillLetterGrid.id = 'fillLetterGrid';
                             fillCardEl.appendChild(fillLetterGrid);
+
+                            const retryCheckBtn = document.createElement('button');
+                            retryCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+                            retryCheckBtn.id = 'fillCheckBtn';
+                            retryCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+                            retryCheckBtn.onclick = doFillCheck;
+                            fillCardEl.appendChild(retryCheckBtn);
 
                             const fillHiddenInput = document.createElement('input');
                             fillHiddenInput.type = 'text';
@@ -729,11 +778,44 @@
                             fillStreak.id = 'fillStreak';
                             fillCardEl.appendChild(fillStreak);
 
-                            fillCardEl.addEventListener('click', (e) => {
+                            // 重建底部按钮栏
+                            const retryFillBottom = document.createElement('div');
+                            retryFillBottom.className = 'fill-bottom';
+                            const retryHintBtn = document.createElement('button');
+                            retryHintBtn.className = 'fill-hint-btn';
+                            retryHintBtn.id = 'fillHintBtn';
+                            retryHintBtn.title = '逐字母提示（-3分/个）';
+                            retryHintBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="8" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="16"/><line x1="8" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="16" y2="12"/></svg>';
+                            const retryOnHintClick = (e) => {
+                                e.stopPropagation();
+                                revealNextLetter();
+                            };
+                            retryHintBtn.addEventListener('click', retryOnHintClick);
+                            _cleanupFns.push(() => retryHintBtn.removeEventListener('click', retryOnHintClick));
+                            retryFillBottom.appendChild(retryHintBtn);
+
+                            const retrySkipBtn = document.createElement('button');
+                            retrySkipBtn.className = 'fill-skip-btn';
+                            retrySkipBtn.title = '跳过';
+                            retrySkipBtn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
+                            const retryOnSkipClick = (e) => {
+                                e.stopPropagation();
+                                doFillSkip();
+                            };
+                            retrySkipBtn.addEventListener('click', retryOnSkipClick);
+                            _cleanupFns.push(() => retrySkipBtn.removeEventListener('click', retryOnSkipClick));
+                            retryFillBottom.appendChild(retrySkipBtn);
+                            fillCardEl.appendChild(retryFillBottom);
+
+                            const onRetryCardClick = (e) => {
                                 if (e.target.closest('.fill-hint-btn')) return;
+                                if (e.target.closest('.fill-skip-btn')) return;
+                                e.stopPropagation();
                                 const hi = document.getElementById('fillHiddenInput');
                                 if (hi) hi.focus();
-                            });
+                            };
+                            fillCardEl.addEventListener('click', onRetryCardClick);
+                            _cleanupFns.push(() => fillCardEl.removeEventListener('click', onRetryCardClick));
 
                             fillAnswered = new Set();
                             fillRetryQueue = [];
@@ -756,6 +838,8 @@
                             updateFillProgress();
                             renderFillWord(0);
                         };
+                        retryBtn.addEventListener('click', onRetryClick);
+                        _cleanupFns.push(() => retryBtn.removeEventListener('click', onRetryClick));
                     }
                 }
             }

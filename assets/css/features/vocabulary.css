@@ -888,3 +888,50 @@ div#vocabInterface > div.batch-actions-bar.show {
 .export-actions .secondary:hover {
     background: var(--border);
 }
+
+/* ========== 生词本界面操作按钮 ========== */
+
+div#vocabInterface > div.add-word-section > button.secondary {
+    height: 37px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: 121px;
+}
+
+div#vocabInterface > div.create-notebook-section > button.secondary {
+    height: 37px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+div#vocabInterface > div.create-notebook-section {
+    width: 100%;
+    margin: 0;
+}
+
+div#vocabInterface > div.memory-mode-section {
+    width: 116px;
+}
+
+div#vocabInterface > div.memory-mode-section > button.secondary {
+    position: absolute;
+    top: auto;
+    z-index: auto;
+    left: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* 单词列表操作按钮 */
+div#vocabWordsList > div.word-item > div.word-actions {
+    margin-left: 0;
+    margin-right: 0;
+}

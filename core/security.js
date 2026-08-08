@@ -5,6 +5,7 @@
         const API_KEY_STORAGE_KEY = 'encrypted_api_key';
         const API_BASE_STORAGE_KEY = 'encrypted_api_base';
         const MODEL_NAME_STORAGE_KEY = 'encrypted_model_name';
+        const PROXY_URL_STORAGE_KEY = 'proxy_url';
 
         // 简单的加密/解密函数（使用Base64编码）
         function encrypt(text) {
@@ -64,8 +65,23 @@
             return {
                 baseUrl: encryptedBaseUrl ? decrypt(encryptedBaseUrl) : 'https://api.deepseek.com',
                 apiKey: getApiKey(),
-                model: encryptedModelName ? decrypt(encryptedModelName) : 'deepseek-chat'
+                model: encryptedModelName ? decrypt(encryptedModelName) : 'deepseek-chat',
+                proxyUrl: getProxyUrl()
             };
+        }
+
+        // 设置代理地址
+        function setProxyUrl(url) {
+            if (url) {
+                localStorage.setItem(PROXY_URL_STORAGE_KEY, url);
+            } else {
+                localStorage.removeItem(PROXY_URL_STORAGE_KEY);
+            }
+        }
+
+        // 获取代理地址
+        function getProxyUrl() {
+            return localStorage.getItem(PROXY_URL_STORAGE_KEY) || '';
         }
 
         // 清除所有API配置
@@ -175,7 +191,6 @@
 
         // 初始化
         function init() {
-            console.log('安全性模块初始化完成');
         }
 
         // 获取模块名称
@@ -192,6 +207,8 @@
             setApiConfig,
             getApiConfig,
             clearApiConfig,
+            setProxyUrl,
+            getProxyUrl,
             validateUrl,
             validateApiKey,
             validateText,

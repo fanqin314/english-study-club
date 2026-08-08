@@ -250,7 +250,6 @@
              * 初始化方法
              */
             init: function() {
-                console.log('CodeQuality 模块初始化完成');
             },
             
             /**

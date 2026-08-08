@@ -1,4 +1,4 @@
-// 分句.js - 本地分句规则（处理常见缩写）
+// split.js - 本地分句规则（处理常见缩写）
 (function() {
     ModuleRegistry.register('SentenceSplitter', [], function() {
         // 常见缩写列表（不会被当作句子结束）

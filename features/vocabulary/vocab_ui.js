@@ -1,4 +1,4 @@
-// 生词本界面.js - 生词本界面的HTML渲染和交互
+// vocab_ui.js - 生词本界面的HTML渲染和交互
 
 (function() {
     ModuleRegistry.register('VocabUI', ['GlobalManager'], function(GlobalManager) {
@@ -1253,7 +1253,7 @@ hello               # 仅单词</pre>
         function initSubModules() {
             const utils = { showToast, getVocabData };
             const modules = ['PracticeFillUI', 'PracticeSpellUI', 'PracticeChoiceUI', 
-                           'ClozeModeUI', 'ArticleReviewUI', 'StatsDetailUI', 'PlanDetailUI', 'MemoryModeUI'];
+                           'ClozeModeUI', 'VocabQuizUI', 'ArticleReviewUI', 'StatsDetailUI', 'PlanDetailUI', 'MemoryModeUI'];
             modules.forEach(name => {
                 const mod = ModuleRegistry.get(name);
                 if (mod && mod.init) {

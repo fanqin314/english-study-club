@@ -1,4 +1,4 @@
-// 单词菜单.js - 右键/长按单词添加生词本的菜单
+// word_context_menu.js - 右键/长按单词添加生词本的菜单
 
 (function() {
     let menu = null;

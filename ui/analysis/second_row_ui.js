@@ -1,4 +1,4 @@
-// 第二行按钮UI.js - 生成第二行按钮（加载示例、保存当前分析、词性高亮）
+// second_row_ui.js - 生成第二行按钮（加载示例、保存当前分析、词性高亮）
 (function() {
     ModuleRegistry.register('SecondRowButtons', ['ErrorHandler'], function(ErrorHandler) {
         // 容器

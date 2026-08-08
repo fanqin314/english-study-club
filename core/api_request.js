@@ -1,9 +1,4 @@
-/**
- * @module APIRequest
- * @description 处理所有API请求，包括词性分析、语法结构、知识点、翻译等
- * @requires Security, ErrorHandler, Performance
- * @exports {Object} APIRequest对象
- */
+// api_request.js - 处理所有API请求，包括词性分析、语法结构、知识点、翻译等
 // 解析请求.js - 调用 API 获取词性、语法结构、知识点、翻译
 (function() {
     ModuleRegistry.register('APIRequest', ['Security', 'ErrorHandler', 'Performance'], function(Security, ErrorHandler, Performance) {
@@ -25,13 +20,22 @@
         async function callAPI(messages, options = {}) {
             const config = getApiConfig();
             
-            if (!config || !config.apiKey) {
+            // 使用代理时不需要 apiKey（代理自带 Key）
+            const useProxy = config.proxyUrl && config.proxyUrl.trim() !== '';
+            if (!useProxy && (!config || !config.apiKey)) {
                 throw new Error('请先配置 API Key');
             }
 
+            // 检查每日免费用量
+            if (window.UsageTracker && !window.UsageTracker.hasQuota()) {
+                const s = window.UsageTracker.summary();
+                throw new Error(`今日免费次数已用完（${s.used}/${s.limit}），请明天再试或升级会员`);
+            }
+
             // 验证API配置
-            if (!Security.validateUrl(config.baseUrl).valid) {
-                throw new Error('API 基础URL格式不正确');
+            const targetUrl = useProxy ? config.proxyUrl : config.baseUrl;
+            if (!Security.validateUrl(targetUrl).valid) {
+                throw new Error('API 地址格式不正确');
             }
 
             // 验证请求参数
@@ -49,11 +53,12 @@
             const isDebug = options.logLevel === 'debug' || window.DEBUG_MODE;
             
             if (isDebug) {
-                const maskedApiKey = config.apiKey.substring(0, 4) + '***' + config.apiKey.substring(config.apiKey.length - 4);
+                const maskedApiKey = config.apiKey ? config.apiKey.substring(0, 4) + '***' + config.apiKey.substring(config.apiKey.length - 4) : 'proxy';
                 console.log('API配置信息:', {
-                    baseUrl: config.baseUrl,
+                    baseUrl: targetUrl,
                     apiKey: maskedApiKey,
-                    model: config.model
+                    model: config.model,
+                    useProxy
                 });
                 console.log('API请求参数:', {
                     messages: filteredMessages,
@@ -69,19 +74,24 @@
 
             while (retries <= maxRetries) {
                 try {
-                    const url = `${config.baseUrl}/chat/completions`;
+                    const url = useProxy ? config.proxyUrl : `${config.baseUrl}/chat/completions`;
                     if (isDebug) console.log('API请求URL:', url);
                     
                     // 添加请求超时设置
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000);
                     
+                    // 通过代理时不需要 Authorization 头
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (!useProxy) {
+                        headers['Authorization'] = `Bearer ${config.apiKey}`;
+                    }
+                    
                     const response = await fetch(url, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${config.apiKey}`
-                        },
+                        headers,
                         body: JSON.stringify({
                             model: config.model,
                             messages: messages,
@@ -139,6 +149,11 @@
                     const data = await response.json();
                     if (isDebug) {
                         console.log('API成功响应:', data);
+                    }
+                    
+                    // 请求成功，消耗一次用量
+                    if (window.UsageTracker) {
+                        window.UsageTracker.consume();
                     }
                     
                     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -492,7 +507,7 @@
             // 使用缓存
             const cacheKey = generateCacheKey('full_translation', text);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `将以下英文文章逐句翻译成中文。每句翻译之间用 [SENTENCE_END] 分隔。只返回翻译结果，不要其他内容。`;
+                const systemPrompt = `将以下英文文章逐句翻译成中文。请严格按照原文的句号(.)、问号(?)、感叹号(!)作为句子结束标志进行分割，每句翻译之间用 [SENTENCE_END] 分隔。只返回翻译结果，不要其他内容。`;
                 
                 try {
                     const content = await callAPI([

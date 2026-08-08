@@ -73,6 +73,22 @@
             if (window.toggleInputPanel) {
                 window.toggleInputPanel();
             }
+        },
+        
+        // 历史记录单词高亮按钮
+        historyHighlightBtn: function(e) {
+            if (window.HistoryHighlight && window.HistoryHighlight.handleClick) {
+                window.HistoryHighlight.handleClick(e);
+            }
+        },
+        
+        // 历史记录单词高亮按钮 - 右键（打开词性设置）
+        historyHighlightBtnContextMenu: function(e) {
+            const target = e.target.closest('button');
+            if (target && window.HighlightSwitch && window.HighlightSwitch.openSettings) {
+                const rect = target.getBoundingClientRect();
+                window.HighlightSwitch.openSettings(rect);
+            }
         }
     };
     

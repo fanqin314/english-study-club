@@ -74,7 +74,7 @@
 }
 
 .spell-cue-text {
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 700;
     color: var(--text);
     line-height: 1.4;
@@ -114,12 +114,12 @@
 .spell-reveal-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
     margin: 6px auto 2px;
-    padding: 6px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 20px;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border-radius: 50%;
     border: 1.5px solid var(--border);
     background: var(--card-bg);
     color: var(--text-muted);
@@ -139,13 +139,57 @@
     background: rgba(99,102,241,0.08);
 }
 
+/* 音节提示按钮 - 气泡悬浮工具提示 */
+.spell-reveal-btn {
+    position: relative;
+}
+
+.spell-reveal-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--text);
+    color: var(--card-bg);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    letter-spacing: 0.5px;
+}
+
+.spell-reveal-btn[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    border: 5px solid transparent;
+    border-top-color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.spell-reveal-btn[data-tooltip]:hover::after,
+.spell-reveal-btn[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
 /* 麦克风播放按钮 */
 .spell-play-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     margin: 8px auto 12px;
     padding: 0;
     border-radius: 50%;
@@ -190,14 +234,35 @@
 }
 
 .spell-play-btn svg {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     stroke: #fff;
     transition: transform 0.2s;
 }
 
 .spell-play-btn:hover svg {
     transform: scale(1.1);
+}
+
+.spell-wave-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+    height: 32px;
+    margin: 6px auto 10px;
+}
+
+.spell-wave-bars .wave-bar {
+    width: 5px;
+    height: 8px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: height 0.12s ease;
+}
+
+.spell-wave-bars .wave-bar.animating {
+    background: var(--accent);
 }
 
 [data-theme="dark"] .spell-play-btn {
@@ -244,21 +309,21 @@
 
 .spell-letter-grid {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     justify-content: center;
     flex-wrap: wrap;
     margin: 8px 0 16px;
 }
 
 .letter-box {
-    width: 40px;
-    height: 48px;
+    width: 54px;
+    height: 64px;
     border: 2px solid var(--border);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     text-transform: lowercase;
@@ -417,32 +482,17 @@
     color: #d97706;
 }
 
-#spellCheckBtn {
-    padding: 12px 28px;
-    gap: 8px;
-    background: linear-gradient(135deg, var(--accent), #6366f1);
-    color: #fff;
-    border-color: transparent;
-    box-shadow: 0 4px 16px rgba(59,130,246,0.35);
-}
-
-#spellCheckBtn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #3b82f6, #4f46e5);
-    box-shadow: 0 8px 24px rgba(59,130,246,0.45);
-    transform: translateY(-2px) scale(1.03);
-}
-
 [data-theme="dark"] .spell-syllable .syllable-part.active {
     color: #818cf8;
     text-shadow: 0 0 8px rgba(129,140,248,0.3);
 }
 
-[data-theme="dark"] #spellCheckBtn {
-    background: linear-gradient(135deg, #6366f1, #818cf8);
-    box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+#spellPracticeCard {
+    margin-top: -73px;
+    margin-bottom: -73px;
 }
 
-[data-theme="dark"] #spellCheckBtn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
-    box-shadow: 0 8px 24px rgba(99,102,241,0.5);
+#spellPracticeCard + .fill-progress-wrap {
+    margin-top: 195px !important;
+    margin-bottom: 195px !important;
 }

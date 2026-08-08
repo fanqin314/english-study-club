@@ -1,4 +1,4 @@
-// sentence_translation.js - 句子翻译功能
+// sentence_translate_button.js - 句子翻译功能
 (function() {
     ModuleRegistry.register('SentenceTranslation', ['ErrorHandler', 'Performance', 'EventBus', 'Security', 'GlobalManager', 'Utils'], function(ErrorHandler, Performance, EventBus, Security, GlobalManager, Utils) {
         function translateSentence(sentence) {

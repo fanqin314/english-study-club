@@ -1,4 +1,4 @@
-// 闪卡模式界面.js - 闪卡模式的界面和交互逻辑
+// flashcard_ui.js - 闪卡模式的界面和交互逻辑
 // 基于完整版 flashcard_ui.js 改造，集成到模块化系统
 
 (function() {
@@ -21,6 +21,10 @@
         let wordsData = [];
         // 是否为翻转模式
         let isFlipMode = false;
+        // 键盘事件处理函数引用（用于清理）
+        let _keydownHandler = null;
+        // 评级自动前进防重入标志
+        let _rateTimeoutPending = false;
 
         // 默认单词库 (当生词本为空时使用)
         const DEFAULT_WORDS = [
@@ -112,9 +116,16 @@
             if (wordsData.length === 0) {
                 // 显示空状态
                 const emptyHTML = `
-                    <button class="icon-only-btn back-btn" id="backBtn" style="position: absolute; top: 0px; left: 0px; z-index: 0;">
-                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
+                    <div class="fill-header">
+                        <button class="back-btn" id="backBtn">
+                            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <h3>闪卡模式</h3>
+                        <span class="fill-score-badge" id="flashcardScoreBadge">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            <span id="flashcardScoreNum">0</span>
+                        </span>
+                    </div>
                     <div class="empty-state">
                         <div class="empty-icon">📖</div>
                         <div class="empty-title">暂无单词</div>
@@ -127,7 +138,7 @@
                 // 添加返回按钮事件
                 const backBtn = document.getElementById('backBtn');
                 if (backBtn) {
-                    backBtn.onclick = () => {
+                    function handleBackClick() {
                         // 移除闪卡容器
                         if (flashcardContainer) {
                             flashcardContainer.remove();
@@ -151,16 +162,24 @@
                         if (fcAppHeader) fcAppHeader.style.display = 'flex';
                         if (fcCardHeader) fcCardHeader.style.display = 'flex';
                         if (fcCardBody) fcCardBody.style.display = 'block';
-                    };
+                    }
+                    backBtn.addEventListener('click', handleBackClick);
                 }
                 return;
             }
 
             // 创建闪卡界面（简化DOM结构）
             const flashcardHTML = `
-                <button class="icon-only-btn back-btn" id="backBtn" style="position: absolute; top: 0px; left: 0px; z-index: 0;">
-                    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
+                <div class="fill-header">
+                    <button class="back-btn" id="backBtn">
+                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <h3>闪卡模式</h3>
+                    <span class="fill-score-badge" id="flashcardScoreBadge">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <span id="flashcardScoreNum">0</span>
+                    </span>
+                </div>
                 <div class="card-3d" id="magicCard">
                     <div class="glare" id="glareLayer"></div>
                     <div class="card-face card-front">
@@ -173,15 +192,14 @@
                         <div class="example-area" id="exampleArea">
                             <div class="example-en" id="exampleEn">点击右侧星星生成例句</div>
                             <div class="example-zh" id="exampleZh"></div>
-                            <div class="capsule-button">
-                                <button class="capsule-btn upper-btn" id="generateExampleBtn" aria-label="生成例句">
-                                    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                </button>
-                                <div class="capsule-divider"></div>
-                                <button class="capsule-btn lower-btn" id="toggleTranslationBtn" aria-label="隐藏/显示翻译">
-                                    <svg viewBox="0 0 24 24" id="hideIcon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
-                                </button>
-                            </div>
+                        </div>
+                        <div class="fill-bottom">
+                            <button class="fill-hint-btn" id="flashcardGenExampleBtn" title="生成例句">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </button>
+                            <button class="fill-skip-btn" id="flashcardToggleTransBtn" title="隐藏/显示翻译">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
+                            </button>
                         </div>
                         <div class="nav-buttons">
                             <button class="nav-btn" id="prevBtn">
@@ -194,7 +212,19 @@
                                 <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                             </button>
                         </div>
-                        <div class="progress-bar" id="progressBar"></div>
+                        <div class="fill-progress-wrap" id="flashcardProgressWrap">
+                            <div class="fill-progress-track">
+                                <div class="fill-progress-fill" id="progressBar" style="width:0%"></div>
+                            </div>
+                            <span class="fill-progress-text" id="counterText">${currentIndex+1} / ${wordsData.length}</span>
+                        </div>
+                        <div class="feedback-overlay" id="feedbackOverlay" style="display:none">
+                            <div class="feedback-content">
+                                <div class="feedback-icon" id="feedbackIcon"></div>
+                                <div class="feedback-text" id="feedbackText"></div>
+                                <div class="feedback-detail" id="feedbackDetail"></div>
+                            </div>
+                        </div>
                         <div class="mastery-ratings" id="masteryRatings">
                             <button class="mastery-btn unknown" data-rating="unknown" title="不认识 (按 1)">
                                 <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -253,13 +283,14 @@
             const meaningEl = document.getElementById('currentMeaning');
             const exampleEnEl = document.getElementById('exampleEn');
             const exampleZhEl = document.getElementById('exampleZh');
-            const generateBtn = document.getElementById('generateExampleBtn');
+            const generateBtn = document.getElementById('flashcardGenExampleBtn');
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
             const counterSpan = document.getElementById('counter');
+            const counterText = document.getElementById('counterText');
             const progressBar = document.getElementById('progressBar');
-            const toggleTransBtn = document.getElementById('toggleTranslationBtn');
-            const hideIconSvg = document.getElementById('hideIcon');
+            const toggleTransBtn = document.getElementById('flashcardToggleTransBtn');
+            const hideIconSvg = document.getElementById('flashcardToggleTransBtn')?.querySelector('svg');
             const flipWrapper = document.getElementById('flipWrapper');
             const exampleArea = document.getElementById('exampleArea');
             const backBtn = document.getElementById('backBtn');
@@ -272,6 +303,9 @@
             } else {
                 document.body.classList.remove('dark');
             }
+
+            // 清理函数数组，用于退出时统一移除事件监听
+            const _cleanupFns = [];
 
             // 翻转卡片功能
             function buildFlipStructure(word, meaning) {
@@ -331,6 +365,7 @@
                     posEl.textContent = '';
                     meaningEl.textContent = '请先在生词本中添加单词';
                     counterSpan.textContent = '0 / 0';
+                    if (counterText) counterText.textContent = '0 / 0';
                     progressBar.style.width = '0%';
                     exampleEnEl.textContent = '暂无例句';
                     exampleZhEl.textContent = '';
@@ -342,6 +377,7 @@
                 posEl.textContent = item.pos;
                 meaningEl.textContent = item.meaning;
                 counterSpan.textContent = `${currentIndex+1} / ${wordsData.length}`;
+                if (counterText) counterText.textContent = `${currentIndex+1} / ${wordsData.length}`;
                 progressBar.style.width = `${((currentIndex+1)/wordsData.length)*100}%`;
                 if (item.example) {
                     exampleEnEl.textContent = item.example.en;
@@ -382,6 +418,7 @@
                     exampleArea.classList.remove('hide-zh');
                 }
                 counterSpan.textContent = `${currentIndex+1} / ${wordsData.length}`;
+                if (counterText) counterText.textContent = `${currentIndex+1} / ${wordsData.length}`;
                 progressBar.style.width = `${((currentIndex+1)/wordsData.length)*100}%`;
                 if (item.example) {
                     exampleEnEl.textContent = item.example.en;
@@ -484,6 +521,7 @@
             // 上一个单词
             function prevWord() {
                 if (wordsData.length === 0) return;
+                _rateTimeoutPending = false;
                 currentIndex = (currentIndex - 1 + wordsData.length) % wordsData.length;
                 updateCard();
             }
@@ -491,12 +529,19 @@
             // 下一个单词
             function nextWord() {
                 if (wordsData.length === 0) return;
+                _rateTimeoutPending = false;
                 currentIndex = (currentIndex + 1) % wordsData.length;
                 updateCard();
             }
 
             // 返回按钮事件
-            backBtn.addEventListener('click', () => {
+            function handleBackBtnClick() {
+                // 调用所有清理函数
+                _cleanupFns.forEach(fn => fn());
+                _cleanupFns.length = 0;
+                // 移除键盘事件引用
+                _keydownHandler = null;
+
                 // 移除闪卡容器
                 if (flashcardContainer) {
                     flashcardContainer.remove();
@@ -520,36 +565,111 @@
                 if (fcAppHeader) fcAppHeader.style.display = 'flex';
                 if (fcCardHeader) fcCardHeader.style.display = 'flex';
                 if (fcCardBody) fcCardBody.style.display = 'block';
-            });
+            }
+            backBtn.addEventListener('click', handleBackBtnClick);
+            _cleanupFns.push(() => backBtn.removeEventListener('click', handleBackBtnClick));
 
             // 事件监听
             generateBtn.addEventListener('click', handleGenerateExample);
+            _cleanupFns.push(() => generateBtn.removeEventListener('click', handleGenerateExample));
             prevBtn.addEventListener('click', prevWord);
+            _cleanupFns.push(() => prevBtn.removeEventListener('click', prevWord));
             nextBtn.addEventListener('click', nextWord);
+            _cleanupFns.push(() => nextBtn.removeEventListener('click', nextWord));
             toggleTransBtn.addEventListener('click', toggleTranslationMode);
+            _cleanupFns.push(() => toggleTransBtn.removeEventListener('click', toggleTranslationMode));
 
-            // 键盘事件 - 导航 + 评级快捷
+            // 键盘事件 - 导航 + 评级快捷（使用命名函数避免累积绑定）
+            if (_keydownHandler) {
+                window.removeEventListener('keydown', _keydownHandler);
+            }
+
+            function handleFlashcardKeydown(e) {
+                if (e.key === 'ArrowLeft') { e.preventDefault(); prevWord(); }
+                else if (e.key === 'ArrowRight') { e.preventDefault(); nextWord(); }
+                else if (e.key === '1') { e.preventDefault(); rateWord('unknown'); }
+                else if (e.key === '2') { e.preventDefault(); rateWord('vague'); }
+                else if (e.key === '3') { e.preventDefault(); rateWord('known'); }
+                else if (e.key === 'Enter') {
+                    const retryBtn = document.querySelector('.summary-retry-btn');
+                    if (retryBtn) { e.preventDefault(); retryBtn.click(); }
+                }
+            }
+
+            _keydownHandler = handleFlashcardKeydown;
+            window.addEventListener('keydown', handleFlashcardKeydown);
+            _cleanupFns.push(() => {
+                window.removeEventListener('keydown', handleFlashcardKeydown);
+                _keydownHandler = null;
+            });
+
             const masteryRatings = document.getElementById('masteryRatings');
             const masteryBtns = masteryRatings ? masteryRatings.querySelectorAll('.mastery-btn') : [];
             let _ratingMap = new Map();
 
             function rateWord(rating) {
                 if (wordsData.length === 0) return;
+                // 防重入保护：如果已有待处理的自动前进，忽略本次评级
+                if (_rateTimeoutPending) return;
+                // 避免重复评级同一单词
+                if (_ratingMap.has(currentIndex)) return;
                 _ratingMap.set(currentIndex, rating);
+
+                // 更新评分徽章
+                const scoreNumEl = document.getElementById('flashcardScoreNum');
+                if (scoreNumEl) {
+                    scoreNumEl.textContent = _ratingMap.size;
+                }
 
                 // 高亮当前评级按钮
                 masteryBtns.forEach(b => b.classList.remove('active'));
                 const activeBtn = masteryRatings.querySelector(`[data-rating="${rating}"]`);
                 if (activeBtn) activeBtn.classList.add('active');
 
-                // 自动前进
+                // 显示即时反馈覆盖层
+                const feedbackOverlay = document.getElementById('feedbackOverlay');
+                const feedbackIcon = document.getElementById('feedbackIcon');
+                const feedbackText = document.getElementById('feedbackText');
+                const feedbackDetail = document.getElementById('feedbackDetail');
+                const item = wordsData[currentIndex];
+
+                if (feedbackOverlay && feedbackIcon && feedbackText && feedbackDetail) {
+                    if (rating === 'known') {
+                        feedbackIcon.innerHTML = '✓';
+                        feedbackIcon.className = 'feedback-icon feedback-known';
+                        feedbackText.textContent = '你已掌握';
+                        feedbackText.className = 'feedback-text feedback-known';
+                    } else if (rating === 'vague') {
+                        feedbackIcon.innerHTML = '?';
+                        feedbackIcon.className = 'feedback-icon feedback-vague';
+                        feedbackText.textContent = '模糊';
+                        feedbackText.className = 'feedback-text feedback-vague';
+                    } else {
+                        feedbackIcon.innerHTML = '✗';
+                        feedbackIcon.className = 'feedback-icon feedback-unknown';
+                        feedbackText.textContent = '不认识';
+                        feedbackText.className = 'feedback-text feedback-unknown';
+                    }
+                    const exampleStr = item.example ? ` — ${item.example.en}` : '';
+                    feedbackDetail.innerHTML = `<strong>${item.word}</strong> ${item.pos || ''} ${item.meaning}${exampleStr}`;
+                    feedbackOverlay.style.display = 'flex';
+                    // 触发入场动画
+                    feedbackOverlay.style.animation = 'none';
+                    void feedbackOverlay.offsetWidth;
+                    feedbackOverlay.style.animation = '';
+                }
+
+                // 自动前进（带防重入保护），延迟600ms让用户看到反馈
+                _rateTimeoutPending = true;
                 setTimeout(() => {
+                    _rateTimeoutPending = false;
+                    if (feedbackOverlay) feedbackOverlay.style.display = 'none';
                     if (currentIndex < wordsData.length - 1) {
                         nextWord();
                     } else {
                         showCardRoundSummary();
                     }
-                }, 350);
+                }, 600);
             }
 
             function showCardRoundSummary() {
@@ -585,21 +705,37 @@
                 // 填充背面总结内容
                 const cardBack = document.getElementById('cardBack');
                 cardBack.innerHTML = `
-                    <div class="round-summary">
-                        <div class="summary-hero">
-                            <svg class="summary-trophy" height="80" preserveAspectRatio="xMidYMid meet" viewBox="0 0 100 100" width="80">
-                                <path d="M62.11,53.93c22.582-3.125,22.304-23.471,18.152-29.929-4.166-6.444-10.36-2.153-10.36-2.153v-4.166H30.099v4.166s-6.194-4.291-10.36,2.153c-4.152,6.458-4.43,26.804,18.152,29.929l5.236,7.777v8.249s-.944,4.597-4.833,4.986c-3.903,.389-7.791,4.028-7.791,7.374h38.997c0-3.347-3.889-6.986-7.791-7.374-3.889-.389-4.833-4.986-4.833-4.986v-8.249l5.236-7.777Zm7.388-24.818s2.833-3.097,5.111-1.347c2.292,1.75,2.292,15.86-8.999,18.138l3.889-16.791Zm-44.108-1.347c2.278-1.75,5.111,1.347,5.111,1.347l3.889,16.791c-11.291-2.278-11.291-16.388-8.999-18.138Z"/>
-                            </svg>
-                            <div class="summary-star">
+                    <div class="fill-summary">
+                        <div class="fill-summary-icon">
+                            <div class="trophy-star">
                                 <div class="star-eight"></div>
                             </div>
+                            <svg class="trophy-svg" viewBox="0 0 100 100" width="80" height="80" fill="#e94822">
+                                <path d="M62.11,53.93c22.582-3.125,22.304-23.471,18.152-29.929-4.166-6.444-10.36-2.153-10.36-2.153v-4.166H30.099v4.166s-6.194-4.291-10.36,2.153c-4.152,6.458-4.43,26.804,18.152,29.929l5.236,7.777v8.249s-.944,4.597-4.833,4.986c-3.903,.389-7.791,4.028-7.791,7.374h38.997c0-3.347-3.889-6.986-7.791-7.374-3.889-.389-4.833-4.986-4.833-4.986v-8.249l5.236-7.777Zm7.388-24.818s2.833-3.097,5.111-1.347c2.292,1.75,2.292,15.86-8.999,18.138l3.889-16.791Zm-44.108-1.347c2.278-1.75,5.111,1.347,5.111,1.347l3.889,16.791c-11.291-2.278-11.291-16.388-8.999-18.138Z"/>
+                            </svg>
                         </div>
-                        <div class="summary-title">本轮回顾完成</div>
-                        <div class="summary-detail">已评估 ${rated} / ${total} 个单词</div>
-                        <div class="summary-bars">
-                            <div class="summary-bar-row"><span class="summary-label mastered">已掌握</span><div class="summary-track"><div class="summary-fill known" style="width:${(known/total)*100}%"></div></div><span class="summary-count">${known}</span></div>
-                            <div class="summary-bar-row"><span class="summary-label vague">模糊</span><div class="summary-track"><div class="summary-fill vague" style="width:${(vague/total)*100}%"></div></div><span class="summary-count">${vague}</span></div>
-                            <div class="summary-bar-row"><span class="summary-label unknown">不认识</span><div class="summary-track"><div class="summary-fill unknown" style="width:${(unknown/total)*100}%"></div></div><span class="summary-count">${unknown}</span></div>
+                        <div class="fill-summary-title">本轮回顾完成</div>
+                        <div class="fill-summary-stats">
+                            <div class="fill-summary-stat" style="animation-delay:0.05s">
+                                <span class="fill-summary-val" style="color:#22c55e">${known}</span>
+                                <span class="fill-summary-lbl">已掌握</span>
+                            </div>
+                            <div class="fill-summary-stat" style="animation-delay:0.12s">
+                                <span class="fill-summary-val" style="color:#f59e0b">${vague}</span>
+                                <span class="fill-summary-lbl">模糊</span>
+                            </div>
+                            <div class="fill-summary-stat" style="animation-delay:0.19s">
+                                <span class="fill-summary-val" style="color:#ef4444">${unknown}</span>
+                                <span class="fill-summary-lbl">不认识</span>
+                            </div>
+                            <div class="fill-summary-stat" style="animation-delay:0.26s">
+                                <span class="fill-summary-val rate">${rated}</span>
+                                <span class="fill-summary-lbl">已评估</span>
+                            </div>
+                            <div class="fill-summary-stat" style="animation-delay:0.33s">
+                                <span class="fill-summary-val" style="color:var(--accent)">${total}</span>
+                                <span class="fill-summary-lbl">总单词</span>
+                            </div>
                         </div>
                         <button class="summary-retry-btn"><span>再练一轮</span></button>
                     </div>
@@ -635,22 +771,11 @@
             }
 
             masteryBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const rating = btn.getAttribute('data-rating');
                     if (rating) rateWord(rating);
                 });
-            });
-
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') { e.preventDefault(); prevWord(); }
-                else if (e.key === 'ArrowRight') { e.preventDefault(); nextWord(); }
-                else if (e.key === '1') { e.preventDefault(); rateWord('unknown'); }
-                else if (e.key === '2') { e.preventDefault(); rateWord('vague'); }
-                else if (e.key === '3') { e.preventDefault(); rateWord('known'); }
-                else if (e.key === 'Enter') {
-                    const retryBtn = document.querySelector('.summary-retry-btn');
-                    if (retryBtn) { e.preventDefault(); retryBtn.click(); }
-                }
             });
 
             // 保存倾斜角度，用于合并翻转 transform

@@ -192,6 +192,4 @@
     
     // 导出全局接口
     window.DomHelper = DomHelper;
-    
-    console.log('[DomHelper] DOM工具类已初始化');
 })();

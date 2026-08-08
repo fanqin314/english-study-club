@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* memory-mode.css - 记忆模式样式 */
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* memory-mode.css - 记忆模式样式 */
 
 .memory-mode-section {
     margin-bottom: 20px;
@@ -251,7 +251,7 @@
     border-bottom: none;
     flex-wrap: wrap;
     gap: 8px;
-    height: 81px;
+    min-height: 56px;
 }
 
 .memory-mode-header h3,
@@ -272,35 +272,42 @@
     flex-wrap: wrap;
 }
 
-/* 标签切换栏 */
+/* 标签切换栏 - 药丸形 */
 .memory-mode-tabs {
     display: flex;
-    gap: 4px;
-    background: transparent;
-    border-radius: 12px;
-    padding: 3px;
+    gap: 8px;
+    flex: 1;
+    height: 46px;
+    padding: 0;
 }
 
 .memory-mode-tab {
-    padding: 5px 14px;
-    border: none;
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
     color: var(--text-light);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-family: inherit;
+    flex: 1;
 }
 
 .memory-mode-tab:hover {
+    background: var(--hover-bg);
     color: var(--text);
 }
 
 .memory-mode-tab.active {
-    background: var(--card-bg);
-    color: var(--accent);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
     font-weight: 600;
 }
 
@@ -468,6 +475,17 @@
     margin-top: -4px;
 }
 
+.mode-card-stat {
+    font-size: 10px;
+    color: var(--text-light);
+    opacity: 0.55;
+    position: relative;
+    z-index: 1;
+    margin-top: 1px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+}
+
 .mode-card.coming-soon {
     opacity: 0.5;
     cursor: not-allowed;
@@ -513,81 +531,6 @@
 @keyframes tabFadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-/* ================================================================
-   返回按钮
-   ================================================================ */
-
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--btn-bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 0;
-    flex-shrink: 0;
-}
-
-.back-btn:hover {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-}
-
-.back-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* ================================================================
-   通用 section-btn
-   ================================================================ */
-
-.section-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 18px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: var(--btn-bg);
-    color: var(--text);
-    white-space: nowrap;
-}
-
-.section-btn:hover {
-    background: var(--btn-hover-bg);
-    transform: translateY(-1px);
-}
-
-.section-btn.primary {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-}
-
-.section-btn.primary:hover {
-    background: var(--accent-hover);
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
 }
 
 /* ================================================================
@@ -923,6 +866,10 @@
     border-radius: 0 999px 999px 0;
 }
 
+.memory-nb-multi-item:only-child {
+    border-radius: 999px;
+}
+
 .memory-nb-multi-item:hover {
     min-width: 76px;
     padding: 0 14px;
@@ -1152,6 +1099,10 @@
     border-color: rgba(255, 255, 255, 0.1);
 }
 
+[data-theme="dark"] .mode-card-stat {
+    color: rgba(255, 255, 255, 0.4);
+}
+
 [data-theme="dark"] .memory-notebook-current,
 [data-theme="dark"] .memory-article-current {
     background: rgba(30, 41, 59, 0.6);
@@ -1170,32 +1121,30 @@
     background: var(--accent);
 }
 
-[data-theme="dark"] .back-btn {
-    background: rgba(51, 65, 85, 0.6);
-}
-
-[data-theme="dark"] .back-btn:hover {
-    background: var(--accent);
-}
-
-[data-theme="dark"] .section-btn {
-    background: rgba(51, 65, 85, 0.6);
-}
-
-[data-theme="dark"] .section-btn.primary {
-    background: var(--accent);
-}
-
-[data-theme="dark"] .section-btn:hover {
-    background: var(--btn-hover-bg);
-}
-
 [data-theme="dark"] .memory-nb-multi-list {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .memory-nb-multi-toggle {
     border-color: var(--border);
+}
+
+/* ================================================================
+   记忆模式界面容器
+   ================================================================ */
+
+div#memoryModeInterface {
+    background-color: transparent;
+    box-shadow: none;
+    border-width: 0px;
+    border-style: solid;
+    border-color: #000000;
+    overflow: visible;
+    scrollbar-width: none;
+}
+
+div#memoryModeInterface::-webkit-scrollbar {
+    display: none;
 }
 
 /* ================================================================
@@ -1258,6 +1207,11 @@
 
     .mode-card .mode-card-desc {
         font-size: 10px;
+        margin-top: 0;
+    }
+
+    .mode-card-stat {
+        font-size: 9px;
         margin-top: 0;
     }
 

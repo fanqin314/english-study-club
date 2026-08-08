@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐私政策 - English Reading Lab</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-light: #555;
+            --accent: #3b82f6;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .date {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        h2 {
+            font-size: 18px;
+            margin: 28px 0 12px;
+            color: var(--text);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        p, li {
+            font-size: 15px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        a:hover { text-decoration: underline; }
+        .back-link {
+            display: inline-block;
+            margin-top: 32px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>隐私政策</h1>
+        <p class="date">最后更新日期：2026年8月8日</p>
+
+        <p>English Reading Lab（以下简称"本应用"）尊重并保护用户的隐私。本隐私政策说明了我们如何收集、使用和保护您的个人信息。</p>
+
+        <h2>1. 我们收集的信息</h2>
+        <ul>
+            <li><strong>API 配置信息</strong>：您输入的 API Key、Base URL、模型名称和代理地址，这些信息仅存储在您设备的浏览器本地存储（localStorage）中，不会上传到任何服务器。</li>
+            <li><strong>学习数据</strong>：您的阅读历史、生词记录、学习进度等数据，均存储在您设备的浏览器本地存储中。</li>
+            <li><strong>使用偏好</strong>：主题设置、界面偏好等，存储在浏览器本地存储中。</li>
+        </ul>
+
+        <h2>2. 信息的使用方式</h2>
+        <ul>
+            <li>API 配置信息仅用于向您指定的 AI 服务（如 DeepSeek API）发送请求，以提供翻译、语法分析、知识点提取等功能。</li>
+            <li>学习数据仅用于在您的设备上展示学习进度和历史记录，提升您的学习体验。</li>
+            <li>我们<strong>不会</strong>将您的任何数据上传到我们的服务器进行分析、跟踪或广告投放。</li>
+        </ul>
+
+        <h2>3. 数据存储与安全</h2>
+        <ul>
+            <li>所有数据均存储在您设备的浏览器本地存储（localStorage）中，不会传输到我们的服务器。</li>
+            <li>API Key 在存储前经过基础编码处理，但这并非强加密。建议您使用代理服务（如 Cloudflare Workers）来保护您的 API Key，避免直接暴露在前端代码中。</li>
+            <li>您可以随时清除浏览器数据来删除所有本地存储的信息。</li>
+        </ul>
+
+        <h2>4. 第三方服务</h2>
+        <ul>
+            <li>本应用使用您自行配置的 AI API 服务（如 DeepSeek API）进行文本分析。发送到 AI 服务的数据受该服务提供商隐私政策的约束。</li>
+            <li>如果您使用代理服务（如 Cloudflare Workers），请求将通过您自己的代理服务器转发。</li>
+            <li>本应用目前不集成任何第三方分析、广告或追踪服务。</li>
+        </ul>
+
+        <h2>5. 您的权利</h2>
+        <ul>
+            <li>您有权随时查看、修改或删除存储在浏览器本地存储中的所有数据。</li>
+            <li>清除浏览器缓存或使用浏览器的隐私模式即可完全移除所有本地数据。</li>
+            <li>您可以选择不使用某些需要 AI API 的功能，或使用自己的代理服务保护隐私。</li>
+        </ul>
+
+        <h2>6. 儿童隐私</h2>
+        <p>本应用不面向 13 岁以下的儿童。我们不会故意收集儿童的个人信息。如果您是家长或监护人，发现孩子向我们提供了个人信息，请联系我们删除相关数据。</p>
+
+        <h2>7. 隐私政策更新</h2>
+        <p>我们可能会不时更新本隐私政策。更新后的政策将在本页面发布，并在顶部注明更新日期。建议您定期查看本页面以了解最新信息。</p>
+
+        <h2>8. 联系我们</h2>
+        <p>如果您对本隐私政策有任何疑问或建议，请通过 GitHub Issues 联系我们：<a href="https://github.com/" target="_blank" rel="noopener">GitHub 项目页面</a></p>
+
+        <a href="index.html" class="back-link">← 返回应用</a>
+    </div>
+</body>
+</html>

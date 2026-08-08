@@ -371,6 +371,12 @@ template {
     transform: rotate(180deg);
 }
 
+/* 历史记录高亮按钮 - 激活状态 */
+#historyHighlightBtn.active {
+    background: var(--accent);
+    color: white;
+}
+
 /* 折叠信息区的平滑过渡动画 */
 .original-text,
 .secondary-translation {

@@ -1,4 +1,4 @@
-// 保存当前分析.js - 保存当前句子列表和解析缓存到 localStorage
+// save_analysis.js - 保存当前句子列表和解析缓存到 localStorage
 
 (function() {
     // 保存当前分析数据

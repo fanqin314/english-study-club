@@ -1,4 +1,4 @@
-// 词性按钮.js - 处理句子卡片上词性按钮的点击事件
+// pos_button.js - 处理句子卡片上词性按钮的点击事件
 
 (function() {
     ModuleRegistry.register('PosButton', ['Security', 'ErrorHandler', 'Performance', 'BaseAnalysisButton', 'GlobalManager'], function(Security, ErrorHandler, Performance, BaseAnalysisButton, GlobalManager) {
@@ -16,12 +16,10 @@
          * 清除当前高亮状态（仅清除点击高亮，保留全局高亮）
          */
         function clearCurrentHighlight() {
-            if (currentHighlightInfo.sentenceIndex !== null && window.DIContainer) {
+            if (currentHighlightInfo.sentenceIndex !== null && window.HighlightRenderer) {
                 try {
-                    const highlightService = window.DIContainer.resolve('HighlightService');
-                    // 使用新方法仅清除点击高亮，避免影响全局高亮
-                    if (highlightService && typeof highlightService.clearWordClickHighlight === 'function') {
-                        highlightService.clearWordClickHighlight(currentHighlightInfo.sentenceIndex);
+                    if (typeof window.HighlightRenderer.clearWordClickHighlight === 'function') {
+                        window.HighlightRenderer.clearWordClickHighlight(currentHighlightInfo.sentenceIndex);
                     }
                 } catch (e) {
                     console.warn('[PosButton] 清除高亮失败:', e);
@@ -67,11 +65,10 @@
             };
             
             // 设置单词高亮（与气泡出现同步）
-            if (sentenceIndex !== null && window.DIContainer) {
+            if (sentenceIndex !== null && window.HighlightRenderer) {
                 try {
-                    const highlightService = window.DIContainer.resolve('HighlightService');
-                    if (highlightService && typeof highlightService.highlightWordInSentence === 'function') {
-                        highlightService.highlightWordInSentence(sentenceIndex, word, pos);
+                    if (typeof window.HighlightRenderer.highlightWordInSentence === 'function') {
+                        window.HighlightRenderer.highlightWordInSentence(sentenceIndex, word, pos);
                     }
                 } catch (e) {
                     console.warn('[PosButton] 设置高亮失败:', e);

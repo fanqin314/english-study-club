@@ -26,7 +26,6 @@
                 
                 // 初始化方法
                 function init() {
-                    console.log('EventBus 模块初始化完成');
                 }
                 
                 // 获取模块名称

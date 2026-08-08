@@ -1,4 +1,4 @@
-// 一键添加所有词性按钮.js - 将当前文章中指定词性的单词批量添加到生词本
+// add_all_pos.js - 将当前文章中指定词性的单词批量添加到生词本
 
 (function() {
     function showLoading() {

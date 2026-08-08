@@ -1,4 +1,4 @@
-// 生词本数据.js - 生词本数据的增删改查、localStorage存储
+// vocab_data.js - 生词本数据的增删改查、localStorage存储
 
 (function() {
     // 存储键名

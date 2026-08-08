@@ -3,8 +3,6 @@
     const modules = {};
     
     function register(moduleName, dependencies, factory) {
-        console.log(`注册模块: ${moduleName}, 依赖: [${dependencies.join(', ')}]`);
-        
         // 验证模块名称
         const moduleNameRegex = /^[A-Z][a-zA-Z0-9]*$/;
         if (!moduleNameRegex.test(moduleName)) {
@@ -29,7 +27,6 @@
             instance: null,
             initialized: false
         };
-        console.log(`模块 ${moduleName} 注册完成，当前模块列表:`, Object.keys(modules));
     }
     
     function initializeModule(moduleName, visited = new Set()) {
@@ -48,18 +45,14 @@
         
         try {
             // 初始化依赖
-            console.log(`初始化模块 ${moduleName} 的依赖: [${module.dependencies.join(', ')}]`);
             const dependencies = module.dependencies.map(dep => {
                 // 递归初始化依赖，传递访问记录
                 return get(dep, visited);
             });
             
             // 创建模块实例
-            console.log(`执行模块 ${moduleName} 的工厂函数`);
             module.instance = module.factory(...dependencies);
             module.initialized = true;
-            
-            console.log(`模块 ${moduleName} 初始化完成`);
         } finally {
             // 移除访问标记
             visited.delete(moduleName);
@@ -67,15 +60,12 @@
     }
     
     function get(moduleName, visited = new Set()) {
-        console.log(`获取模块: ${moduleName}`);
-        console.log(`当前模块列表:`, Object.keys(modules));
         if (!modules[moduleName]) {
             console.error(`模块 ${moduleName} 未注册`);
             return null;
         }
         
         if (!modules[moduleName].initialized) {
-            console.log(`模块 ${moduleName} 未初始化，开始初始化`);
             try {
                 initializeModule(moduleName, visited);
             } catch (error) {
@@ -88,14 +78,11 @@
     }
     
     function initializeAll() {
-        console.log('开始初始化所有模块');
-        console.log(`当前模块列表:`, Object.keys(modules));
         Object.keys(modules).forEach(moduleName => {
             if (!modules[moduleName].initialized) {
                 initializeModule(moduleName);
             }
         });
-        console.log('所有模块初始化完成');
     }
     
     // 暴露内部模块列表用于测试
@@ -114,7 +101,4 @@
     });
     
     window.ModuleRegistry = registry;
-    
-    console.log('ModuleRegistry 初始化完成');
-    console.log('初始模块列表:', Object.keys(modules));
 })();

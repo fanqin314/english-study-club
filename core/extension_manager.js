@@ -70,9 +70,6 @@
                     }
                 });
                 
-                console.log(`扩展 ${extension.name} (${extension.id}) 注册成功`);
-                
-                // 触发扩展注册事件
                 EventBus.emit('extensionRegistered', extension);
                 
                 return true;
@@ -103,8 +100,6 @@
                 
                 // 移除扩展
                 delete this.extensions[extensionId];
-                
-                console.log(`扩展 ${extensionId} 注销成功`);
                 
                 // 触发扩展注销事件
                 EventBus.emit('extensionUnregistered', extensionId);
@@ -185,8 +180,6 @@
                     extensions: []
                 };
                 
-                console.log(`扩展点 ${name} 注册成功`);
-                
                 return true;
             },
             
@@ -221,8 +214,6 @@
              * 初始化方法
              */
             init: function() {
-                console.log('ExtensionManager 模块初始化完成');
-                console.log('已注册的扩展点:', Object.keys(this.extensionPoints));
             },
             
             /**

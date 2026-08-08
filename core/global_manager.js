@@ -10,7 +10,6 @@
             SentenceRenderer: null,
             CacheManager: null,
             MainButtonManager: null,
-            HighlightService: null,
             FlashcardMode: null,
             FlashcardUI: null
         };
@@ -23,7 +22,6 @@
         function setGlobalObject(name, obj) {
             if (name && obj) {
                 globalObjects[name] = obj;
-                console.log(`[GlobalManager] 已设置全局对象: ${name}`);
             }
         }
 
@@ -76,7 +74,6 @@
         function clearGlobalObject(name) {
             if (name) {
                 globalObjects[name] = null;
-                console.log(`[GlobalManager] 已清除全局对象: ${name}`);
             }
         }
 
@@ -87,7 +84,6 @@
             Object.keys(globalObjects).forEach(key => {
                 globalObjects[key] = null;
             });
-            console.log('[GlobalManager] 已清除所有全局对象');
         }
 
         return {

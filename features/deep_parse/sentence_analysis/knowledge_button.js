@@ -1,4 +1,4 @@
-// 知识点按钮.js - 处理句子卡片上知识点按钮的点击事件
+// knowledge_button.js - 处理句子卡片上知识点按钮的点击事件
 
 (function() {
     ModuleRegistry.register('KnowledgeButton', ['Security', 'ErrorHandler', 'Performance', 'BaseAnalysisButton', 'GlobalManager', 'Utils'], function(Security, ErrorHandler, Performance, BaseAnalysisButton, GlobalManager, Utils) {

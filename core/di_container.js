@@ -112,6 +112,4 @@
         has,
         clear
     };
-    
-    console.log('[DIContainer] 依赖注入容器已初始化');
 })();

@@ -1,4 +1,4 @@
-// history_detail.js - 历史记录详情界面的实时解析功能
+// history_detail_ui.js - 历史记录详情界面的实时解析功能
 
 (function() {
     let tempCache = {}; // 内存缓存，仅在当前详情界面有效

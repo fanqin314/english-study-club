@@ -1,7 +1,7 @@
 /* base.css - 基础样式和排版 */
 
 body {
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg-page);
     color: var(--text);
     line-height: 1.5;
@@ -9,6 +9,12 @@ body {
     transition: background 0.2s, color 0.2s;
     height: 100vh;
     overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--text);
 }
 
 .container {
@@ -21,12 +27,12 @@ body {
     gap: 12px;
 }
 
+/* 通用卡片基础 - 具体样式由 components/cards.css 管理 */
 .card {
     background: var(--card-bg);
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-    border-bottom: 1px solid var(--border);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
     margin-bottom: 12px;
     width: 100%;
     display: flex;

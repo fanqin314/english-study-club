@@ -12,7 +12,7 @@
 .choice-card .fill-card {
     border: 2.5px solid var(--border);
     border-radius: 18px;
-    background: linear-gradient(175deg, var(--card-bg, #fff), rgba(238,242,255,0.3));
+    background: linear-gradient(175deg, var(--card-bg), rgba(238,242,255,0.3));
     box-shadow:
         0 2px 0 var(--border),
         0 4px 16px rgba(0,0,0,0.04),
@@ -60,6 +60,11 @@
 .choice-prompt {
     text-align: center;
     padding: 8px 0 4px;
+    min-height: 76px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .choice-prompt-label {
@@ -126,72 +131,16 @@
     50% { border-bottom-color: #6366f1; opacity: 1; }
 }
 
-/* 翻译气泡 */
-.choice-translation-bubble {
-    position: fixed;
-    z-index: 9999;
-    max-width: 200px;
-    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.12));
-    pointer-events: none;
-    animation: bubbleFadeIn 0.2s ease;
-}
-
-@keyframes bubbleFadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.choice-translation-bubble-arrow {
-    position: absolute;
-    top: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
-    border-bottom: 7px solid var(--text);
-}
-
-.choice-translation-bubble.bubble-above .choice-translation-bubble-arrow {
-    top: auto;
-    bottom: -6px;
-    border-bottom: none;
-    border-top: 7px solid var(--text);
-}
-
-.choice-translation-bubble-inner {
-    background: var(--text);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.5;
-    text-align: center;
-    word-break: break-word;
-}
-
-[data-theme="dark"] .choice-translation-bubble-inner {
-    background: #334155;
-    color: #f1f5f9;
-}
-
-[data-theme="dark"] .choice-translation-bubble-arrow {
-    border-bottom-color: #334155;
-}
-
-[data-theme="dark"] .choice-translation-bubble.bubble-above .choice-translation-bubble-arrow {
-    border-top-color: #334155;
-}
-
-/* 翻译切换按钮 */
+/* 翻译切换按钮 - 悬浮气泡工具提示 */
 .choice-toggle-zh-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     margin-top: 6px;
-    padding: 6px;
+    width: 46px;
+    height: 46px;
+    padding: 0;
     border-radius: 50%;
     border: 1.5px solid var(--border);
     background: var(--card-bg);
@@ -214,6 +163,45 @@
     background: rgba(99,102,241,0.08);
 }
 
+/* 气泡工具提示 */
+.choice-toggle-zh-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    background: var(--text);
+    color: var(--card-bg);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.choice-toggle-zh-btn[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    border: 5px solid transparent;
+    border-top-color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.choice-toggle-zh-btn[data-tooltip]:hover::after,
+.choice-toggle-zh-btn[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
 /* 填空模式卡片调整 */
 .choice-mode-fillblank .choice-prompt {
     width: 100%;
@@ -233,72 +221,6 @@
     border-bottom-color: #818cf8;
 }
 
-/* 底部工具栏按钮 */
-.choice-gen-example-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    flex-shrink: 0;
-    padding: 0;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--card-bg);
-    color: #f59e0b;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-        0 2px 6px rgba(0,0,0,0.03),
-        inset 0 1px 0 rgba(255,255,255,0.4);
-}
-
-.choice-gen-example-btn:hover {
-    border-color: #f59e0b;
-    background: rgba(245,158,11,0.06);
-    box-shadow:
-        0 4px 12px rgba(245,158,11,0.15),
-        inset 0 1px 0 rgba(255,255,255,0.4);
-    transform: translateY(-2px);
-}
-
-.choice-gen-example-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.choice-speak-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    flex-shrink: 0;
-    padding: 0;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--card-bg);
-    color: var(--accent, #4F46E5);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-        0 2px 6px rgba(0,0,0,0.03),
-        inset 0 1px 0 rgba(255,255,255,0.4);
-}
-
-.choice-speak-btn:hover {
-    border-color: var(--accent, #4F46E5);
-    background: rgba(79,70,229,0.06);
-    box-shadow:
-        0 4px 12px rgba(79,70,229,0.15),
-        inset 0 1px 0 rgba(255,255,255,0.4);
-    transform: translateY(-2px);
-}
-
-.choice-speak-btn:active {
-    transform: translateY(0) scale(0.92);
-}
-
 .choice-skip-btn {
     gap: 5px;
     margin-left: auto;
@@ -313,25 +235,6 @@
     padding: 6px 4px;
 }
 
-.choice-gen-status {
-    margin-top: 6px;
-    font-size: 12px;
-}
-
-.choice-gen-loading {
-    color: var(--accent);
-    font-weight: 500;
-}
-
-.choice-gen-error {
-    color: #ef4444;
-    font-weight: 500;
-}
-
-[data-theme="dark"] .choice-gen-example-btn:hover {
-    background: rgba(245,158,11,0.08);
-}
-
 .choice-play-btn {
     display: flex;
     align-items: center;
@@ -342,8 +245,8 @@
     padding: 0;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, var(--accent), #6366f1);
-    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    color: var(--on-accent);
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow:
@@ -379,7 +282,7 @@
 .choice-play-btn svg {
     width: 26px;
     height: 26px;
-    stroke: #fff;
+    stroke: var(--on-accent);
     fill: currentColor;
     transition: transform 0.2s;
 }
@@ -390,6 +293,27 @@
 
 .choice-play-dots {
     margin: 0;
+}
+
+.choice-wave-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+    height: 32px;
+    margin: 4px auto 8px;
+}
+
+.choice-wave-bars .wave-bar {
+    width: 5px;
+    height: 8px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: height 0.12s ease;
+}
+
+.choice-wave-bars .wave-bar.animating {
+    background: var(--accent);
 }
 
 [data-theme="dark"] .choice-play-btn {
@@ -411,13 +335,15 @@
     width: 100%;
     max-width: 340px;
     padding: 4px 0;
+    margin-top: 6px;
+    margin-bottom: 6px;
 }
 
 .choice-option-btn {
     padding: 14px 18px;
     border-radius: 15px;
     border: 2.5px solid var(--border);
-    background: linear-gradient(170deg, #ffffff, rgba(238,242,255,0.5));
+    background: linear-gradient(170deg, var(--card-bg), rgba(238,242,255,0.5));
     color: var(--text);
     font-size: 17px;
     font-weight: 600;
@@ -630,34 +556,6 @@
         inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
-[data-theme="dark"] .choice-gen-example-btn {
-    background: rgba(30,30,42,0.8);
-    border-color: rgba(99,102,241,0.12);
-    color: #fbbf24;
-    box-shadow:
-        0 2px 6px rgba(0,0,0,0.3),
-        inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-[data-theme="dark"] .choice-gen-example-btn:hover {
-    border-color: #f59e0b;
-    background: rgba(245,158,11,0.1);
-}
-
-[data-theme="dark"] .choice-speak-btn {
-    background: rgba(30,30,42,0.8);
-    border-color: rgba(99,102,241,0.12);
-    color: #818cf8;
-    box-shadow:
-        0 2px 6px rgba(0,0,0,0.3),
-        inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-[data-theme="dark"] .choice-speak-btn:hover {
-    border-color: var(--accent, #818cf8);
-    background: rgba(79,70,229,0.1);
-}
-
 [data-theme="dark"] .spell-mode-btn.active {
     background: var(--accent, #4F46E5);
     box-shadow: 0 3px 16px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
@@ -726,9 +624,9 @@
 }
 
 .spell-mode-btn.active {
-    color: var(--on-primary, #fff);
-    background: var(--accent, #4F46E5);
-    border-color: var(--accent, #4F46E5);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
     box-shadow: 0 3px 12px rgba(79,70,229,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
     transform: translateY(-1px);
 }

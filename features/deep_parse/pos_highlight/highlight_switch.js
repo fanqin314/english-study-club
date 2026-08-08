@@ -1,4 +1,4 @@
-// 高亮开关.js - 词性高亮开关功能（功能模块，事件绑定由 event_delegation.js 统一处理）
+// highlight_switch.js - 词性高亮开关功能（功能模块，事件绑定由 event_delegation.js 统一处理）
 
 (function() {
     let highlightEnabled = false;

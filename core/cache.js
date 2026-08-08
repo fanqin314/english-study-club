@@ -1,4 +1,4 @@
-// 缓存管理.js - 统一管理句子解析缓存、全文翻译等
+// cache.js - 统一管理句子解析缓存、全文翻译等
 
 (function() {
     if (typeof ModuleRegistry !== 'undefined') {
@@ -95,7 +95,6 @@
                 keysToRemove.forEach(key => {
                     delete memoryCache.sentenceData[key];
                 });
-                console.log(`已清理 ${keysToRemove.length} 个旧缓存项`);
             }
         } catch (e) {
             console.warn('清理旧缓存失败:', e);
@@ -213,7 +212,6 @@
                 loadFromLocalStorage();
                 // 页面卸载前强制保存
                 window.addEventListener('beforeunload', forceSave);
-                console.log('CacheManager 模块初始化完成');
             }
 
             // 获取模块名称
@@ -360,7 +358,6 @@
                     keysToRemove.forEach(key => {
                         delete memoryCache.sentenceData[key];
                     });
-                    console.log(`已清理 ${keysToRemove.length} 个旧缓存项`);
                 }
             } catch (e) {
                 console.warn('清理旧缓存失败:', e);

@@ -1,4 +1,4 @@
-// 深色模式调节按钮.js - 深色模式切换逻辑
+// dark_mode.js - 深色模式切换逻辑
 
 (function() {
     // 深色模式状态（从 localStorage 读取）

@@ -1,4 +1,4 @@
-// 高亮设置弹窗.js - 词性选择弹窗（含一键添加所有该词性单词）
+// highlight_settings.js - 词性选择弹窗（含一键添加所有该词性单词）
 
 (function() {
     let modal = null;

@@ -25,6 +25,7 @@
             container.id = 'memoryModeInterface';
             container.className = 'vocab-card memory-mode-card';
             if (window.applyMemoryRainbow) window.applyMemoryRainbow();
+            const _cleanupFns = [];
 
             const spellHeader = document.createElement('div');
             spellHeader.className = 'fill-header';
@@ -36,10 +37,26 @@
                     <span id="spellScoreNum">0</span>
                 </span>
             `;
-            spellHeader.querySelector('.back-btn').onclick = () => {
+            const spellBackBtn = spellHeader.querySelector('.back-btn');
+            const spellBackHandler = () => {
+                _cleanupFns.forEach(fn => fn());
+                _cleanupFns.length = 0;
                 const MemoryModeUI = ModuleRegistry.get('MemoryModeUI');
                 if (MemoryModeUI) { MemoryModeUI.show(container); }
             };
+            spellBackBtn.addEventListener('click', spellBackHandler);
+            _cleanupFns.push(() => spellBackBtn.removeEventListener('click', spellBackHandler));
+
+            const spellEscHandler = (e) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    spellBackBtn.click();
+                }
+            };
+            document.addEventListener('keydown', spellEscHandler);
+            _cleanupFns.push(() => document.removeEventListener('keydown', spellEscHandler));
+
             container.appendChild(spellHeader);
 
             const spellModeBar = document.createElement('div');
@@ -69,9 +86,6 @@
             const spellBottom = document.createElement('div');
             spellBottom.className = 'fill-bottom';
             spellBottom.innerHTML = `
-                <button class="fill-reset-btn" id="spellResetBtn">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 重来
-                </button>
                 <button class="fill-hint-btn" id="spellHintBtn" title="逐字母提示（-3分/个）">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="8" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="16"/><line x1="8" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="16" y2="12"/></svg>
                 </button>
@@ -81,25 +95,16 @@
                     </svg>
                 </button>
                 <button class="fill-skip-btn" id="spellSkipBtn">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
-                    跳过
-                </button>
-                <button class="fill-check-btn" id="spellCheckBtn">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
                 </button>
             `;
-            spellBottom.querySelector('#spellResetBtn').onclick = () => {
-                renderSpellWord(spellCurrentIndex);
-            };
             spellBottom.querySelector('#spellHintBtn').onclick = doSpellHint;
             spellBottom.querySelector('#spellSpeedToggle').onclick = () => {
                 spellIsSlow = !spellIsSlow;
                 const btn = document.getElementById('spellSpeedToggle');
                 if (btn) btn.classList.toggle('slow', spellIsSlow);
             };
-            spellBottom.querySelector('#spellCheckBtn').onclick = doSpellCheck;
             spellBottom.querySelector('#spellSkipBtn').onclick = doSpellSkip;
-            container.appendChild(spellBottom);
 
             container.appendChild(spellModeBar);
 
@@ -118,6 +123,12 @@
             spellPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
             spellPlayBtn.onclick = () => { spellSpeakCurrentWord(); };
             spellCard.appendChild(spellPlayBtn);
+
+            const spellWaveBars = document.createElement('div');
+            spellWaveBars.className = 'spell-wave-bars';
+            spellWaveBars.id = 'spellWaveBars';
+            spellWaveBars.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
+            spellCard.appendChild(spellWaveBars);
 
             const spellLetterGrid = document.createElement('div');
             spellLetterGrid.className = 'spell-letter-grid';
@@ -149,10 +160,12 @@
                     e.preventDefault();
                 }
             });
-            spellCard.addEventListener('click', (e) => {
+            const spellCardClickHandler = (e) => {
                 if (e.target.closest('.spell-play-btn')) return;
                 spellHiddenInput.focus();
-            });
+            };
+            spellCard.addEventListener('click', spellCardClickHandler);
+            _cleanupFns.push(() => spellCard.removeEventListener('click', spellCardClickHandler));
             spellCard.appendChild(spellHiddenInput);
 
             const spellResult = document.createElement('div');
@@ -165,7 +178,15 @@
             spellStreak.id = 'spellStreak';
             spellCard.appendChild(spellStreak);
 
+            const spellCheckBtn = document.createElement('button');
+            spellCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+            spellCheckBtn.id = 'spellCheckBtn';
+            spellCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+            spellCheckBtn.addEventListener('click', doSpellCheck);
+            spellCard.appendChild(spellCheckBtn);
+
             container.appendChild(spellCard);
+            spellCard.appendChild(spellBottom);
 
             const spellProgressWrap = document.createElement('div');
             spellProgressWrap.className = 'fill-progress-wrap';
@@ -272,6 +293,8 @@
                         const utterance = new SpeechSynthesisUtterance(word.meaning);
                         utterance.lang = 'zh-CN';
                         utterance.rate = spellIsSlow ? 0.7 : 1.0;
+                        startSpellWaveAnimation();
+                        utterance.onend = () => { stopSpellWaveAnimation(); };
                         window.speechSynthesis.speak(utterance);
                     }
                     return;
@@ -294,13 +317,37 @@
                             setTimeout(() => clearSyllableHighlight(), 200);
                         }
                     }, syllables.length > 0 ? totalTime / syllables.length : totalTime);
-
+                    startSpellWaveAnimation();
                     utterance.onend = () => {
                         clearInterval(sylInterval);
                         clearSyllableHighlight();
+                        stopSpellWaveAnimation();
                     };
                     window.speechSynthesis.speak(utterance);
                 }
+            }
+
+            let _spellWaveInterval = null;
+
+            function startSpellWaveAnimation() {
+                stopSpellWaveAnimation();
+                const bars = document.querySelectorAll('#spellWaveBars .wave-bar');
+                bars.forEach(b => b.classList.add('animating'));
+                _spellWaveInterval = setInterval(() => {
+                    bars.forEach(b => {
+                        b.style.height = (8 + Math.random() * 24) + 'px';
+                    });
+                }, 150);
+            }
+
+            function stopSpellWaveAnimation() {
+                if (_spellWaveInterval) clearInterval(_spellWaveInterval);
+                _spellWaveInterval = null;
+                const bars = document.querySelectorAll('#spellWaveBars .wave-bar');
+                bars.forEach(b => {
+                    b.classList.remove('animating');
+                    b.style.height = '8px';
+                });
             }
 
             function highlightSyllable(idx) {
@@ -402,9 +449,9 @@
                     const revealBtn = document.createElement('button');
                     revealBtn.className = 'spell-reveal-btn';
                     revealBtn.dataset.target = 'cn';
+                    revealBtn.dataset.tooltip = word.meaning || '';
                     revealBtn.innerHTML = `
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        中文提示
                     `;
                     revealBtn.addEventListener('click', function() {
                         const cue = spellSyllableEl.querySelector('.spell-cue-cn');
@@ -412,10 +459,8 @@
                         const isVisible = cue && !cue.classList.contains('spell-cue-hidden');
                         this.innerHTML = isVisible ? `
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                            隐藏中文
                         ` : `
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            中文提示
                         `;
                     });
                     if (spellSyllableEl.parentNode) {
@@ -428,19 +473,17 @@
                         const revealBtn = document.createElement('button');
                         revealBtn.className = 'spell-reveal-btn';
                         revealBtn.dataset.target = 'en';
+                        revealBtn.dataset.tooltip = word.word;
                         revealBtn.innerHTML = `
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            音节提示
                         `;
                         revealBtn.addEventListener('click', function() {
                             spellSyllableEl.classList.toggle('spell-syllable-hidden');
                             const isVisible = !spellSyllableEl.classList.contains('spell-syllable-hidden');
                             this.innerHTML = isVisible ? `
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                                隐藏音节
                             ` : `
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                音节提示
                             `;
                         });
                         if (spellSyllableEl.parentNode) {
@@ -620,6 +663,9 @@
                     const boxes = document.querySelectorAll('#spellLetterGrid .letter-box');
                     boxes.forEach(b => b.classList.add('correct'));
 
+                    const confettiIntensity = spellStreakCount >= 10 ? 'super' : 'normal';
+                    triggerConfetti(document.getElementById('spellLetterGrid'), confettiIntensity);
+
                     if (spellAnswered.size + spellSkipped.size >= spellTotalWords) {
                         setTimeout(() => showSpellSummary(), 600);
                     } else {
@@ -632,6 +678,18 @@
                     spellResultEl.innerHTML = `<span class="fill-wrong">✗ 正确答案：<strong>${word.word}</strong> · ${word.meaning}${modeHint}</span>`;
                     spellResultEl.className = 'fill-result fill-result-wrong';
                     highlightLetterDiff(userAnswer, correctWord);
+
+                    // 将检查按钮改为重来按钮
+                    const checkBtn = document.getElementById('spellCheckBtn');
+                    if (checkBtn) {
+                        checkBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 重来`;
+                        checkBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            _spellRated = false;
+                            if (spellInputEl) spellInputEl.disabled = false;
+                            renderSpellWord(spellCurrentIndex);
+                        };
+                    }
                 }
             }
 
@@ -706,7 +764,16 @@
 
                     const retryBtn = spellCardEl.querySelector('.summary-retry-btn');
                     if (retryBtn) {
-                        retryBtn.onclick = () => {
+                        const spellRetryHandler = () => {
+                            _cleanupFns.forEach(fn => fn());
+                            _cleanupFns.length = 0;
+
+                            // 重新注册返回按钮和ESC键
+                            spellBackBtn.addEventListener('click', spellBackHandler);
+                            _cleanupFns.push(() => spellBackBtn.removeEventListener('click', spellBackHandler));
+                            document.addEventListener('keydown', spellEscHandler);
+                            _cleanupFns.push(() => document.removeEventListener('keydown', spellEscHandler));
+
                             spellCardEl.innerHTML = '';
 
                             const spellSyllable = document.createElement('div');
@@ -720,6 +787,12 @@
                             spellPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
                             spellPlayBtn.onclick = () => { spellSpeakCurrentWord(); };
                             spellCardEl.appendChild(spellPlayBtn);
+
+                            const spellWaveBars = document.createElement('div');
+                            spellWaveBars.className = 'spell-wave-bars';
+                            spellWaveBars.id = 'spellWaveBars';
+                            spellWaveBars.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
+                            spellCardEl.appendChild(spellWaveBars);
 
                             const spellLetterGrid = document.createElement('div');
                             spellLetterGrid.className = 'spell-letter-grid';
@@ -766,6 +839,37 @@
                             spellStreak.id = 'spellStreak';
                             spellCardEl.appendChild(spellStreak);
 
+                            // 重建检查按钮
+                            const retryCheckBtn = document.createElement('button');
+                            retryCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+                            retryCheckBtn.id = 'spellCheckBtn';
+                            retryCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+                            retryCheckBtn.addEventListener('click', doSpellCheck);
+                            spellCardEl.appendChild(retryCheckBtn);
+
+                            // 重建底部按钮栏
+                            const retrySpellBottom = document.createElement('div');
+                            retrySpellBottom.className = 'fill-bottom';
+                            retrySpellBottom.innerHTML = `
+                                <button class="fill-hint-btn" id="spellHintBtn" title="逐字母提示（-3分/个）">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="8" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="16"/><line x1="8" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="16" y2="12"/></svg>
+                                </button>
+                                <button class="fill-hint-btn" id="spellSpeedToggle" title="语速切换">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                </button>
+                                <button class="fill-skip-btn" id="spellSkipBtn">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+                                </button>
+                            `;
+                            retrySpellBottom.querySelector('#spellHintBtn').onclick = doSpellHint;
+                            retrySpellBottom.querySelector('#spellSpeedToggle').onclick = () => {
+                                spellIsSlow = !spellIsSlow;
+                                const btn = document.getElementById('spellSpeedToggle');
+                                if (btn) btn.classList.toggle('slow', spellIsSlow);
+                            };
+                            retrySpellBottom.querySelector('#spellSkipBtn').onclick = doSpellSkip;
+                            spellCardEl.appendChild(retrySpellBottom);
+
                             spellCurrentIndex = 0;
                             spellAnswered = new Set();
                             spellSkipped = new Set();
@@ -777,16 +881,71 @@
 
                             const checkBtn = document.getElementById('spellCheckBtn');
                             if (checkBtn) checkBtn.style.display = '';
-                            const bottomEl = document.querySelector('.fill-bottom');
-                            if (bottomEl) bottomEl.style.display = '';
 
                             updateSpellScore();
                             updateSpellStreak();
                             updateSpellProgress();
                             renderSpellWord(0);
                         };
+                        retryBtn.addEventListener('click', spellRetryHandler);
+                        _cleanupFns.push(() => retryBtn.removeEventListener('click', spellRetryHandler));
                     }
                 }
+            }
+
+            function triggerConfetti(containerEl, intensity) {
+                if (!containerEl) return;
+                const rect = containerEl.getBoundingClientRect();
+                const container = document.createElement('div');
+                container.className = 'confetti-container';
+                container.style.left = rect.width / 2 + 'px';
+                container.style.top = rect.height / 2 + 'px';
+                containerEl.style.position = 'relative';
+                containerEl.appendChild(container);
+
+                const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d', '#c084fc', '#fb923c', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#06b6d4'];
+                const shapes = ['confetti-piece--square', 'confetti-piece--circle', 'confetti-piece--ribbon', 'confetti-piece--star'];
+                const count = intensity === 'super' ? 140 : 80;
+
+                for (let i = 0; i < count; i++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'confetti-piece ' + shapes[i % shapes.length];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const size = 5 + Math.random() * 9;
+                    const angle = Math.random() * 360;
+                    const distance = 50 + Math.random() * (intensity === 'super' ? 180 : 140);
+                    const rad = (angle * Math.PI) / 180;
+                    const tx = Math.cos(rad) * distance;
+                    const ty = Math.sin(rad) * distance - 50;
+                    const tr = Math.random() * 720 - 360;
+                    const fx = tx * 0.4;
+                    const fy = ty * 0.5 + 70 + Math.random() * 50;
+                    const fr = tr + Math.random() * 360;
+                    const duration = 500 + Math.random() * (intensity === 'super' ? 700 : 500);
+                    const delay = Math.random() * 120;
+
+                    piece.style.width = size + 'px';
+                    piece.style.height = size * (0.4 + Math.random() * 0.9) + 'px';
+                    piece.style.background = color;
+                    piece.style.setProperty('--tx', tx + 'px');
+                    piece.style.setProperty('--ty', ty + 'px');
+                    piece.style.setProperty('--tr', tr + 'deg');
+                    piece.style.setProperty('--fx', fx + 'px');
+                    piece.style.setProperty('--fy', fy + 'px');
+                    piece.style.setProperty('--fr', fr + 'deg');
+
+                    const useBurst = Math.random() > 0.25;
+                    piece.style.animation = (useBurst ? 'confettiBurst' : 'confettiFall') + ' ' + duration + 'ms ease-out ' + delay + 'ms forwards';
+                    if (intensity === 'super' && Math.random() > 0.7) {
+                        piece.style.boxShadow = '0 0 4px ' + color;
+                    }
+                    container.appendChild(piece);
+                }
+
+                const cleanupTimeout = intensity === 'super' ? 2000 : 1500;
+                setTimeout(() => {
+                    if (container.parentNode) container.parentNode.removeChild(container);
+                }, cleanupTimeout);
             }
 
             updateSpellScore();

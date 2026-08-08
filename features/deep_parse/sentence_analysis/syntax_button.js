@@ -1,4 +1,4 @@
-// 语法按钮.js - 处理句子卡片上语法结构按钮的点击事件
+// syntax_button.js - 处理句子卡片上语法结构按钮的点击事件
 
 (function() {
     ModuleRegistry.register('SyntaxButton', ['Security', 'ErrorHandler', 'Performance', 'BaseAnalysisButton', 'GlobalManager'], function(Security, ErrorHandler, Performance, BaseAnalysisButton, GlobalManager) {

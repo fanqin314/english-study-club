@@ -82,6 +82,16 @@
         return history.find(item => item.originalText === text) || null;
     }
     
+    // 更新指定历史记录的句子分析数据
+    function updateSentenceData(id, idx, data) {
+        const item = history.find(h => h.id === id);
+        if (!item) return false;
+        if (!item.sentenceData) item.sentenceData = {};
+        item.sentenceData[idx] = { ...(item.sentenceData[idx] || {}), ...data };
+        saveToStorage();
+        return true;
+    }
+
     // 初始化加载
     loadHistory();
     
@@ -91,7 +101,8 @@
         getHistory,
         deleteHistoryItem,
         clearHistory,
-        findByText
+        findByText,
+        updateSentenceData
     };
     
     console.log('[HistoryManager] 初始化完成，共', history.length, '条记录');

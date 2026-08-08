@@ -8,6 +8,7 @@
             const vocabData = _getVocabData();
             const notebook = vocabData ? vocabData.getCurrentNotebook() : null;
             const words = (notebook && notebook.words && notebook.words.length > 0) ? [...notebook.words] : [];
+            const _cleanupFns = [];
 
             if (words.length === 0) {
                 _showToast('当前生词本没有单词');
@@ -35,10 +36,26 @@
                     <span id="listenScoreNum">0</span>
                 </span>
             `;
-            listenHeader.querySelector('.back-btn').onclick = () => {
+            const backBtn = listenHeader.querySelector('.back-btn');
+            const backHandler = (e) => {
+                e.stopPropagation();
+                _cleanupFns.forEach(fn => fn());
                 const MemoryModeUI = ModuleRegistry.get('MemoryModeUI');
                 if (MemoryModeUI) { MemoryModeUI.show(container); }
             };
+            backBtn.addEventListener('click', backHandler);
+            _cleanupFns.push(() => backBtn.removeEventListener('click', backHandler));
+
+            const listenEscHandler = (e) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    backBtn.click();
+                }
+            };
+            document.addEventListener('keydown', listenEscHandler);
+            _cleanupFns.push(() => document.removeEventListener('keydown', listenEscHandler));
+
             container.appendChild(listenHeader);
 
             const listenProgressWrap = document.createElement('div');
@@ -78,7 +95,12 @@
             listenPlayBtn.className = 'listen-play-btn';
             listenPlayBtn.id = 'listenPlayBtn';
             listenPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> 播放单词';
-            listenPlayBtn.onclick = () => { listenSpeak(words[listenCurrentIndex]); };
+            const initialPlayHandler = (e) => {
+                e.stopPropagation();
+                listenSpeak(words[listenCurrentIndex]);
+            };
+            listenPlayBtn.addEventListener('click', initialPlayHandler);
+            _cleanupFns.push(() => listenPlayBtn.removeEventListener('click', initialPlayHandler));
             listenCard.appendChild(listenPlayBtn);
 
             const listenPlayDots = document.createElement('div');
@@ -99,9 +121,11 @@
             listenInput.autocomplete = 'off';
             listenInput.spellcheck = false;
             listenInput.style.display = 'none';
-            listenInput.addEventListener('keydown', (e) => {
+            const inputKeydownHandler = (e) => {
                 if (e.key === 'Enter') doListenCheck();
-            });
+            };
+            listenInput.addEventListener('keydown', inputKeydownHandler);
+            _cleanupFns.push(() => listenInput.removeEventListener('keydown', inputKeydownHandler));
             listenInputArea.appendChild(listenInput);
 
             const listenChoiceArea = document.createElement('div');
@@ -116,7 +140,12 @@
             listenResult.id = 'listenPracticeResult';
             listenCard.appendChild(listenResult);
 
-            container.appendChild(listenCard);
+            const listenCheckBtn = document.createElement('button');
+            listenCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+            listenCheckBtn.id = 'listenCheckBtn';
+            listenCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+            listenCheckBtn.addEventListener('click', doListenCheck);
+            listenCard.appendChild(listenCheckBtn);
 
             const listenBottom = document.createElement('div');
             listenBottom.className = 'fill-bottom';
@@ -132,20 +161,36 @@
                 <button class="fill-skip-btn" id="listenSkipBtn" title="跳过">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
                 </button>
-                <button class="fill-check-btn" id="listenCheckBtn">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查
-                </button>
             `;
-            listenBottom.querySelector('#listenReplayBtn').onclick = () => { listenSpeak(words[listenCurrentIndex]); };
-            listenBottom.querySelector('#listenModeToggle').onclick = () => {
+            const listenReplayBtn = listenBottom.querySelector('#listenReplayBtn');
+            const replayHandler = (e) => {
+                e.stopPropagation();
+                listenSpeak(words[listenCurrentIndex]);
+            };
+            listenReplayBtn.addEventListener('click', replayHandler);
+            _cleanupFns.push(() => listenReplayBtn.removeEventListener('click', replayHandler));
+
+            const listenModeToggleBtn = listenBottom.querySelector('#listenModeToggle');
+            const modeHandler = (e) => {
+                e.stopPropagation();
                 listenChoiceMode = !listenChoiceMode;
                 const btn = document.getElementById('listenModeToggle');
                 if (btn) btn.classList.toggle('active', !listenChoiceMode);
                 renderListenWord(listenCurrentIndex);
             };
-            listenBottom.querySelector('#listenSkipBtn').onclick = doListenSkip;
-            listenBottom.querySelector('#listenCheckBtn').onclick = doListenCheck;
-            container.appendChild(listenBottom);
+            listenModeToggleBtn.addEventListener('click', modeHandler);
+            _cleanupFns.push(() => listenModeToggleBtn.removeEventListener('click', modeHandler));
+
+            const listenSkipBtn = listenBottom.querySelector('#listenSkipBtn');
+            const skipHandler = (e) => {
+                e.stopPropagation();
+                doListenSkip();
+            };
+            listenSkipBtn.addEventListener('click', skipHandler);
+            _cleanupFns.push(() => listenSkipBtn.removeEventListener('click', skipHandler));
+
+            listenCard.appendChild(listenBottom);
+            container.appendChild(listenCard);
 
             let listenCurrentIndex = 0;
             let listenAnswered = new Set();
@@ -305,7 +350,10 @@
                         const btn = document.createElement('button');
                         btn.className = 'listen-choice-btn';
                         btn.textContent = choice;
-                        btn.onclick = () => { doChoiceSelect(choice, word); };
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            doChoiceSelect(choice, word);
+                        });
                         listenChoiceAreaEl.appendChild(btn);
                     });
                 } else {
@@ -441,6 +489,11 @@
                 else if (wrong <= 2) { earLevel = '银耳朵'; earEmoji = '🥈'; }
                 else { earLevel = '铜耳朵'; earEmoji = '🥉'; }
 
+                if (window.StatsTracker) {
+                    window.StatsTracker.recordWordsLearned(correct);
+                    window.StatsTracker.recordModuleActivity('listening', correct, window.VocabData ? window.VocabData.getCurrentNotebookId() : null);
+                }
+
                 let title = `👂 ${earLevel}！`;
                 let titleClass = 'perfect';
 
@@ -485,7 +538,17 @@
 
                     const retryBtn = listenCardEl.querySelector('.summary-retry-btn');
                     if (retryBtn) {
-                        retryBtn.onclick = () => {
+                        const retryHandler = (e) => {
+                            e.stopPropagation();
+                            _cleanupFns.forEach(fn => fn());
+                            _cleanupFns.length = 0;
+
+                            // 重新注册返回按钮和ESC键
+                            backBtn.addEventListener('click', backHandler);
+                            _cleanupFns.push(() => backBtn.removeEventListener('click', backHandler));
+                            document.addEventListener('keydown', listenEscHandler);
+                            _cleanupFns.push(() => document.removeEventListener('keydown', listenEscHandler));
+
                             listenCardEl.innerHTML = '';
 
                             const listenWaveContainer = document.createElement('div');
@@ -511,7 +574,12 @@
                             listenPlayBtn.className = 'listen-play-btn';
                             listenPlayBtn.id = 'listenPlayBtn';
                             listenPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> 播放单词';
-                            listenPlayBtn.onclick = () => { listenSpeak(words[0]); };
+                            const retryPlayHandler = (e) => {
+                                e.stopPropagation();
+                                listenSpeak(words[listenCurrentIndex]);
+                            };
+                            listenPlayBtn.addEventListener('click', retryPlayHandler);
+                            _cleanupFns.push(() => listenPlayBtn.removeEventListener('click', retryPlayHandler));
                             listenCardEl.appendChild(listenPlayBtn);
 
                             const listenPlayDots = document.createElement('div');
@@ -532,9 +600,11 @@
                             listenInput.autocomplete = 'off';
                             listenInput.spellcheck = false;
                             listenInput.style.display = 'none';
-                            listenInput.addEventListener('keydown', (e) => {
+                            const retryInputHandler = (e) => {
                                 if (e.key === 'Enter') doListenCheck();
-                            });
+                            };
+                            listenInput.addEventListener('keydown', retryInputHandler);
+                            _cleanupFns.push(() => listenInput.removeEventListener('keydown', retryInputHandler));
                             listenInputArea.appendChild(listenInput);
 
                             const listenChoiceArea = document.createElement('div');
@@ -549,6 +619,59 @@
                             listenResult.id = 'listenPracticeResult';
                             listenCardEl.appendChild(listenResult);
 
+                            // 重建检查按钮
+                            const retryListenCheckBtn = document.createElement('button');
+                            retryListenCheckBtn.className = 'fill-check-btn fill-check-btn-inline btn-check';
+                            retryListenCheckBtn.id = 'listenCheckBtn';
+                            retryListenCheckBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 检查`;
+                            retryListenCheckBtn.addEventListener('click', doListenCheck);
+                            listenCardEl.appendChild(retryListenCheckBtn);
+
+                            // 重建底部按钮栏
+                            const retryListenBottom = document.createElement('div');
+                            retryListenBottom.className = 'fill-bottom';
+                            retryListenBottom.innerHTML = `
+                                <button class="fill-reset-btn" id="listenReplayBtn">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg> 播放
+                                </button>
+                                <button class="fill-hint-btn" id="listenModeToggle" title="切换输入/选择模式">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+                                    </svg>
+                                </button>
+                                <button class="fill-skip-btn" id="listenSkipBtn" title="跳过">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                                </button>
+                            `;
+                            const retryReplayBtn = retryListenBottom.querySelector('#listenReplayBtn');
+                            const retryReplayHandler = (e) => {
+                                e.stopPropagation();
+                                listenSpeak(words[listenCurrentIndex]);
+                            };
+                            retryReplayBtn.addEventListener('click', retryReplayHandler);
+                            _cleanupFns.push(() => retryReplayBtn.removeEventListener('click', retryReplayHandler));
+
+                            const retryModeToggleBtn = retryListenBottom.querySelector('#listenModeToggle');
+                            const retryModeHandler = (e) => {
+                                e.stopPropagation();
+                                listenChoiceMode = !listenChoiceMode;
+                                const btn = document.getElementById('listenModeToggle');
+                                if (btn) btn.classList.toggle('active', !listenChoiceMode);
+                                renderListenWord(listenCurrentIndex);
+                            };
+                            retryModeToggleBtn.addEventListener('click', retryModeHandler);
+                            _cleanupFns.push(() => retryModeToggleBtn.removeEventListener('click', retryModeHandler));
+
+                            const retrySkipBtn = retryListenBottom.querySelector('#listenSkipBtn');
+                            const retrySkipHandler = (e) => {
+                                e.stopPropagation();
+                                doListenSkip();
+                            };
+                            retrySkipBtn.addEventListener('click', retrySkipHandler);
+                            _cleanupFns.push(() => retrySkipBtn.removeEventListener('click', retrySkipHandler));
+
+                            listenCardEl.appendChild(retryListenBottom);
+
                             listenCurrentIndex = 0;
                             listenAnswered = new Set();
                             _listenRated = false;
@@ -558,19 +681,13 @@
                             listenTotalPlays = 0;
                             listenWrongCount = 0;
 
-                            const checkBtn = document.getElementById('listenCheckBtn');
-                            if (checkBtn) checkBtn.style.display = '';
-                            const bottomEl = document.querySelector('.fill-bottom');
-                            if (bottomEl) bottomEl.style.display = '';
-
-                            const modeToggle = document.getElementById('listenModeToggle');
-                            if (modeToggle) modeToggle.classList.add('active');
-
                             updatePlayDots();
                             updateListenScore();
                             updateListenProgress();
                             renderListenWord(0);
                         };
+                        retryBtn.addEventListener('click', retryHandler);
+                        _cleanupFns.push(() => retryBtn.removeEventListener('click', retryHandler));
                     }
                 }
             }

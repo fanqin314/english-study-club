@@ -1,4 +1,4 @@
-// 学习统计界面.js - 学习统计界面的HTML渲染和交互
+// learning_stats_ui.js - 学习统计界面的HTML渲染和交互
 
 (function() {
     ModuleRegistry.register('LearningStatsUI', ['GlobalManager'], function(GlobalManager) {

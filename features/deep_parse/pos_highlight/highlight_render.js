@@ -1,4 +1,4 @@
-// 高亮渲染.js - 给单词添加词性颜色高亮
+// highlight_render.js - 给单词添加词性颜色高亮
 
 (function() {
     const posClassMap = {
@@ -44,6 +44,12 @@
         if (window.HighlightSwitch && window.HighlightSwitch.isEnabled()) {
             applyHighlightToAll();
         }
+        
+        // 同步刷新历史记录高亮
+        if (window.HistoryHighlight && window.HistoryHighlight.isEnabled()) {
+            window.HistoryHighlight.clearHighlight();
+            window.HistoryHighlight.applyHighlight();
+        }
     }
     
     function getHighlightPosMapConfig() {
@@ -56,8 +62,8 @@
      */
     function clearAllHighlight() {
         // 优先使用句子容器进行局部查询
+        // 注意：不清除 secondarySentencesContainer，避免影响历史记录高亮
         const container = document.getElementById('deepParseSentencesContainer') || 
-                         document.getElementById('secondarySentencesContainer') ||
                          document.getElementById('sentencesContainer');
         
         if (container) {
@@ -102,6 +108,7 @@
                 const className = posClassMap[posItem.pos];
                 if (className) {
                     span.classList.add(className);
+                    span.classList.add('global-highlight'); // 标记为全局高亮
                 }
             }
         });
@@ -138,11 +145,120 @@
         }
     }
     
+    /**
+     * 标准化单词（去除标点符号）
+     */
+    function normalizeWord(word) {
+        if (typeof word !== 'string') return '';
+        return word.toLowerCase().replace(/^[,.!?;:\"\']+|[,.!?;:\"\']+$/g, '');
+    }
+
+    /**
+     * 高亮句子中指定的单词（点击高亮，区别于全局高亮）
+     * @param {number} sentenceIndex - 句子索引
+     * @param {string} word - 要高亮的单词
+     * @param {string} pos - 词性
+     */
+    function highlightWordInSentence(sentenceIndex, word, pos) {
+        if (typeof sentenceIndex !== 'number' || sentenceIndex < 0 || !Number.isInteger(sentenceIndex)) {
+            console.warn(`[HighlightRenderer] 无效的句子索引: ${sentenceIndex}`);
+            return;
+        }
+        if (typeof word !== 'string' || !word.trim()) {
+            console.warn('[HighlightRenderer] 无效的单词');
+            return;
+        }
+        if (typeof pos !== 'string' || !posClassMap[pos]) {
+            console.warn(`[HighlightRenderer] 无效的词性: ${pos}`);
+            return;
+        }
+
+        const sentenceElementId = `sentence-${sentenceIndex}`;
+        const sentenceDiv = document.getElementById(sentenceElementId);
+        if (!sentenceDiv) {
+            console.warn(`[HighlightRenderer] 找不到句子元素: ${sentenceElementId}`);
+            return;
+        }
+
+        const wordSpans = sentenceDiv.querySelectorAll('.word-span');
+        const wordNormalized = normalizeWord(word);
+
+        wordSpans.forEach(span => {
+            const spanWord = span.dataset.word;
+            const isMatch = spanWord && normalizeWord(spanWord) === wordNormalized;
+
+            if (span.classList.contains('click-highlight')) {
+                if (!isMatch) {
+                    Object.values(posClassMap).forEach(className => {
+                        span.classList.remove(className);
+                    });
+                }
+                span.classList.remove('click-highlight');
+            }
+
+            if (isMatch && highlightPosMap[pos]) {
+                const className = posClassMap[pos];
+                if (className) {
+                    span.classList.add(className);
+                    span.classList.add('click-highlight');
+                }
+            }
+        });
+    }
+
+    /**
+     * 清除句子中指定单词的点击高亮（保留全局高亮）
+     * @param {number} sentenceIndex - 句子索引
+     */
+    function clearWordClickHighlight(sentenceIndex) {
+        if (typeof sentenceIndex !== 'number' || sentenceIndex < 0 || !Number.isInteger(sentenceIndex)) {
+            return;
+        }
+
+        const sentenceElementId = `sentence-${sentenceIndex}`;
+        const sentenceDiv = document.getElementById(sentenceElementId);
+        if (!sentenceDiv) return;
+
+        const wordSpans = sentenceDiv.querySelectorAll('.word-span.click-highlight:not(.global-highlight)');
+        wordSpans.forEach(span => {
+            Object.values(posClassMap).forEach(className => {
+                span.classList.remove(className);
+            });
+            span.classList.remove('click-highlight');
+        });
+    }
+
+    /**
+     * 清除句子中所有单词的高亮（包括全局和点击）
+     * @param {number} sentenceIndex - 句子索引
+     */
+    function clearWordHighlight(sentenceIndex) {
+        if (typeof sentenceIndex !== 'number' || sentenceIndex < 0 || !Number.isInteger(sentenceIndex)) {
+            return;
+        }
+
+        const sentenceElementId = `sentence-${sentenceIndex}`;
+        const sentenceDiv = document.getElementById(sentenceElementId);
+        if (!sentenceDiv) return;
+
+        const wordSpans = sentenceDiv.querySelectorAll('.word-span');
+        wordSpans.forEach(span => {
+            Object.values(posClassMap).forEach(className => {
+                span.classList.remove(className);
+            });
+            span.classList.remove('click-highlight');
+        });
+    }
+
     window.HighlightRenderer = {
         clearAllHighlight,
         highlightSentenceWords,
         applyHighlightToAll,
         getHighlightPosMap: getHighlightPosMapConfig,
-        updateHighlightPosMap
+        updateHighlightPosMap,
+        highlightWordInSentence,
+        clearWordClickHighlight,
+        clearWordHighlight,
+        normalizeWord
     };
 })();

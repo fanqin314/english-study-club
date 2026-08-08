@@ -6,8 +6,8 @@
     box-sizing: border-box;
 }
 
-/* 主题变量 (浅色) */
-:root {
+/* 闪卡模式变量 - 作用域限定在闪卡容器内 */
+#flashcardModeContainer {
     --bg-gradient-start: #e0eafc;
     --bg-gradient-end: #cfdef3;
     --card-bg: rgba(255, 255, 255, 0.65);
@@ -42,7 +42,7 @@
     --flip-border: rgba(255,255,255,0.8);
 }
 
-body.dark {
+[data-theme="dark"] #flashcardModeContainer {
     --bg-gradient-start: #0f141e;
     --bg-gradient-end: #1a1f2e;
     --card-bg: rgba(22, 28, 40, 0.8);
@@ -83,16 +83,105 @@ body.dark {
     flex: 1;
     min-height: 600px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 12px;
     box-sizing: border-box;
+    gap: 8px;
+}
+
+/* 统一头部样式 - 闪卡模式内联布局 */
+#flashcardModeContainer .fill-header {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    padding: 10px 16px 12px;
+    border-bottom: 2px solid var(--border);
+    background: transparent;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+#flashcardModeContainer .fill-header h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.3px;
+}
+
+/* 统一进度条样式 - 闪卡模式内联布局 */
+#flashcardModeContainer .fill-progress-wrap {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    translate: none;
+    z-index: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    margin-bottom: 0;
+    padding: 6px 10px;
+    background: var(--card-bg);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#flashcardModeContainer .fill-progress-track {
+    flex: 1;
+    height: 8px;
+    background: var(--progress-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+}
+
+#flashcardModeContainer .fill-progress-fill {
+    height: 100%;
+    background: var(--progress-bar);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#flashcardModeContainer .fill-progress-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+    transition: color 0.3s;
+    letter-spacing: 0.3px;
+}
+
+/* 暗色模式适配 */
+[data-theme="dark"] #flashcardModeContainer .fill-progress-wrap {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+[data-theme="dark"] #flashcardModeContainer .fill-progress-track {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    background: rgba(255,255,255,0.06);
 }
 
 /* 闪卡容器 - 居中并自适应大小，保持固定宽高比约 600:496 */
 .card-3d {
-    width: min(95vw, 680px);
-    height: calc(min(95vw, 680px) * 0.827);
+    width: min(85vw, 1000px);
+    height: calc(min(85vw, 1000px) * 0.827);
     max-height: 85vh;
     border-radius: 48px;
     padding: 0;
@@ -116,7 +205,7 @@ body.dark {
     backface-visibility: hidden;
     display: flex;
     flex-direction: column;
-    padding: clamp(20px, 5vw, 32px);
+    padding: clamp(24px, 4vw, 40px);
     border-radius: inherit;
     overflow: hidden;
     backdrop-filter: blur(18px);
@@ -128,21 +217,62 @@ body.dark {
     align-items: center;
 }
 
+.card-front {
+    overflow: visible;
+}
+
+#exampleArea {
+    position: relative;
+}
+
+#magicCard .card-face .fill-bottom {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: column;
+    gap: 0;
+    z-index: 10;
+    width: 46px;
+    margin-left: 36px;
+    margin-right: 36px;
+    padding: 0;
+    background-color: transparent;
+    border-width: 1.5px;
+    border-style: solid;
+    border-color: var(--border);
+    border-radius: 999px;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+#magicCard .card-face .fill-bottom button {
+    width: 100%;
+    height: 46px;
+    border-radius: 0;
+    border: none;
+    flex-shrink: 0;
+}
+
+#magicCard .card-face .fill-bottom button:first-child {
+    border-bottom: 1px solid var(--border);
+}
+
 /* 响应式字体大小 */
 .word {
-    font-size: clamp(2rem, 8vw, 3.2rem);
+    font-size: clamp(2.2rem, 7vw, 4rem);
 }
 
 .flip-front {
-    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-size: clamp(2rem, 5.5vw, 3.5rem);
 }
 
 .flip-back {
-    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-size: clamp(1.4rem, 3.5vw, 2.4rem);
 }
 
 .meaning {
-    font-size: clamp(1rem, 3vw, 1.25rem);
+    font-size: clamp(1.1rem, 2.8vw, 1.5rem);
 }
 
 .glare {
@@ -511,13 +641,83 @@ button#generateExampleBtn {
     font-weight: 500;
     backdrop-filter: blur(4px);
 }
-.progress-bar {
-    width: 0%;
-    height: 5px;
-    background: var(--progress-bar);
-    border-radius: 6px;
-    margin-top: 16px;
-    transition: width 0.25s;
+
+/* 评级反馈覆盖层 */
+.feedback-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background: var(--card-bg);
+    backdrop-filter: blur(8px);
+    border-radius: inherit;
+    animation: feedbackFadeIn 0.25s ease-out;
+}
+
+@keyframes feedbackFadeIn {
+    0% { opacity: 0; transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.feedback-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.feedback-icon {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.feedback-icon.feedback-known {
+    color: #22c55e;
+}
+
+.feedback-icon.feedback-vague {
+    color: #f59e0b;
+}
+
+.feedback-icon.feedback-unknown {
+    color: #ef4444;
+}
+
+.feedback-text {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.feedback-text.feedback-known {
+    color: #22c55e;
+}
+
+.feedback-text.feedback-vague {
+    color: #f59e0b;
+}
+
+.feedback-text.feedback-unknown {
+    color: #ef4444;
+}
+
+.feedback-detail {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 280px;
+    margin: 0 auto;
+    word-break: break-all;
+}
+
+.feedback-detail strong {
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 /* 掌握度评级按钮 */
@@ -624,196 +824,28 @@ button#generateExampleBtn {
     .nav-btn { padding: 8px 16px; font-size: 0.85rem; }
 }
 
-/* 轮次总结 */
-.round-summary {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px 0;
-    gap: 14px;
-}
-
-.summary-hero {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 140px;
-    width: 260px;
-}
-
-.summary-trophy {
-    width: 110px;
-    height: 110px;
-    position: absolute;
-    fill: #e94822;
-    z-index: 1;
-    filter: drop-shadow(0 4px 12px rgba(233,72,34,0.35));
-    transition: all 0.3s ease;
-}
-
-.round-summary:hover .summary-trophy {
-    animation: trophyGrow 1s linear infinite;
-}
-
-.summary-star {
-    transition: all 0.7s ease-in-out;
-}
-
-.round-summary:hover .summary-star {
-    transform: rotateX(70deg) translateY(80px);
-}
-
-.star-eight {
-    background: #efd510;
-    width: 110px;
-    height: 110px;
-    position: relative;
-    text-align: center;
-    animation: starSpin 3s infinite;
-    box-shadow: 0 0 40px rgba(239,213,16,0.3);
-}
-
-.star-eight::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 110px;
-    width: 110px;
-    background: #efd510;
-    transform: rotate(135deg);
-    box-shadow: 0 0 40px rgba(239,213,16,0.3);
-}
-
-@keyframes starSpin {
-    0%   { transform: rotate(0deg); }
-    50%  { transform: rotate(340deg); }
-    100% { transform: rotate(0deg); }
-}
-
-@keyframes trophyGrow {
-    0%   { transform: rotate(0deg); }
-    25%  { transform: rotate(-5deg); }
-    75%  { transform: rotate(5deg); }
-    100% { transform: scale(1) rotate(0deg); }
-}
-
-.summary-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.summary-detail {
-    font-size: 16px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.summary-bars {
+/* 统一总结样式 - 使用 fill-practice.css 中的 .fill-summary 系列样式 */
+/* 闪卡模式总结页面在卡片背面，使用 fill-summary 结构 */
+#flashcardModeContainer .card-back .fill-summary {
+    padding: 8px 0;
     width: 100%;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 8px;
 }
 
-.summary-bar-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+#flashcardModeContainer .card-back .fill-summary-title {
+    font-size: 22px;
 }
 
-.summary-label {
-    font-size: 14px;
-    font-weight: 600;
-    min-width: 56px;
-    text-align: right;
+#flashcardModeContainer .card-back .fill-summary-stat {
+    padding: 8px 14px;
+    min-width: 60px;
 }
 
-.summary-label.mastered { color: #22c55e; }
-.summary-label.vague { color: #f59e0b; }
-.summary-label.unknown { color: #ef4444; }
-
-.summary-track {
-    flex: 1;
-    height: 14px;
-    background: rgba(0,0,0,0.06);
-    border-radius: 10px;
-    overflow: hidden;
+#flashcardModeContainer .card-back .fill-summary-val {
+    font-size: 22px;
 }
 
-body.dark .summary-track {
-    background: rgba(255,255,255,0.08);
-}
-
-.summary-fill {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.4s ease;
-}
-
-.summary-fill.known { background: #22c55e; }
-.summary-fill.vague { background: #f59e0b; }
-.summary-fill.unknown { background: #ef4444; }
-
-.summary-count {
-    font-size: 14px;
-    font-weight: 600;
-    min-width: 28px;
-    color: var(--text-primary);
-}
-
-.summary-retry-btn {
-    padding: 1.1em 2em;
-    background: none;
-    border: 2px solid #131313;
-    font-size: 15px;
-    color: #131313;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
-    border-radius: 12px;
-    background-color: #ecd448;
-    font-weight: bolder;
-    box-shadow: 0 2px 0 2px #000;
-    font-family: inherit;
-}
-
-.summary-retry-btn::before {
-    content: "";
-    position: absolute;
-    width: 100px;
-    height: 120%;
-    background-color: #ff6700;
-    top: 50%;
-    transform: skewX(30deg) translate(-150%, -50%);
-    transition: all 0.5s;
-    z-index: 0;
-}
-
-.summary-retry-btn:hover {
-    background-color: #4cc9f0;
-    color: #fff;
-    border-color: #0d3b66;
-    box-shadow: 0 2px 0 2px #0d3b66;
-}
-
-.summary-retry-btn:hover::before {
-    transform: skewX(30deg) translate(150%, -50%);
-    transition-delay: 0.1s;
-}
-
-.summary-retry-btn:active {
-    transform: scale(0.9);
-}
-
-.summary-retry-btn span {
-    position: relative;
-    z-index: 1;
+/* 暗色模式适配 - 总结统计卡片 */
+[data-theme="dark"] #flashcardModeContainer .card-back .fill-summary-stat {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
 }

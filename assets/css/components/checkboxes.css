@@ -5,7 +5,7 @@
 .custom-checkbox,
 .select-all-checkbox {
     --primary-color: #1677ff;
-    --secondary-color: #fff;
+    --secondary-color: var(--card-bg);
     --primary-hover-color: #4096ff;
     --checkbox-diameter: 20px;
     --checkbox-border-radius: 5px;
@@ -193,7 +193,7 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    border: 2px solid #ccc;
+    border: 2px solid var(--border);
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -227,7 +227,7 @@
 
 /* 词性复选框动画 */
 #posCheckboxGroup input[type="checkbox"] {
-    --secondary-color: #fff;
+    --secondary-color: var(--card-bg);
     --checkbox-diameter: 20px;
     --checkbox-border-radius: 5px;
     --checkbox-border-width: 2px;

@@ -1,4 +1,4 @@
-// main/deep_parse/second_row/load_example.js
+// load_example.js - 加载示例
 (function() {
     const exampleText = `The quick brown fox jumps over the lazy dog. Although it was raining, she decided to go for a walk, and she enjoyed the fresh air.`;
     

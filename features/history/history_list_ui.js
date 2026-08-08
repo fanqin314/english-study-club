@@ -1,4 +1,4 @@
-// history_ui.js - 历史记录界面的HTML渲染和交互
+// history_list_ui.js - 历史记录界面的HTML渲染和交互
 (function() {
     ModuleRegistry.register('HistoryUI', ['GlobalManager'], function(GlobalManager) {
         let currentContainer = null;
@@ -281,12 +281,23 @@
             window.SentenceRenderer.setContainer(secondarySentencesContainer);
             window.SentenceRenderer.setSentencesData(sentences, sentenceData);
             window.SentenceRenderer.renderAll();
+            
+            // 渲染完成后，如果历史记录高亮已开启，自动应用高亮
+            if (window.HistoryHighlight && window.HistoryHighlight.isEnabled()) {
+                setTimeout(function() {
+                    window.HistoryHighlight.applyHighlight();
+                }, 50);
+            }
         }
         
         // 5. 绑定二级界面的返回按钮
         const backButton = document.getElementById('backButton');
         if (backButton) {
             backButton.onclick = function() {
+                // 清除历史记录高亮
+                if (window.HistoryHighlight) {
+                    window.HistoryHighlight.clearHighlight();
+                }
                 // 清除 CacheManager 中的历史数据，避免影响深度解析界面
                 if (window.CacheManager) {
                     window.CacheManager.setSentences([]);

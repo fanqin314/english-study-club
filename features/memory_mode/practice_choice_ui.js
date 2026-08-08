@@ -39,6 +39,7 @@
             let choiceMaxStreak = 0;
             let choiceTotalWords = words.length;
             let _choiceHintUsed = false;
+            const _cleanupFns = [];
 
             const choiceHeader = document.createElement('div');
             choiceHeader.className = 'fill-header';
@@ -50,10 +51,26 @@
                     <span id="choiceScoreNum">0</span>
                 </span>
             `;
-            choiceHeader.querySelector('.back-btn').onclick = () => {
+            const backBtn = choiceHeader.querySelector('.back-btn');
+            const backBtnHandler = () => {
+                _cleanupFns.forEach(fn => fn());
+                _cleanupFns.length = 0;
                 const MemoryModeUI = ModuleRegistry.get('MemoryModeUI');
                 if (MemoryModeUI) { MemoryModeUI.show(container); }
             };
+            backBtn.addEventListener('click', backBtnHandler);
+            _cleanupFns.push(() => backBtn.removeEventListener('click', backBtnHandler));
+
+            const choiceEscHandler = (e) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    backBtn.click();
+                }
+            };
+            document.addEventListener('keydown', choiceEscHandler);
+            _cleanupFns.push(() => document.removeEventListener('keydown', choiceEscHandler));
+
             container.appendChild(choiceHeader);
 
             const choiceBottom = document.createElement('div');
@@ -62,24 +79,18 @@
                 <button class="fill-hint-btn" id="choiceHintBtn" title="显示首字母提示">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 </button>
-                <button class="choice-speak-btn" id="choiceSpeakBtn" title="重新播放发音" style="display:none">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                </button>
-                <button class="choice-gen-example-btn" id="choiceGenExampleBtn" title="生成例句">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                </button>
                 <button class="fill-skip-btn choice-skip-btn" id="choiceSkipBtn" title="跳过">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-                    <span>跳过</span>
                 </button>
             `;
-            choiceBottom.querySelector('#choiceHintBtn').onclick = () => { doChoiceHint(); };
-            choiceBottom.querySelector('#choiceSkipBtn').onclick = doChoiceSkip;
-            choiceBottom.querySelector('#choiceSpeakBtn').onclick = () => { if (words[choiceCurrentIndex]) choiceSpeak(words[choiceCurrentIndex]); };
-            choiceBottom.querySelector('#choiceGenExampleBtn').onclick = () => {
-                handleGenerateExample(words[choiceCurrentIndex], choiceCurrentIndex);
-            };
-            container.appendChild(choiceBottom);
+            const hintBtnEl = choiceBottom.querySelector('#choiceHintBtn');
+            const hintBtnHandler = () => { doChoiceHint(); };
+            hintBtnEl.addEventListener('click', hintBtnHandler);
+            _cleanupFns.push(() => hintBtnEl.removeEventListener('click', hintBtnHandler));
+
+            const skipBtnEl = choiceBottom.querySelector('#choiceSkipBtn');
+            skipBtnEl.addEventListener('click', doChoiceSkip);
+            _cleanupFns.push(() => skipBtnEl.removeEventListener('click', doChoiceSkip));
 
             const choiceModeBar = document.createElement('div');
             choiceModeBar.className = 'spell-mode-bar choice-mode-bar';
@@ -106,13 +117,16 @@
                 </button>
             `;
             choiceModeBar.querySelectorAll('.spell-mode-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                const modeHandler = (e) => {
+                    e.stopPropagation();
                     if (_choiceRated) return;
                     choiceModeBar.querySelectorAll('.spell-mode-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     choiceMode = btn.dataset.mode;
                     renderChoiceWord(choiceCurrentIndex);
-                });
+                };
+                btn.addEventListener('click', modeHandler);
+                _cleanupFns.push(() => btn.removeEventListener('click', modeHandler));
             });
             container.appendChild(choiceModeBar);
 
@@ -129,8 +143,16 @@
             choicePlayBtn.className = 'choice-play-btn';
             choicePlayBtn.id = 'choicePlayBtn';
             choicePlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
-            choicePlayBtn.onclick = () => { choiceSpeak(words[choiceCurrentIndex]); };
+            const playBtnHandler = () => { choiceSpeak(words[choiceCurrentIndex]); };
+            choicePlayBtn.addEventListener('click', playBtnHandler);
+            _cleanupFns.push(() => choicePlayBtn.removeEventListener('click', playBtnHandler));
             choiceCard.appendChild(choicePlayBtn);
+
+            const choiceWaveBars = document.createElement('div');
+            choiceWaveBars.className = 'choice-wave-bars';
+            choiceWaveBars.id = 'choiceWaveBars';
+            choiceWaveBars.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
+            choiceCard.appendChild(choiceWaveBars);
 
             const choicePlayDots = document.createElement('div');
             choicePlayDots.className = 'listen-play-dots choice-play-dots';
@@ -154,6 +176,7 @@
             choiceCard.appendChild(choiceResult);
 
             container.appendChild(choiceCard);
+            choiceCard.appendChild(choiceBottom);
 
             const choiceProgressWrap = document.createElement('div');
             choiceProgressWrap.className = 'fill-progress-wrap';
@@ -238,6 +261,7 @@
 
             function choiceSpeak(wordObj) {
                 if (_choiceRated) return;
+                if (_choicePlaysRemaining <= 0) return;
                 _choicePlaysRemaining--;
                 choiceTotalPlays++;
                 if (_choicePlaysRemaining < 0) {
@@ -251,8 +275,33 @@
                     const utterance = new SpeechSynthesisUtterance(wordObj.word);
                     utterance.lang = 'en-US';
                     utterance.rate = 0.85;
+                    startChoiceWaveAnimation();
+                    utterance.onend = () => { stopChoiceWaveAnimation(); };
                     window.speechSynthesis.speak(utterance);
                 }
+            }
+
+            let _choiceWaveInterval = null;
+
+            function startChoiceWaveAnimation() {
+                stopChoiceWaveAnimation();
+                const bars = document.querySelectorAll('#choiceWaveBars .wave-bar');
+                bars.forEach(b => b.classList.add('animating'));
+                _choiceWaveInterval = setInterval(() => {
+                    bars.forEach(b => {
+                        b.style.height = (8 + Math.random() * 24) + 'px';
+                    });
+                }, 150);
+            }
+
+            function stopChoiceWaveAnimation() {
+                if (_choiceWaveInterval) clearInterval(_choiceWaveInterval);
+                _choiceWaveInterval = null;
+                const bars = document.querySelectorAll('#choiceWaveBars .wave-bar');
+                bars.forEach(b => {
+                    b.classList.remove('animating');
+                    b.style.height = '8px';
+                });
             }
 
             function triggerConfetti(containerEl, intensity) {
@@ -354,38 +403,6 @@
                 });
             }
 
-            let _choiceTranslationBubble = null;
-
-            function closeChoiceTranslationBubble() {
-                if (_choiceTranslationBubble) {
-                    _choiceTranslationBubble.remove();
-                    _choiceTranslationBubble = null;
-                }
-            }
-
-            function showChoiceTranslationBubble(btn, translation) {
-                closeChoiceTranslationBubble();
-
-                const bubble = document.createElement('div');
-                bubble.className = 'choice-translation-bubble';
-                bubble.innerHTML = `
-                    <div class="choice-translation-bubble-arrow"></div>
-                    <div class="choice-translation-bubble-inner">${translation}</div>
-                `;
-                document.body.appendChild(bubble);
-                _choiceTranslationBubble = bubble;
-
-                const rect = btn.getBoundingClientRect();
-                bubble.style.left = Math.max(8, Math.min(rect.left + rect.width / 2 - 100, window.innerWidth - 208)) + 'px';
-                bubble.style.top = (rect.bottom + 8) + 'px';
-
-                const bubbleRect = bubble.getBoundingClientRect();
-                if (rect.bottom + 8 + bubbleRect.height > window.innerHeight) {
-                    bubble.style.top = (rect.top - bubbleRect.height - 8) + 'px';
-                    bubble.classList.add('bubble-above');
-                }
-            }
-
             function getBlankedSentence(word) {
                 if (word.example && word.example.en) {
                     const escaped = word.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -395,46 +412,12 @@
                 return null;
             }
 
-            async function handleGenerateExample(word, idx) {
-                if (_choiceRated) return;
-                const genBtn = document.getElementById('choiceGenExampleBtn');
-                if (genBtn) genBtn.disabled = true;
-                _showToast('正在生成例句...');
-
-                try {
-                    const APIRequest = window.APIRequest || GlobalManager.getGlobalObject('APIRequest');
-                    if (APIRequest && APIRequest.requestExample) {
-                        const example = await APIRequest.requestExample(word.word, word.meaning);
-                        if (example && example.en) {
-                            word.example = example;
-                            const vocabData = _getVocabData();
-                            if (vocabData) {
-                                const notebookId = vocabData.getCurrentNotebookId();
-                                vocabData.updateWord(notebookId, word.word, { example: example });
-                            }
-                            _showToast('例句已生成');
-                            renderChoiceWord(idx);
-                            return;
-                        }
-                    }
-
-                    _showToast('生成失败，请重试');
-                    if (genBtn) genBtn.disabled = false;
-                } catch (err) {
-                    _showToast('生成失败，请重试');
-                    if (genBtn) genBtn.disabled = false;
-                }
-            }
-
             function renderChoiceWord(idx) {
                 choiceCurrentIndex = idx;
                 _choiceRated = false;
                 _choicePlaysRemaining = 3;
                 _choiceHintUsed = false;
                 updatePlayDots();
-
-                const genBtn = document.getElementById('choiceGenExampleBtn');
-                if (genBtn) { genBtn.disabled = false; genBtn.style.display = 'none'; }
 
                 const word = words[idx];
                 const choiceAreaEl = document.getElementById('choiceOptionArea');
@@ -453,16 +436,14 @@
                 const playBtnVisible = choiceMode === 'listen' || choiceMode === 'listenzh';
                 if (choicePlayBtnEl) choicePlayBtnEl.style.display = playBtnVisible ? '' : 'none';
                 if (choicePlayDotsEl) choicePlayDotsEl.style.display = playBtnVisible ? '' : 'none';
+                const choiceWaveBarsEl = document.getElementById('choiceWaveBars');
+                if (choiceWaveBarsEl) choiceWaveBarsEl.style.display = playBtnVisible ? '' : 'none';
 
                 const hintBtn = document.getElementById('choiceHintBtn');
                 if (hintBtn) hintBtn.style.display = (choiceMode === 'listenzh' || choiceMode === 'wordzh') ? 'none' : '';
 
-                const speakBtn = document.getElementById('choiceSpeakBtn');
-                if (speakBtn) speakBtn.style.display = (choiceMode === 'listen' || choiceMode === 'listenzh') ? '' : 'none';
-
                 if (choiceMode === 'meaning') {
-                    const genBtn = document.getElementById('choiceGenExampleBtn');
-                    if (genBtn) genBtn.style.display = 'none';
+                    
                     if (choicePromptEl) {
                         choicePromptEl.innerHTML = `
                             <div class="choice-prompt-label">选择正确单词</div>
@@ -470,8 +451,7 @@
                         `;
                     }
                 } else if (choiceMode === 'listenzh') {
-                    const genBtn = document.getElementById('choiceGenExampleBtn');
-                    if (genBtn) genBtn.style.display = 'none';
+                    
                     if (choicePromptEl) {
                         choicePromptEl.innerHTML = `
                             <div class="choice-prompt-label">听发音，选择中文释义</div>
@@ -480,8 +460,7 @@
                     }
                     setTimeout(() => choiceSpeak(word), 300);
                 } else if (choiceMode === 'wordzh') {
-                    const genBtn = document.getElementById('choiceGenExampleBtn');
-                    if (genBtn) genBtn.style.display = 'none';
+                    
                     if (choicePromptEl) {
                         choicePromptEl.innerHTML = `
                             <div class="choice-prompt-label">选择正确中文释义</div>
@@ -489,8 +468,7 @@
                         `;
                     }
                 } else if (choiceMode === 'listen') {
-                    const genBtn = document.getElementById('choiceGenExampleBtn');
-                    if (genBtn) genBtn.style.display = 'none';
+                    
                     if (choicePromptEl) {
                         choicePromptEl.innerHTML = `
                             <div class="choice-prompt-label">听发音，选择正确单词</div>
@@ -501,37 +479,18 @@
                 } else if (choiceMode === 'fillblank') {
                     card.classList.add('choice-mode-fillblank');
                     const blanked = getBlankedSentence(word);
-                    closeChoiceTranslationBubble();
-                    const genBtn = document.getElementById('choiceGenExampleBtn');
                     if (choicePromptEl) {
                         if (blanked) {
-                            if (genBtn) genBtn.style.display = 'none';
                             const translation = (word.example && word.example.zh) ? word.example.zh : '';
                             choicePromptEl.innerHTML = `
                                 <div class="choice-prompt-label">选择正确单词完成句子</div>
                                 <div class="choice-prompt-sentence">${blanked}</div>
                                 ${translation ? `
-                                    <button class="choice-toggle-zh-btn" id="choiceToggleZhBtn">
+                                    <button class="choice-toggle-zh-btn" id="choiceToggleZhBtn" data-tooltip="${translation}">
                                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </button>
                                 ` : ''}
                             `;
-                            const toggleBtn = document.getElementById('choiceToggleZhBtn');
-                            if (toggleBtn) {
-                                toggleBtn.addEventListener('click', function(e) {
-                                    e.stopPropagation();
-                                    if (_choiceTranslationBubble) {
-                                        closeChoiceTranslationBubble();
-                                    } else {
-                                        showChoiceTranslationBubble(this, translation);
-                                    }
-                                });
-                                toggleBtn.addEventListener('mouseleave', function() {
-                                    if (_choiceTranslationBubble) {
-                                        closeChoiceTranslationBubble();
-                                    }
-                                });
-                            }
                         } else {
                             if (genBtn) genBtn.style.display = '';
                             choicePromptEl.innerHTML = `
@@ -549,7 +508,12 @@
                         const btn = document.createElement('button');
                         btn.className = 'choice-option-btn';
                         btn.textContent = choice;
-                        btn.onclick = () => { doChoiceSelect(choice, word); };
+                        const optHandler = (e) => {
+                            e.stopPropagation();
+                            doChoiceSelect(choice, word);
+                        };
+                        btn.addEventListener('click', optHandler);
+                        _cleanupFns.push(() => btn.removeEventListener('click', optHandler));
                         choiceAreaEl.appendChild(btn);
                     });
                 }
@@ -597,7 +561,7 @@
 
                     if (choiceStreakCount >= 10) {
                         triggerConfetti(choiceCardEl, 'super');
-                    } else if (choiceStreakCount >= 5) {
+                    } else {
                         triggerConfetti(choiceCardEl, 'normal');
                     }
                 } else {
@@ -750,7 +714,16 @@
 
                     const retryBtn = choiceCardEl.querySelector('.summary-retry-btn');
                     if (retryBtn) {
-                        retryBtn.onclick = () => {
+                        const retryHandler = () => {
+                            _cleanupFns.forEach(fn => fn());
+                            _cleanupFns.length = 0;
+
+                            // 重新注册返回按钮和ESC键
+                            backBtn.addEventListener('click', backBtnHandler);
+                            _cleanupFns.push(() => backBtn.removeEventListener('click', backBtnHandler));
+                            document.addEventListener('keydown', choiceEscHandler);
+                            _cleanupFns.push(() => document.removeEventListener('keydown', choiceEscHandler));
+
                             choiceCardEl.innerHTML = '';
 
                             const choicePrompt = document.createElement('div');
@@ -762,8 +735,16 @@
                             choicePlayBtn.className = 'choice-play-btn';
                             choicePlayBtn.id = 'choicePlayBtn';
                             choicePlayBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> 播放发音';
-                            choicePlayBtn.onclick = () => { choiceSpeak(words[0]); };
+                            const retryPlayHandler = () => { choiceSpeak(words[0]); };
+                            choicePlayBtn.addEventListener('click', retryPlayHandler);
+                            _cleanupFns.push(() => choicePlayBtn.removeEventListener('click', retryPlayHandler));
                             choiceCardEl.appendChild(choicePlayBtn);
+
+                            const choiceWaveBars = document.createElement('div');
+                            choiceWaveBars.className = 'choice-wave-bars';
+                            choiceWaveBars.id = 'choiceWaveBars';
+                            choiceWaveBars.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
+                            choiceCardEl.appendChild(choiceWaveBars);
 
                             const choicePlayDots = document.createElement('div');
                             choicePlayDots.className = 'listen-play-dots choice-play-dots';
@@ -786,6 +767,46 @@
                             choiceResult.id = 'choicePracticeResult';
                             choiceCardEl.appendChild(choiceResult);
 
+                            // 重建底部按钮栏
+                            const retryChoiceBottom = document.createElement('div');
+                            retryChoiceBottom.className = 'fill-bottom choice-bottom-bar';
+                            retryChoiceBottom.innerHTML = `
+                                <button class="fill-hint-btn" id="choiceHintBtn" title="显示首字母提示">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                </button>
+                                <button class="fill-skip-btn choice-skip-btn" id="choiceSkipBtn" title="跳过">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                                </button>
+                            `;
+                            const retryHintBtn = retryChoiceBottom.querySelector('#choiceHintBtn');
+                            const retryHintHandler = () => { doChoiceHint(); };
+                            retryHintBtn.addEventListener('click', retryHintHandler);
+                            _cleanupFns.push(() => retryHintBtn.removeEventListener('click', retryHintHandler));
+
+                            const retrySkipBtn = retryChoiceBottom.querySelector('#choiceSkipBtn');
+                            const retrySkipHandler = () => { doChoiceSkip(); };
+                            retrySkipBtn.addEventListener('click', retrySkipHandler);
+                            _cleanupFns.push(() => retrySkipBtn.removeEventListener('click', retrySkipHandler));
+
+                            choiceCardEl.appendChild(retryChoiceBottom);
+
+                            // 重新注册模式栏按钮事件
+                            const modeBar = container.querySelector('.spell-mode-bar');
+                            if (modeBar) {
+                                modeBar.querySelectorAll('.spell-mode-btn').forEach(btn => {
+                                    const modeHandler = (e) => {
+                                        e.stopPropagation();
+                                        if (_choiceRated) return;
+                                        modeBar.querySelectorAll('.spell-mode-btn').forEach(b => b.classList.remove('active'));
+                                        btn.classList.add('active');
+                                        choiceMode = btn.dataset.mode;
+                                        renderChoiceWord(choiceCurrentIndex);
+                                    };
+                                    btn.addEventListener('click', modeHandler);
+                                    _cleanupFns.push(() => btn.removeEventListener('click', modeHandler));
+                                });
+                            }
+
                             choiceCurrentIndex = 0;
                             choiceAnswered = new Set();
                             choiceSkipped = new Set();
@@ -798,15 +819,14 @@
                             choiceMaxStreak = 0;
                             _choiceHintUsed = false;
 
-                            const bottomEl = document.querySelector('.fill-bottom');
-                            if (bottomEl) bottomEl.style.display = '';
-
                             updatePlayDots();
                             updateChoiceScore();
                             updateChoiceStreak();
                             updateChoiceProgress();
                             renderChoiceWord(0);
                         };
+                        retryBtn.addEventListener('click', retryHandler);
+                        _cleanupFns.push(() => retryBtn.removeEventListener('click', retryHandler));
                     }
                 }
             }

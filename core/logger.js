@@ -20,8 +20,6 @@
     const modulePrefixes = {
         'EventBus': '[EventBus]',
         'DIContainer': '[DI]',
-        'HighlightService': '[Highlight]',
-        'HighlightController': '[HLCtrl]',
         'PosButton': '[PosBtn]',
         'VocabUI': '[Vocab]',
         'EventDelegation': '[EventDel]',
@@ -156,6 +154,4 @@
         // 工厂方法
         create: createLogger
     };
-    
-    console.log('[Logger] 日志服务已初始化');
 })();

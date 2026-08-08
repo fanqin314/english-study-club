@@ -1,4 +1,4 @@
-// 学习计划界面.js - 学习计划界面的HTML渲染和交互
+// learning_plan_ui.js - 学习计划界面的HTML渲染和交互
 
 (function() {
     ModuleRegistry.register('LearningPlanUI', ['GlobalManager'], function(GlobalManager) {

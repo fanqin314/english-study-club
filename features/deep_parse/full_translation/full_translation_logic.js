@@ -1,4 +1,4 @@
-// full_translation.js - 全文翻译功能
+// full_translation_logic.js - 全文翻译功能
 (function() {
     ModuleRegistry.register('FullTranslation', ['ErrorHandler', 'Performance', 'EventBus', 'Security'], function(ErrorHandler, Performance, EventBus, Security) {
         let translationArea = null;
@@ -44,8 +44,13 @@
 
                     if (window.CacheManager && sentenceTranslations.length > 0) {
                         const sentences = window.CacheManager.getSentences();
+                        // 数量不匹配时发出警告，防止静默错位
+                        if (sentenceTranslations.length !== sentences.length) {
+                            console.warn(`[FullTranslation] 翻译句子数(${sentenceTranslations.length})与原文句子数(${sentences.length})不匹配，可能因AI未按句号分割导致`);
+                        }
                         const updates = [];
-                        for (let i = 0; i < Math.min(sentenceTranslations.length, sentences.length); i++) {
+                        const count = Math.min(sentenceTranslations.length, sentences.length);
+                        for (let i = 0; i < count; i++) {
                             updates.push({ idx: i, type: 'translation', data: sentenceTranslations[i] });
                         }
                         if (updates.length > 0) {

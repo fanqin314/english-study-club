@@ -1,4 +1,20 @@
-/* cards.css - 卡片组件样式 */
+/* cards.css - 统一卡片组件样式 */
+
+/* ========== 基础卡片变体 ========== */
+
+.card-flat {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    box-shadow: none;
+}
+
+.card-elevated {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    box-shadow: var(--shadow-lg);
+}
 
 /* ========== 句子卡片 ========== */
 
@@ -7,8 +23,8 @@
     border-radius: 16px;
     border: 1px solid var(--border);
     margin-bottom: 12px;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow);
+    transition: all var(--duration-normal) var(--ease-smooth);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
     cursor: pointer;
     position: relative;
@@ -16,7 +32,7 @@
 
 .sentence-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     border-color: var(--border-light);
 }
 
@@ -60,7 +76,7 @@
     padding: 6px 14px;
     font-size: 13px;
     border-radius: 20px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-fast) var(--ease-smooth);
     border: 1px solid var(--border);
 }
 
@@ -87,7 +103,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-fast) var(--ease-smooth);
     color: var(--text);
     padding: 0;
     opacity: 1 !important;
@@ -109,6 +125,7 @@
     display: block;
 }
 
+/* 详情面板 */
 .detail-panel {
     padding: 0;
     border-top: none;
@@ -117,7 +134,7 @@
     max-height: 0;
     overflow: hidden;
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+    font-family: var(--font-body);
     font-size: 14px;
     line-height: 1.6;
     color: var(--text);
@@ -148,4 +165,14 @@
 
 .detail-panel br {
     margin-bottom: 6px;
+}
+
+/* ========== 暗色模式 ========== */
+
+[data-theme="dark"] .sentence-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .sentence-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
 }

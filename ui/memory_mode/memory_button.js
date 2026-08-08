@@ -1,4 +1,4 @@
-// 记忆模式按钮.js - 管理记忆模式按钮的显示和主按钮交互
+// memory_button.js - 管理记忆模式按钮的显示和主按钮交互
 
 (function() {
     let mainButtonManager = null;

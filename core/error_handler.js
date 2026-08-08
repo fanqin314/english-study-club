@@ -116,7 +116,6 @@
         // 初始化
         function init() {
             setupGlobalErrorHandler();
-            console.log('错误处理模块初始化完成');
         }
 
         // 获取模块名称

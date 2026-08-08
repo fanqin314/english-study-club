@@ -46,3 +46,8 @@
     flex-direction: column;
     gap: 8px;
 }
+
+/* 顶部导航栏卡片去除底边距 */
+header#app-header > div.card {
+    margin-bottom: 0px;
+}

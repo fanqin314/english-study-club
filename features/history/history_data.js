@@ -1,4 +1,4 @@
-// history_module.js - 历史记录模块
+// history_data.js - 历史记录模块
 (function() {
     ModuleRegistry.register('HistoryModule', [], function() {
         let history = [];

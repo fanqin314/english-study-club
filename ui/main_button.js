@@ -1,4 +1,4 @@
-// ui/main_button.js - 主按钮生成与模式切换（模块化重构版）
+// main_button.js - 主按钮生成与模式切换（模块化重构版）
 (function() {
     'use strict';
 

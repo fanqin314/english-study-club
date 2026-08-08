@@ -35,8 +35,6 @@
         registerSingleton('EventBus', () => {
             return window.EventBus || {};
         });
-        
-        console.log('[ServiceRegistration] 核心服务已注册');
     }
     
     /**
@@ -88,8 +86,6 @@
                 addToSupplement: (word, meaning, pos) => window.DictService.addToSupplementDict(word, meaning, pos)
             };
         });
-        
-        console.log('[ServiceRegistration] 数据服务已注册');
     }
     
     /**
@@ -111,8 +107,6 @@
                 requestFullTranslation: (text) => window.APIRequest.requestFullTranslation(text)
             };
         });
-        
-        console.log('[ServiceRegistration] API 服务已注册');
     }
     
     /**
@@ -132,8 +126,6 @@
                 renderAll: () => window.SentenceRenderer.renderAll()
             };
         });
-        
-        console.log('[ServiceRegistration] 渲染服务已注册');
     }
     
     /**
@@ -145,7 +137,6 @@
             registerDataServices();
             registerApiServices();
             registerRenderServices();
-            console.log('[ServiceRegistration] 所有服务注册完成');
         } catch (error) {
             console.error('[ServiceRegistration] 服务注册失败:', error);
         }

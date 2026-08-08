@@ -1,4 +1,4 @@
-// 记忆模式彩虹背景开关.js
+// memory_bg.js - 记忆模式彩虹背景开关
 
 (function() {
     let rainbowEnabled = false;
