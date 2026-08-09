@@ -152,16 +152,35 @@
                     if (isDebug) {
                         console.log('API成功响应:', data);
                     }
-                    
+
+                    // 检查 200 响应中嵌套的 error
+                    if (data.error) {
+                        const errMsg = data.error.message || JSON.stringify(data.error);
+                        throw new Error(`API 返回错误: ${Security.filterSensitiveInfo(errMsg)}`);
+                    }
+
                     // 请求成功，消耗一次用量
                     if (window.UsageTracker) {
                         window.UsageTracker.consume();
                     }
-                    
+
                     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                        throw new Error('API 返回格式错误');
+                        const summary = JSON.stringify(data).substring(0, 300);
+                        if (isDebug) console.warn('API 返回非预期格式:', summary);
+                        throw new Error(`API 返回格式错误: ${summary}`);
                     }
-                    return data.choices[0].message.content;
+
+                    const msg = data.choices[0].message;
+                    if (!msg.content && msg.content !== '') {
+                        throw new Error('API 返回空内容');
+                    }
+
+                    if (data.choices[0].finish_reason === 'length') {
+                        if (isDebug) console.warn('API 响应被截断 (finish_reason=length)');
+                        throw new Error('API 响应被截断，请增大 max_tokens 参数');
+                    }
+
+                    return msg.content;
                 } catch (error) {
                     if (isDebug) {
                         console.error('API请求错误:', Security.filterSensitiveInfo(error.message));
