@@ -1,21 +1,20 @@
-// Cloudflare Worker - API 代理
-// 部署后替换下面的 DEEPSEEK_API_KEY 为你的真实 Key
-// 然后将前端 API 地址改为你的 Worker 域名
+// Cloudflare Worker - API 代理（魔搭社区）
+// 部署后在前端设置中填入 Worker 域名作为代理地址
+// 直接请求时浏览器会带上 github.io 的 Origin，魔搭 API 可能限制
+// 通过 Worker 代理后，Origin 变为 Cloudflare IP，避免被限制
 
-const DEEPSEEK_API_KEY = 'sk-你的DeepSeek-API-Key填这里';
-const DEEPSEEK_BASE = 'https://api.deepseek.com';
-const DAILY_LIMIT = 20; // 每个 IP 每天最多 20 次（硬限制，防滥用）
+const TARGET_BASE = 'https://api-inference.modelscope.cn/v1';
+const DAILY_LIMIT = 500; // 每个 IP 每天最多 500 次
 
 export default {
   async fetch(request, env, ctx) {
-    // CORS 头
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
-    // OPTIONS 预检请求必须最先处理，否则浏览器 CORS 会失败
+    // OPTIONS 预检请求必须最先处理
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -30,8 +29,6 @@ export default {
     const today = new Date().toISOString().slice(0, 10);
     const rateKey = `rate:${ip}:${today}`;
 
-    // 使用简单的内存计数（生产环境建议用 KV）
-    // 这里用全局变量，Worker 重启会清零，对于免费场景足够
     if (!globalThis._rateCache) globalThis._rateCache = {};
     const count = (globalThis._rateCache[rateKey] || 0) + 1;
     globalThis._rateCache[rateKey] = count;
@@ -45,12 +42,14 @@ export default {
 
     try {
       const body = await request.json();
+      // 转发客户端的 Authorization 头到魔搭 API
+      const authHeader = request.headers.get('Authorization') || '';
 
-      const resp = await fetch(`${DEEPSEEK_BASE}/chat/completions`, {
+      const resp = await fetch(`${TARGET_BASE}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+          'Authorization': authHeader,
         },
         body: JSON.stringify(body),
       });

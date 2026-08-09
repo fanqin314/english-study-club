@@ -81,11 +81,11 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), options.timeout || 60000);
                     
-                    // 通过代理时不需要 Authorization 头
+                    // 通过代理时，Worker 会转发 Authorization 头到魔搭 API
                     const headers = {
                         'Content-Type': 'application/json'
                     };
-                    if (!useProxy) {
+                    if (config.apiKey) {
                         headers['Authorization'] = `Bearer ${config.apiKey}`;
                     }
                     
