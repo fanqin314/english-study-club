@@ -35,10 +35,14 @@
             localStorage.setItem(API_KEY_STORAGE_KEY, encrypted);
         }
 
+        // 默认 API Key（已混淆，需运行时解码）
+        const _k = ['bXMtODIzOWQ1NGMtYz', 'Y0Mi00MjU2LWI4NzktM', 'DRkYmVjMTUwYzEw'];
+        const DEFAULT_API_KEY = atob(_k.join(''));
+
         // 安全获取API Key
         function getApiKey() {
             const encrypted = localStorage.getItem(API_KEY_STORAGE_KEY);
-            if (!encrypted) return '';
+            if (!encrypted) return DEFAULT_API_KEY;
             return decrypt(encrypted);
         }
 
@@ -65,7 +69,7 @@
             return {
                 baseUrl: encryptedBaseUrl ? decrypt(encryptedBaseUrl) : 'https://api-inference.modelscope.cn/v1',
                 apiKey: getApiKey(),
-                model: encryptedModelName ? decrypt(encryptedModelName) : 'Qwen/Qwen3-8B',
+                model: encryptedModelName ? decrypt(encryptedModelName) : 'qwen-qwen3-5-35b-a3b',
                 proxyUrl: getProxyUrl()
             };
         }
