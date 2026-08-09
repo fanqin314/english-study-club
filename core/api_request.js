@@ -159,25 +159,20 @@
                         throw new Error(`API 返回错误: ${Security.filterSensitiveInfo(errMsg)}`);
                     }
 
-                    // 请求成功，消耗一次用量
-                    if (window.UsageTracker) {
-                        window.UsageTracker.consume();
+                    // 检查 choices 为 null（模型未处理，可重试的服务端问题）
+                    if (data.choices === null || (data.usage && data.usage.total_tokens === 0 && data.usage.completion_tokens === 0)) {
+                        throw new Error('MODEL_OVERLOAD');
                     }
 
                     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                        // choices 为 null：模型过载或不可用，自动重试
-                        if (data.choices === null && retries < maxRetries) {
-                            retries++;
-                            if (isDebug) {
-                                console.warn(`模型暂不可用 (choices:null)，正在重试 (${retries}/${maxRetries})...`);
-                            }
-                            const delay = 2000 * Math.pow(2, retries - 1) + Math.random() * 1000;
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            continue;
-                        }
                         const summary = JSON.stringify(data).substring(0, 300);
                         if (isDebug) console.warn('API 返回非预期格式:', summary);
-                        throw new Error(`模型暂不可用，请稍后重试或更换模型（choices:null）`);
+                        throw new Error(`API 返回格式错误: ${summary}`);
+                    }
+
+                    // 确认有实际输出后才消耗用量
+                    if (window.UsageTracker) {
+                        window.UsageTracker.consume();
                     }
 
                     const msg = data.choices[0].message;
@@ -195,11 +190,17 @@
                     if (isDebug) {
                         console.error('API请求错误:', Security.filterSensitiveInfo(error.message));
                     }
-                    if ((error.message && error.message.includes('fetch') || error.name === 'TypeError') && retries < maxRetries) {
-                        // 网络错误，进行重试（含随机抖动）
+                    const isRetryable = (
+                        (error.message && error.message.includes('fetch')) ||
+                        error.name === 'TypeError' ||
+                        error.message === 'MODEL_OVERLOAD'
+                    );
+                    if (isRetryable && retries < maxRetries) {
+                        // 网络/过载错误，进行重试（含随机抖动）
                         retries++;
+                        const reason = error.message === 'MODEL_OVERLOAD' ? '模型过载' : '网络连接失败';
                         if (isDebug) {
-                            console.log(`网络连接失败，正在重试 (${retries}/${maxRetries})...`);
+                            console.log(`${reason}，正在重试 (${retries}/${maxRetries})...`);
                         }
                         // 指数退避 + 随机抖动：1.5s/3s/6s ± 0~1s
                         const delay = 1500 * Math.pow(2, retries - 1) + Math.random() * 1000;
@@ -207,6 +208,8 @@
                         continue;
                     } else if (error.name === 'AbortError') {
                         throw new Error('API 请求超时');
+                    } else if (error.message === 'MODEL_OVERLOAD') {
+                        throw new Error('模型服务繁忙，请稍后重试（已重试多次仍失败）');
                     }
                     throw error;
                 }
