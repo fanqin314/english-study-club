@@ -525,6 +525,10 @@
                 this.globalManager = globalManager;
             }
 
+            isEmptyResult(result) {
+                return !result || !result.pos || result.pos.length === 0;
+            }
+
             async callApi(sentence) {
                 const apiRequest = this.globalManager.getGlobalObject('APIRequest');
                 return await apiRequest.requestPos(sentence);
@@ -563,7 +567,7 @@
                     const contentDiv = document.createElement('div');
                     
                     if (posList.length === 0) {
-                        contentDiv.textContent = '暂无数据';
+                        contentDiv.textContent = '暂无数据，请重试或刷新';
                         panel.appendChild(contentDiv);
                     } else {
                         contentDiv.className = 'pos-list';

@@ -335,22 +335,43 @@
 }
 只返回JSON，不要其他文字。`;
 
-                const userContent = `分析句子: "${Security.escapeHtml(sentence)}"`;
+                const userContent = `分析句子: "${sentence}"`;
                 
-                try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userContent }
-                    ], { maxTokens: 800, temperature: 0 });
+                // 空结果时自动重试一次（模型可能临时返回空数组）
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        const content = await callAPI([
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userContent }
+                        ], { maxTokens: 1000, temperature: 0 });
 
-                    const result = extractAndParseJSON(content, 'pos');
-                    if (result) return result;
-                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
-                    return { pos: [] };
-                } catch (error) {
-                    ErrorHandler.handleApiError(error);
-                    return { pos: [] };
+                        const result = extractAndParseJSON(content, 'pos');
+                        if (result && result.pos && result.pos.length > 0) {
+                            return result;
+                        }
+                        
+                        if (attempt === 0) {
+                            // 第一次返回空结果，短暂延迟后重试
+                            if (window.DEBUG_MODE) console.log('[pos] 返回空结果，1秒后重试...');
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            continue;
+                        }
+                        
+                        if (!result) {
+                            ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                        }
+                        return { pos: [] };
+                    } catch (error) {
+                        if (attempt === 0 && error.message === 'MODEL_OVERLOAD') {
+                            // 模型过载，延迟后重试
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            continue;
+                        }
+                        ErrorHandler.handleApiError(error);
+                        return { pos: [] };
+                    }
                 }
+                return { pos: [] };
             });
         });
 
@@ -381,7 +402,7 @@
 }
 只返回JSON，不要其他文字。`;
 
-                const userContent = `分析句子: "${Security.escapeHtml(sentence)}"`;
+                const userContent = `分析句子: "${sentence}"`;
                 
                 try {
                     const content = await callAPI([
@@ -427,7 +448,7 @@
 }
 只返回JSON，不要其他文字。`;
 
-                const userContent = `分析句子: "${Security.escapeHtml(sentence)}"`;
+                const userContent = `分析句子: "${sentence}"`;
                 
                 try {
                     const content = await callAPI([
@@ -477,7 +498,7 @@
                 try {
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: Security.escapeHtml(sentence) }
+                        { role: 'user', content: sentence }
                     ], { maxTokens: 300 });
                     return content;
                 } catch (error) {
@@ -515,7 +536,7 @@
 }
 只返回JSON，不要其他文字。`;
 
-                const userContent = `提供单词"${Security.escapeHtml(word)}"的中文释义和词性。`;
+                const userContent = `提供单词"${word}"的中文释义和词性。`;
                 
                 try {
                     const content = await callAPI([
@@ -560,7 +581,7 @@
                 try {
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: Security.escapeHtml(text) }
+                        { role: 'user', content: text }
                     ], { maxTokens: 2000 });
                     return content;
                 } catch (error) {
@@ -599,7 +620,7 @@
 }
 只返回JSON，不要其他文字。`;
 
-                const userContent = `为单词 "${Security.escapeHtml(word)}"（意思：${Security.escapeHtml(meaning)}）生成一个自然的英文例句，并提供中文翻译。`;
+                const userContent = `为单词 "${word}"（意思：${meaning}）生成一个自然的英文例句，并提供中文翻译。`;
                 
                 try {
                     const content = await callAPI([

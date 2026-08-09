@@ -38,9 +38,14 @@
                 
                 try {
                     const result = await this.callApi(sentence);
-                    this.saveToCache(idx, result);
+                    // 不缓存空结果，允许用户重试
+                    if (!this.isEmptyResult(result)) {
+                        this.saveToCache(idx, result);
+                    }
                     this.displayInPanel(panel, result);
-                    this.showSuccess();
+                    if (!this.isEmptyResult(result)) {
+                        this.showSuccess();
+                    }
                 } catch (error) {
                     this.handleError(error);
                 }
@@ -123,6 +128,17 @@
             handleError(error) {
                 console.error(`${this.typeName}解析失败:`, error);
                 this.errorHandler.handleApiError(error);
+            }
+
+            /**
+             * 判断结果是否为空（默认返回 false，子类可覆盖）
+             * 空结果不会被缓存，允许用户重试
+             * 
+             * @param {*} result - 分析结果
+             * @returns {boolean} 是否为空结果
+             */
+            isEmptyResult(result) {
+                return false;
             }
 
             /**
