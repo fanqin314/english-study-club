@@ -68,8 +68,8 @@
 
             Performance.trackAPIRequest();
 
-            // 添加重试机制
-            const maxRetries = 2;
+            // 添加重试机制（含随机抖动避免惊群效应）
+            const maxRetries = 3;
             let retries = 0;
 
             while (retries <= maxRetries) {
@@ -136,13 +136,13 @@
                         } else if (response.status === 500) {
                             throw new Error('服务器内部错误，请稍后再试');
                         } else if (response.status >= 500 && retries < maxRetries) {
-                            // 服务器错误，进行重试
+                            // 服务器错误，进行重试（含随机抖动）
                             retries++;
                             if (isDebug) {
                                 console.log(`API请求失败，正在重试 (${retries}/${maxRetries})...`);
                             }
-                            // 指数退避策略
-                            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+                            const delay = 1500 * Math.pow(2, retries - 1) + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         }
                         throw new Error(errorMessage);
@@ -167,13 +167,14 @@
                         console.error('API请求错误:', Security.filterSensitiveInfo(error.message));
                     }
                     if ((error.message && error.message.includes('fetch') || error.name === 'TypeError') && retries < maxRetries) {
-                        // 网络错误，进行重试
+                        // 网络错误，进行重试（含随机抖动）
                         retries++;
                         if (isDebug) {
                             console.log(`网络连接失败，正在重试 (${retries}/${maxRetries})...`);
                         }
-                        // 指数退避策略
-                        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+                        // 指数退避 + 随机抖动：1.5s/3s/6s ± 0~1s
+                        const delay = 1500 * Math.pow(2, retries - 1) + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     } else if (error.name === 'AbortError') {
                         throw new Error('API 请求超时');
