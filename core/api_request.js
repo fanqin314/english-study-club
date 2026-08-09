@@ -96,6 +96,7 @@
                             model: config.model,
                             messages: messages,
                             temperature: options.temperature || 0.3,
+                            max_tokens: options.maxTokens || 500,
                             ...(options.responseFormat ? { response_format: { type: options.responseFormat } } : {})
                         }),
                         signal: controller.signal
@@ -265,7 +266,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ]);
+                    ], { maxTokens: 400 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -318,7 +319,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ]);
+                    ], { maxTokens: 300 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -372,7 +373,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ]);
+                    ], { maxTokens: 400 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -423,7 +424,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: Security.escapeHtml(sentence) }
-                    ]);
+                    ], { maxTokens: 300 });
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
@@ -466,7 +467,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ]);
+                    ], { maxTokens: 150 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -513,7 +514,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: Security.escapeHtml(text) }
-                    ]);
+                    ], { maxTokens: 2000 });
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
@@ -557,7 +558,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ]);
+                    ], { maxTokens: 200 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
