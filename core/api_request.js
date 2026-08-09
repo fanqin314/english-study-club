@@ -95,8 +95,9 @@
                         body: JSON.stringify({
                             model: config.model,
                             messages: messages,
-                            temperature: options.temperature || 0.3,
+                            temperature: options.temperature ?? 0.3,
                             max_tokens: options.maxTokens || 500,
+                            chat_template_kwargs: { enable_thinking: false },
                             ...(options.responseFormat ? { response_format: { type: options.responseFormat } } : {})
                         }),
                         signal: controller.signal
@@ -266,7 +267,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 400 });
+                    ], { maxTokens: 400, temperature: 0 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -319,7 +320,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 300 });
+                    ], { maxTokens: 300, temperature: 0 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -373,7 +374,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 400 });
+                    ], { maxTokens: 400, temperature: 0 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -467,7 +468,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 150 });
+                    ], { maxTokens: 150, temperature: 0 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -558,7 +559,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 200 });
+                    ], { maxTokens: 200, temperature: 0 });
 
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
