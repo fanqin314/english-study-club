@@ -482,7 +482,7 @@
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
-                    return '';
+                    throw error; // 重新抛出，让调用方获知真实错误原因
                 }
             });
         });
@@ -565,7 +565,7 @@
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
-                    return '';
+                    throw error; // 重新抛出，让调用方获知真实错误原因
                 }
             });
         });

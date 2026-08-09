@@ -65,10 +65,13 @@
                     ErrorHandler.showSuccess('全文翻译完成');
                     return displayTranslation;
                 } else {
-                    throw new Error('翻译结果为空');
+                    ErrorHandler.showError('翻译失败，请稍后重试');
+                    return null;
                 }
             } catch (error) {
-                throw error;
+                // API 错误已在 requestFullTranslation 中通过 handleApiError 记录
+                // 不再重复抛出，避免误导性错误信息
+                return null;
             }
         });
 
