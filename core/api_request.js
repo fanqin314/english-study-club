@@ -233,6 +233,47 @@
         }
 
         /**
+         * 从 API 响应中提取并解析 JSON
+         * 使用 indexOf 定位首尾花括号，比正则更可靠
+         * @param {string} content - API 响应内容
+         * @param {string} context - 上下文标识（用于调试日志）
+         * @returns {Object|null} 解析后的对象，失败返回 null
+         */
+        function extractAndParseJSON(content, context) {
+            if (!content || typeof content !== 'string') return null;
+
+            const startIdx = content.indexOf('{');
+            const endIdx = content.lastIndexOf('}');
+            if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null;
+
+            let jsonStr = content.substring(startIdx, endIdx + 1);
+
+            // 尝试直接解析
+            try {
+                return JSON.parse(jsonStr);
+            } catch (e) {
+                // 尝试修复常见问题后重试
+            }
+
+            // 修复常见 JSON 格式问题
+            try {
+                // 1. 移除尾随逗号（在 } 或 ] 之前）
+                jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+                // 2. 移除 markdown 代码块标记
+                jsonStr = jsonStr.replace(/```(?:json)?\s*/g, '');
+                // 3. 修复中文引号等特殊字符
+                jsonStr = jsonStr.replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"');
+                return JSON.parse(jsonStr);
+            } catch (e2) {
+                // 如果仍然失败，记录原始内容便于调试
+                if (window.DEBUG_MODE) {
+                    console.warn(`[${context}] JSON解析失败，原始内容:`, content.substring(0, 500));
+                }
+                return null;
+            }
+        }
+
+        /**
          * 请求词性分析
          * @param {string} sentence - 待分析的句子
          * @returns {Promise<Object>} 词性分析结果
@@ -267,19 +308,12 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 400, temperature: 0 });
+                    ], { maxTokens: 800, temperature: 0 });
 
-                    const jsonMatch = content.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) {
-                        ErrorHandler.handleApiError(new Error('返回格式错误'));
-                        return { pos: [] };
-                    }
-                    try {
-                        return JSON.parse(jsonMatch[0]);
-                    } catch (parseError) {
-                        ErrorHandler.handleApiError(new Error('JSON解析失败: ' + parseError.message));
-                        return { pos: [] };
-                    }
+                    const result = extractAndParseJSON(content, 'pos');
+                    if (result) return result;
+                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                    return { pos: [] };
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     return { pos: [] };
@@ -320,20 +354,12 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 300, temperature: 0 });
+                    ], { maxTokens: 500, temperature: 0 });
 
-                    const jsonMatch = content.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) {
-                        ErrorHandler.handleApiError(new Error('返回格式错误'));
-                        return '暂无语法结构';
-                    }
-                    try {
-                        const parsed = JSON.parse(jsonMatch[0]);
-                        return parsed.syntax || '暂无语法结构';
-                    } catch (parseError) {
-                        ErrorHandler.handleApiError(new Error('JSON解析失败: ' + parseError.message));
-                        return '暂无语法结构';
-                    }
+                    const parsed = extractAndParseJSON(content, 'syntax');
+                    if (parsed) return parsed.syntax || '暂无语法结构';
+                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                    return '暂无语法结构';
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     return '暂无语法结构';
@@ -374,23 +400,17 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 400, temperature: 0 });
+                    ], { maxTokens: 600, temperature: 0 });
 
-                    const jsonMatch = content.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) {
-                        ErrorHandler.handleApiError(new Error('返回格式错误'));
-                        return '暂无知识点';
-                    }
-                    try {
-                        const parsed = JSON.parse(jsonMatch[0]);
+                    const parsed = extractAndParseJSON(content, 'knowledge');
+                    if (parsed) {
                         let knowledge = parsed.knowledge || '暂无知识点';
                         knowledge = knowledge.replace(/[；;]\s*/g, '<br>');
                         knowledge = knowledge.replace(/(重点搭配|金句|写作建议)/g, '<strong>$1</strong>');
                         return knowledge;
-                    } catch (parseError) {
-                        ErrorHandler.handleApiError(new Error('JSON解析失败: ' + parseError.message));
-                        return '暂无知识点';
                     }
+                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                    return '暂无知识点';
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     return '暂无知识点';
@@ -468,19 +488,12 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 150, temperature: 0 });
+                    ], { maxTokens: 300, temperature: 0 });
 
-                    const jsonMatch = content.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) {
-                        ErrorHandler.handleApiError(new Error('返回格式错误'));
-                        return { meaning: '', pos: '' };
-                    }
-                    try {
-                        return JSON.parse(jsonMatch[0]);
-                    } catch (parseError) {
-                        ErrorHandler.handleApiError(new Error('JSON解析失败: ' + parseError.message));
-                        return { meaning: '', pos: '' };
-                    }
+                    const result = extractAndParseJSON(content, 'meaning');
+                    if (result) return result;
+                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                    return { meaning: '', pos: '' };
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     return { meaning: '', pos: '' };
@@ -559,19 +572,12 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userContent }
-                    ], { maxTokens: 200, temperature: 0 });
+                    ], { maxTokens: 300, temperature: 0 });
 
-                    const jsonMatch = content.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) {
-                        ErrorHandler.handleApiError(new Error('返回格式错误'));
-                        return { en: '', zh: '' };
-                    }
-                    try {
-                        return JSON.parse(jsonMatch[0]);
-                    } catch (parseError) {
-                        ErrorHandler.handleApiError(new Error('JSON解析失败: ' + parseError.message));
-                        return { en: '', zh: '' };
-                    }
+                    const result = extractAndParseJSON(content, 'example');
+                    if (result) return result;
+                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                    return { en: '', zh: '' };
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     return { en: '', zh: '' };
