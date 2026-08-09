@@ -165,9 +165,19 @@
                     }
 
                     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        // choices 为 null：模型过载或不可用，自动重试
+                        if (data.choices === null && retries < maxRetries) {
+                            retries++;
+                            if (isDebug) {
+                                console.warn(`模型暂不可用 (choices:null)，正在重试 (${retries}/${maxRetries})...`);
+                            }
+                            const delay = 2000 * Math.pow(2, retries - 1) + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
                         const summary = JSON.stringify(data).substring(0, 300);
                         if (isDebug) console.warn('API 返回非预期格式:', summary);
-                        throw new Error(`API 返回格式错误: ${summary}`);
+                        throw new Error(`模型暂不可用，请稍后重试或更换模型（choices:null）`);
                     }
 
                     const msg = data.choices[0].message;
