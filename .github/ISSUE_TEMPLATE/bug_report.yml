@@ -1,0 +1,47 @@
+name: Bug 报告
+description: 提交一个问题反馈，帮助我们改进
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 请清晰地描述你遇到的问题
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 如何一步步复现这个问题？
+      placeholder: |
+        1. 打开页面
+        2. 粘贴文章
+        3. 点击"深度解析"
+        4. 看到错误
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望看到什么结果？
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么？如有报错信息请粘贴控制台日志
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      placeholder: "例如：Chrome 120 / Edge 120"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: "例如：Windows 11 / macOS 14"
+    validations:
+      required: true
