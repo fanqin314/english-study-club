@@ -1,0 +1,79 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release 版本号（如 1.0.0）'
+        required: true
+        default: '1.0.0'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 构建 Obsidian 插件
+      - name: Build Obsidian plugin
+        working-directory: obsidian-plugin
+        run: |
+          npm ci --no-fund --no-audit
+          npm run build
+
+      # 打包主应用（纯静态站点）
+      - name: Package main app
+        run: |
+          mkdir -p dist/English-Reading-Lab
+          cp -r index.html privacy.html assets core features modules ui \
+            dist/English-Reading-Lab/
+          cp README.md dist/English-Reading-Lab/
+          cd dist
+          zip -r English-Reading-Lab.zip English-Reading-Lab/
+
+      # 打包浏览器插件
+      - name: Package browser extension
+        run: |
+          cd browser-extension
+          zip -r ../dist/English-Reading-Lab-browser-extension.zip .
+
+      # 打包 Obsidian 插件（编译产物 + manifest + styles）
+      - name: Package Obsidian plugin
+        run: |
+          mkdir -p dist/english-reading-lab
+          cp obsidian-plugin/main.js obsidian-plugin/manifest.json obsidian-plugin/styles.css \
+            dist/english-reading-lab/
+          cd dist
+          zip -r english-reading-lab-obsidian.zip english-reading-lab/
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.tag }}
+          name: English Reading Lab v${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/English-Reading-Lab.zip
+            dist/English-Reading-Lab-browser-extension.zip
+            dist/english-reading-lab-obsidian.zip

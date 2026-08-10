@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Reading Lab - 设置</title>
+<style>
+  /* ===== 设计令牌 ===== */
+  :root {
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-soft: #eff6ff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --card-bg: #ffffff;
+    --page-bg: #f5f7fb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --radius-card: 12px;
+    --radius-control: 8px;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+    --selection-bg: rgba(59,130,246,0.22);
+    --dot-success-glow: rgba(16,185,129,0.20);
+    --dot-danger-glow: rgba(239,68,68,0.16);
+    --code-bg: #1e293b;
+    --code-text: #e2e8f0;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+
+  /* ===== 暗色模式 ===== */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-soft: rgba(96,165,250,0.16);
+      --text: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #334155;
+      --card-bg: #1e293b;
+      --page-bg: #0f172a;
+      --success: #34d399;
+      --danger: #f87171;
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.28);
+      --selection-bg: rgba(96,165,250,0.35);
+      --dot-success-glow: rgba(52,211,153,0.30);
+      --dot-danger-glow: rgba(248,113,113,0.24);
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  ::selection { background: var(--selection-bg); }
+
+  body {
+    font-family: var(--font);
+    background: var(--page-bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 44px 20px 36px;
+  }
+
+  /* ===== 页头 ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .logo { width: 36px; height: 36px; flex-shrink: 0; }
+  .header h1 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: 0.2px; }
+  .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.3; }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+  .card-title-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--accent); }
+
+  /* ===== Native Host 连接状态 ===== */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    margin-bottom: 16px;
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .status-dot.connected {
+    background: var(--success);
+    box-shadow: 0 0 0 3px var(--dot-success-glow);
+    animation: pulse 2.2s ease-in-out infinite;
+  }
+  .status-dot.disconnected {
+    background: var(--danger);
+    box-shadow: 0 0 0 3px var(--dot-danger-glow);
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--dot-success-glow); }
+    50% { box-shadow: 0 0 0 6px var(--dot-success-glow); }
+  }
+  .status-info { flex: 1; min-width: 0; }
+  .status-label { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .status-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ===== 按钮 ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:disabled:active { transform: none; }
+  .btn-primary { background: var(--accent); color: #ffffff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn .spinner { display: none; }
+  .btn.loading .spinner { display: block; }
+  .btn.loading .btn-refresh { display: none; }
+
+  /* ===== Spinner（SVG 圆弧动画） ===== */
+  .spinner {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transform-origin: center;
+    animation: spin 0.8s linear infinite;
+  }
+  .spinner-track { stroke: var(--border); stroke-width: 2.5; }
+  .spinner-arc { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 40 22; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== 安装说明步骤 ===== */
+  .steps { list-style: none; counter-reset: step; }
+  .step { position: relative; counter-increment: step; padding-left: 38px; }
+  .step + .step { margin-top: 20px; }
+  .step::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .step p { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+  .step > :last-child { margin-bottom: 0; }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    padding: 14px 16px;
+    margin: 0 0 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .paths { list-style: none; margin: 0 0 8px; padding: 0; }
+  .paths li {
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .paths li:last-child { margin-bottom: 0; }
+  .paths li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .paths code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--accent-soft);
+    color: var(--text);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ===== 底部 ===== */
+  .footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" aria-hidden="true">
+        <rect width="128" height="128" rx="24" fill="#3b82f6"/>
+        <path d="M40 28h48c8 0 14 6 14 14v4c0 8-6 14-14 14H40c-8 0-14-6-14-14v-4c0-8 6-14 14-14z" fill="white" opacity="0.95"/>
+        <path d="M40 64h48c8 0 14 6 14 14v4c0 8-6 14-14 14H40c-8 0-14-6-14-14v-4c0-8 6-14 14-14z" fill="white" opacity="0.95"/>
+        <path d="M40 100h30c6 0 10 4 10 10v2c0 6-4 10-10 10H40c-6 0-10-4-10-10v-2c0-6 4-10 10-10z" fill="white" opacity="0.95"/>
+        <line x1="34" y1="36" x2="34" y2="106" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <line x1="34" y1="36" x2="94" y2="36" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <line x1="34" y1="72" x2="94" y2="72" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <line x1="34" y1="108" x2="80" y2="108" stroke="white" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>English Reading Lab</h1>
+        <p class="header-sub">英语阅读实验室</p>
+      </div>
+    </div>
+
+    <!-- Native Host 连接状态 -->
+    <section class="card">
+      <h2 class="card-title">
+        <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="8" rx="2"/>
+          <rect x="2" y="14" width="20" height="8" rx="2"/>
+          <line x1="6" y1="6" x2="6.01" y2="6"/>
+          <line x1="6" y1="18" x2="6.01" y2="18"/>
+        </svg>
+        Native Host 连接状态
+      </h2>
+      <div class="status-row">
+        <div class="status-dot disconnected" id="statusDot"></div>
+        <div class="status-info">
+          <div class="status-label" id="statusLabel">未连接</div>
+          <div class="status-desc" id="statusDesc">Native Host 服务未运行或未安装</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="reconnectBtn">
+        <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle class="spinner-track" cx="12" cy="12" r="9"/>
+          <circle class="spinner-arc" cx="12" cy="12" r="9"/>
+        </svg>
+        <svg class="btn-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span class="btn-label">重新连接</span>
+      </button>
+    </section>
+
+    <!-- 安装说明 -->
+    <section class="card">
+      <h2 class="card-title">
+        <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        安装说明
+      </h2>
+      <ol class="steps">
+        <li class="step">
+          <p>确保 Native Host 程序已安装到系统中</p>
+        </li>
+        <li class="step">
+          <p>Native Host 清单文件位于 Chrome 的 NativeMessagingHosts 目录：</p>
+          <pre>{
+  "name": "com.englishlab.nativehost",
+  "description": "English Reading Lab Native Host",
+  "path": "C:\\path\\to\\native-host.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://&lt;extension-id&gt;/"
+  ]
+}</pre>
+        </li>
+        <li class="step">
+          <p>清单文件应放置在以下位置之一：</p>
+          <ul class="paths">
+            <li>Windows: <code>HKCU\Software\Google\Chrome\NativeMessagingHosts\com.englishlab.nativehost</code></li>
+            <li>macOS: <code>~/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.englishlab.nativehost.json</code></li>
+            <li>Linux: <code>~/.config/google-chrome/NativeMessagingHosts/com.englishlab.nativehost.json</code></li>
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <div class="footer">
+      English Reading Lab v1.0.0
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

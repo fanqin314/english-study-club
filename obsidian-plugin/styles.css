@@ -1,0 +1,158 @@
+/* ============================================================
+   English Reading Lab - Dashboard Styles
+   ============================================================ */
+
+/* Dashboard container */
+.erl-dashboard {
+  padding: 16px;
+  font-family: var(--font-interface);
+  color: var(--text-normal);
+}
+
+/* Header */
+.erl-dashboard-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.erl-dashboard-header h2 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Empty state */
+.erl-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.erl-empty-state p {
+  color: var(--text-muted);
+  font-size: 0.95em;
+  line-height: 1.6;
+  max-width: 280px;
+  white-space: pre-line;
+}
+
+/* Stats cards row */
+.erl-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Individual stat card */
+.erl-stat-card {
+  flex: 1;
+  min-width: 100px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  text-align: center;
+  transition: background-color 0.15s ease;
+}
+
+.erl-stat-card:hover {
+  background: var(--background-modifier-hover);
+}
+
+.erl-stat-value {
+  font-size: 2em;
+  font-weight: 700;
+  color: var(--text-accent);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.erl-stat-label {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Section */
+.erl-section {
+  margin-bottom: 20px;
+}
+
+.erl-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin: 20px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* Activity list */
+.erl-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.erl-activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  transition: background-color 0.15s ease;
+}
+
+.erl-activity-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.erl-activity-date {
+  font-size: 0.85em;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+}
+
+.erl-activity-count {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Captures list */
+.erl-captures-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.erl-capture-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.erl-capture-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.erl-capture-item .internal-link {
+  font-size: 0.9em;
+  color: var(--text-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.erl-capture-item .internal-link:hover {
+  color: var(--text-accent-hover);
+  text-decoration: underline;
+}

@@ -1,0 +1,20 @@
+{
+  "name": "english-reading-lab-obsidian-plugin",
+  "version": "1.0.0",
+  "description": "English Reading Lab Obsidian plugin - learning dashboard, review planner, bidirectional links",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild main.ts --bundle --external:obsidian --format=cjs --target=es2018 --outfile=main.js",
+    "dev": "npm run build -- --watch"
+  },
+  "keywords": [
+    "obsidian",
+    "english",
+    "learning"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "obsidian": "latest"
+  }
+}
