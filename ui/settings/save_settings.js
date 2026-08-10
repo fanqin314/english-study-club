@@ -10,7 +10,7 @@
 
     // ========== 保存说明 TXT 内容 ==========
     function getSaveDescriptionText() {
-        return `英语阅读实验室 - 数据保存说明
+        return `英研社 - 数据保存说明
 ===============================
 
 📁 本地文件存储
@@ -107,7 +107,7 @@
                 mimeType = 'application/json';
                 break;
             case 'txt': {
-                let txt = '英语阅读实验室 - 生词本\n';
+                let txt = '英研社 - 生词本\n';
                 txt += '='.repeat(40) + '\n';
                 txt += `导出时间: ${new Date().toLocaleString()}\n\n`;
                 for (const id of notebookIds) {
@@ -127,7 +127,7 @@
                 break;
             }
             case 'md': {
-                let md = '# 英语阅读实验室 - 生词本\n\n';
+                let md = '# 英研社 - 生词本\n\n';
                 md += `> 导出时间: ${new Date().toLocaleString()}\n\n`;
                 for (const id of notebookIds) {
                     const nb = notebooks[id];

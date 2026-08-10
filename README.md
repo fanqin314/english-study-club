@@ -1,13 +1,13 @@
-# 英语阅读实验室 (English Reading Lab)
+# 英研社 (English Study Club)
 
 **文章驱动的人工智能英语精读学习工具** —— 阅读真实英文文章，AI 自动解析词性、语法、知识点与翻译，并通过闪卡、填空、听写、选词等练习模式，在语境中自然积累词汇与语法知识。
 
 <p align="center">
-  <img src="assets/screenshot_demo.png" alt="英语阅读实验室界面预览" width="90%" />
+  <img src="assets/screenshot_demo.png" alt="英研社界面预览" width="90%" />
 </p>
 
 <p align="center">
-  <a href="https://fanqin314.github.io/English-Reading-Lab/"><strong>在线体验 Demo</strong></a> ·
+  <a href="https://fanqin314.github.io/english-study-club/"><strong>在线体验 Demo</strong></a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#核心功能">核心功能</a> ·
   <a href="#技术架构">技术架构</a>
@@ -17,7 +17,7 @@
 
 ## 为什么是"文章驱动"？
 
-传统背单词脱离语境，记住了单词却不会用。英语阅读实验室让**一切学习围绕真实文章展开**：
+传统背单词脱离语境，记住了单词却不会用。英研社让**一切学习围绕真实文章展开**：
 
 1. 粘贴一篇英文文章，AI 逐句分析词性、语法结构、知识点并翻译
 2. 阅读中随手标注生词，自动存入生词本
@@ -73,14 +73,14 @@
 
 ### 在线体验（零配置）
 
-直接访问 **https://fanqin314.github.io/English-Reading-Lab/** 即可使用。
+直接访问 **https://fanqin314.github.io/english-study-club/** 即可使用。
 项目内置默认 AI API Key，打开就能体验深度解析，无需任何配置。
 
 ### 本地运行
 
 ```bash
-git clone https://github.com/fanqin314/English-Reading-Lab.git
-cd English-Reading-Lab
+git clone https://github.com/fanqin314/english-study-club.git
+cd english-study-club
 
 # 方式一：直接用浏览器打开（纯静态应用，无需构建）
 open index.html
@@ -109,7 +109,7 @@ python -m http.server 8080
 ### 目录结构
 
 ```
-English-Reading-Lab/
+english-study-club/
 ├── index.html                 # 主页面（应用入口）
 ├── core/                      # 核心基础设施
 │   ├── module_registry.js     # 模块注册系统

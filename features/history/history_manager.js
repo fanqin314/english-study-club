@@ -149,7 +149,7 @@
 
     // 导出历史记录为 TXT
     function exportTXT() {
-        let txt = '英语阅读实验室 - 历史记录\n';
+        let txt = '英研社 - 历史记录\n';
         txt += '='.repeat(40) + '\n';
         txt += `导出时间: ${new Date().toLocaleString()}\n`;
         txt += `共 ${history.length} 条记录\n\n`;
@@ -167,7 +167,7 @@
 
     // 导出历史记录为 MD
     function exportMD() {
-        let md = '# 英语阅读实验室 - 历史记录\n\n';
+        let md = '# 英研社 - 历史记录\n\n';
         md += `> 导出时间: ${new Date().toLocaleString()}  |  共 ${history.length} 条记录\n\n`;
         history.forEach((item, i) => {
             md += `## ${i + 1}. ${item.savedAt ? new Date(item.savedAt).toLocaleString() : '未知时间'}\n\n`;

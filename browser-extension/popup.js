@@ -1,4 +1,4 @@
-// popup.js - English Reading Lab Popup Controller
+// popup.js - English Study Club Popup Controller
 
 const statusDot = document.getElementById('statusDot');
 const detectCaptionsBtn = document.getElementById('detectCaptionsBtn');

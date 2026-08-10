@@ -1,9 +1,9 @@
-﻿{
-  "id": "english-reading-lab",
-  "name": "English Reading Lab",
+{
+  "id": "english-study-club",
+  "name": "English Study Club",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "Learning dashboard, review planner, and bidirectional linking for English Reading Lab data",
+  "description": "Learning dashboard, review planner, and bidirectional linking for English Study Club data",
   "author": "fanqin",
   "isDesktopOnly": true
 }

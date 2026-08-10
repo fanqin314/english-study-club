@@ -1,8 +1,8 @@
-﻿{
+{
   "manifest_version": 3,
-  "name": "English Reading Lab",
+  "name": "English Study Club",
   "version": "1.0.0",
-  "description": "English Reading Lab browser extension - YouTube subtitle extraction and web page text selection saving.",
+  "description": "English Study Club browser extension - YouTube subtitle extraction and web page text selection saving.",
   "permissions": [
     "nativeMessaging",
     "activeTab",
@@ -13,7 +13,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "English Reading Lab",
+    "default_title": "English Study Club",
     "default_icon": {
       "16": "icons/icon.svg",
       "48": "icons/icon.svg",

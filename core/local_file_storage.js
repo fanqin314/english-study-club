@@ -4,7 +4,7 @@
 (function() {
     'use strict';
 
-    const DB_NAME = 'english-reading-lab-fs';
+    const DB_NAME = 'english-study-club-fs';
     const DB_VERSION = 1;
     const HANDLE_KEY = 'dirHandle';
 
@@ -74,7 +74,7 @@
 
             try {
                 this._dirHandle = await window.showDirectoryPicker({
-                    id: 'english-reading-lab',
+                    id: 'english-study-club',
                     mode: 'readwrite',
                     startIn: 'documents'
                 });

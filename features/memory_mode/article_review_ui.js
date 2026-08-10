@@ -512,7 +512,7 @@
             byline.className = 'rv-mag-byline';
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            byline.innerHTML = 'By English Reading Lab <span class="rv-mag-byline-sep">·</span> ' + dateStr;
+            byline.innerHTML = 'By English Study Club <span class="rv-mag-byline-sep">·</span> ' + dateStr;
             magWrap.appendChild(byline);
 
             // ===== Info bar（信息栏）=====
@@ -668,7 +668,7 @@
             // Byline
             const byline = document.createElement('div');
             byline.className = 'rv-news-byline';
-            byline.textContent = 'By English Reading Lab';
+            byline.textContent = 'By English Study Club';
             newsHeader.appendChild(byline);
 
             // Masthead info bar (word count, timer, edition)

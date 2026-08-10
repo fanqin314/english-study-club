@@ -1,12 +1,12 @@
 # 贡献指南
 
-感谢你对英语阅读实验室的关注！本项目欢迎一切形式的贡献：Bug 报告、功能建议、代码改进、文档完善。
+感谢你对英研社的关注！本项目欢迎一切形式的贡献：Bug 报告、功能建议、代码改进、文档完善。
 
 ## 快速开始
 
 ```bash
-git clone https://github.com/fanqin314/English-Reading-Lab.git
-cd English-Reading-Lab
+git clone https://github.com/fanqin314/english-study-club.git
+cd english-study-club
 
 # 方式一：浏览器直接打开 index.html
 # 方式二：本地静态服务器（推荐）
@@ -17,7 +17,7 @@ python -m http.server 8080
 
 ### 报告 Bug
 
-1. 先搜索 [Issues](https://github.com/fanqin314/English-Reading-Lab/issues) 是否已有相同问题
+1. 先搜索 [Issues](https://github.com/fanqin314/english-study-club/issues) 是否已有相同问题
 2. 创建 Issue 时请包含：
    - 复现步骤
    - 期望行为与实际行为

@@ -1,4 +1,4 @@
-// content.js - English Reading Lab Content Script
+// content.js - English Study Club Content Script
 
 // ============================================================
 // Local time helpers (本地时间，不使用 toISOString 避免时区偏差)

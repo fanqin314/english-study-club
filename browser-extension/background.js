@@ -1,4 +1,4 @@
-﻿// background.js - English Reading Lab Service Worker
+// background.js - English Study Club Service Worker
 
 const NATIVE_HOST_NAME = 'com.englishlab.nativehost';
 let nativePort = null;
@@ -19,10 +19,10 @@ function connectNativeHost() {
 
   try {
     nativePort = chrome.runtime.connectNative(NATIVE_HOST_NAME);
-    console.log('[English Reading Lab] Connected to native host');
+    console.log('[English Study Club] Connected to native host');
 
     nativePort.onMessage.addListener((message) => {
-      console.log('[English Reading Lab] Native host message:', message);
+      console.log('[English Study Club] Native host message:', message);
       if (message.requestId !== undefined && pendingRequests.has(message.requestId)) {
         const { resolve } = pendingRequests.get(message.requestId);
         pendingRequests.delete(message.requestId);
@@ -31,7 +31,7 @@ function connectNativeHost() {
     });
 
     nativePort.onDisconnect.addListener(() => {
-      console.log('[English Reading Lab] Native host disconnected');
+      console.log('[English Study Club] Native host disconnected');
       nativePort = null;
       // Reject all pending requests
       pendingRequests.forEach(({ reject }, id) => {
@@ -44,7 +44,7 @@ function connectNativeHost() {
     updateConnectionStatus(true);
     return true;
   } catch (err) {
-    console.error('[English Reading Lab] Failed to connect native host:', err.message);
+    console.error('[English Study Club] Failed to connect native host:', err.message);
     nativePort = null;
     updateConnectionStatus(false);
     return false;
@@ -149,7 +149,7 @@ chrome.runtime.onConnect.addListener((port) => {
 // Reconnect if needed
 setInterval(() => {
   if (!isNativeHostConnected()) {
-    console.log('[English Reading Lab] Attempting reconnection to native host...');
+    console.log('[English Study Club] Attempting reconnection to native host...');
     connectNativeHost();
   }
 }, 60000);

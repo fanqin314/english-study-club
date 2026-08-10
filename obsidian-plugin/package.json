@@ -1,7 +1,7 @@
 {
-  "name": "english-reading-lab-obsidian-plugin",
+  "name": "english-study-club-obsidian-plugin",
   "version": "1.0.0",
-  "description": "English Reading Lab Obsidian plugin - learning dashboard, review planner, bidirectional links",
+  "description": "English Study Club Obsidian plugin - learning dashboard, review planner, bidirectional links",
   "main": "main.js",
   "scripts": {
     "build": "esbuild main.ts --bundle --external:obsidian --format=cjs --target=es2018 --outfile=main.js",

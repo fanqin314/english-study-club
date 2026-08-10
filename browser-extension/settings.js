@@ -1,4 +1,4 @@
-// settings.js - English Reading Lab Settings Page
+// settings.js - English Study Club Settings Page
 
 const statusDot = document.getElementById('statusDot');
 const statusLabel = document.getElementById('statusLabel');

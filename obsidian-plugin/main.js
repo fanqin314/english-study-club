@@ -33,7 +33,7 @@ var DashboardView = class extends import_obsidian.ItemView {
     return DASHBOARD_VIEW_TYPE;
   }
   getDisplayText() {
-    return "\u82F1\u8BED\u9605\u8BFB\u5B9E\u9A8C\u5BA4\u4EEA\u8868\u76D8";
+    return "\u82F1\u7814\u793E\u4EEA\u8868\u76D8";
   }
   getIcon() {
     return "book-open";
@@ -47,10 +47,10 @@ var DashboardView = class extends import_obsidian.ItemView {
     container.addClass("erl-dashboard");
     const stats = await this.plugin.collectDashboardStats();
     const header = container.createEl("div", { cls: "erl-dashboard-header" });
-    header.createEl("h2", { text: "\u82F1\u8BED\u9605\u8BFB\u5B9E\u9A8C\u5BA4" });
+    header.createEl("h2", { text: "\u82F1\u7814\u793E" });
     if (stats.totalArticles === 0 && stats.totalCaptures === 0) {
       const emptyState = container.createEl("div", { cls: "erl-empty-state" });
-      emptyState.createEl("p", { text: "\u6682\u65E0\u5B66\u4E60\u6570\u636E\n\u8BF7\u5148\u5728\u82F1\u8BED\u9605\u8BFB\u5B9E\u9A8C\u5BA4\u4E2D\u5206\u6790\u6587\u7AE0" });
+      emptyState.createEl("p", { text: "\u6682\u65E0\u5B66\u4E60\u6570\u636E\n\u8BF7\u5148\u5728\u82F1\u7814\u793E\u4E2D\u5206\u6790\u6587\u7AE0" });
       return;
     }
     const statsRow = container.createEl("div", { cls: "erl-stats-row" });
@@ -112,7 +112,7 @@ var EnglishReadingLabSettingTab = class extends import_obsidian.PluginSettingTab
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "\u82F1\u8BED\u9605\u8BFB\u5B9E\u9A8C\u5BA4\u8BBE\u7F6E" });
+    containerEl.createEl("h2", { text: "\u82F1\u7814\u793E\u8BBE\u7F6E" });
     new import_obsidian.Setting(containerEl).setName("\u590D\u4E60\u95F4\u9694\uFF08\u5929\uFF09").setDesc("\u8D85\u8FC7\u8BE5\u5929\u6570\u672A\u4FEE\u6539\u7684\u6587\u7AE0\u5C06\u51FA\u73B0\u5728\u590D\u4E60\u8BA1\u5212\u4E2D").addText(
       (text) => text.setValue(String(this.plugin.settings.reviewIntervalDays)).onChange(async (value) => {
         const num = parseInt(value, 10);
@@ -150,7 +150,7 @@ var EnglishReadingLabPlugin = class extends import_obsidian.Plugin {
       DASHBOARD_VIEW_TYPE,
       (leaf) => new DashboardView(leaf, this)
     );
-    this.addRibbonIcon("book-open", "\u82F1\u8BED\u9605\u8BFB\u5B9E\u9A8C\u5BA4\u4EEA\u8868\u76D8", () => {
+    this.addRibbonIcon("book-open", "\u82F1\u7814\u793E\u4EEA\u8868\u76D8", () => {
       this.activateDashboard();
     });
     this.addCommand({
@@ -296,7 +296,7 @@ var EnglishReadingLabPlugin = class extends import_obsidian.Plugin {
       }
       stats.recentActivity = Array.from(activityMap.entries()).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
     } catch (error) {
-      console.error("English Reading Lab: Error collecting dashboard stats", error);
+      console.error("English Study Club: Error collecting dashboard stats", error);
     }
     return stats;
   }
@@ -394,7 +394,7 @@ var EnglishReadingLabPlugin = class extends import_obsidian.Plugin {
         `\u590D\u4E60\u8BA1\u5212\u5DF2\u751F\u6210\uFF1A${historyItems.length} \u7BC7\u6587\u7AE0\uFF0C${vocabItems.length} \u4E2A\u751F\u8BCD\u672C\u6587\u4EF6`
       );
     } catch (error) {
-      console.error("English Reading Lab: Error generating review plan", error);
+      console.error("English Study Club: Error generating review plan", error);
       new import_obsidian.Notice("\u751F\u6210\u590D\u4E60\u8BA1\u5212\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u63A7\u5236\u53F0\u83B7\u53D6\u8BE6\u7EC6\u4FE1\u606F\u3002");
     }
   }
@@ -508,7 +508,7 @@ ${sectionHeader}
         `\u5DF2\u5728\u6587\u7AE0\u4E2D\u521B\u5EFA ${totalLinksCreated} \u4E2A\u6B63\u5411\u94FE\u63A5\uFF0C\u5728\u751F\u8BCD\u672C\u4E2D\u521B\u5EFA ${reverseLinksCreated} \u4E2A\u53CD\u5411\u94FE\u63A5`
       );
     } catch (error) {
-      console.error("English Reading Lab: Error creating bidirectional links", error);
+      console.error("English Study Club: Error creating bidirectional links", error);
       new import_obsidian.Notice("\u5EFA\u7ACB\u53CC\u5411\u94FE\u63A5\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u63A7\u5236\u53F0\u83B7\u53D6\u8BE6\u7EC6\u4FE1\u606F\u3002");
     }
   }

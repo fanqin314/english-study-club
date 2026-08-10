@@ -27,7 +27,7 @@ class DashboardView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "英语阅读实验室仪表盘";
+		return "英研社仪表盘";
 	}
 
 	getIcon(): string {
@@ -47,12 +47,12 @@ class DashboardView extends ItemView {
 
 		// Header
 		const header = container.createEl("div", { cls: "erl-dashboard-header" });
-		header.createEl("h2", { text: "英语阅读实验室" });
+		header.createEl("h2", { text: "英研社" });
 
 		// Check if any data exists
 		if (stats.totalArticles === 0 && stats.totalCaptures === 0) {
 			const emptyState = container.createEl("div", { cls: "erl-empty-state" });
-			emptyState.createEl("p", { text: "暂无学习数据\n请先在英语阅读实验室中分析文章" });
+			emptyState.createEl("p", { text: "暂无学习数据\n请先在英研社中分析文章" });
 			return;
 		}
 
@@ -139,7 +139,7 @@ class EnglishReadingLabSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "英语阅读实验室设置" });
+		containerEl.createEl("h2", { text: "英研社设置" });
 
 		new Setting(containerEl)
 			.setName("复习间隔（天）")
@@ -209,7 +209,7 @@ export default class EnglishReadingLabPlugin extends Plugin {
 		);
 
 		// Ribbon icon
-		this.addRibbonIcon("book-open", "英语阅读实验室仪表盘", () => {
+		this.addRibbonIcon("book-open", "英研社仪表盘", () => {
 			this.activateDashboard();
 		});
 
@@ -405,7 +405,7 @@ export default class EnglishReadingLabPlugin extends Plugin {
 				.sort((a, b) => a.date.localeCompare(b.date));
 
 		} catch (error) {
-			console.error("English Reading Lab: Error collecting dashboard stats", error);
+			console.error("English Study Club: Error collecting dashboard stats", error);
 		}
 
 		return stats;
@@ -520,7 +520,7 @@ export default class EnglishReadingLabPlugin extends Plugin {
 			);
 
 		} catch (error) {
-			console.error("English Reading Lab: Error generating review plan", error);
+			console.error("English Study Club: Error generating review plan", error);
 			new Notice("生成复习计划失败，请查看控制台获取详细信息。");
 		}
 	}
@@ -675,7 +675,7 @@ export default class EnglishReadingLabPlugin extends Plugin {
 			);
 
 		} catch (error) {
-			console.error("English Reading Lab: Error creating bidirectional links", error);
+			console.error("English Study Club: Error creating bidirectional links", error);
 			new Notice("建立双向链接失败，请查看控制台获取详细信息。");
 		}
 	}

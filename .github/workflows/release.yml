@@ -36,27 +36,27 @@ jobs:
       # 打包主应用（纯静态站点）
       - name: Package main app
         run: |
-          mkdir -p dist/English-Reading-Lab
+          mkdir -p dist/english-study-club
           cp -r index.html privacy.html assets core features modules ui \
-            dist/English-Reading-Lab/
-          cp README.md dist/English-Reading-Lab/
+            dist/english-study-club/
+          cp README.md dist/english-study-club/
           cd dist
-          zip -r English-Reading-Lab.zip English-Reading-Lab/
+          zip -r english-study-club.zip english-study-club/
 
       # 打包浏览器插件
       - name: Package browser extension
         run: |
           cd browser-extension
-          zip -r ../dist/English-Reading-Lab-browser-extension.zip .
+          zip -r ../dist/english-study-club-browser-extension.zip .
 
       # 打包 Obsidian 插件（编译产物 + manifest + styles）
       - name: Package Obsidian plugin
         run: |
-          mkdir -p dist/english-reading-lab
+          mkdir -p dist/english-study-club-obsidian
           cp obsidian-plugin/main.js obsidian-plugin/manifest.json obsidian-plugin/styles.css \
-            dist/english-reading-lab/
+            dist/english-study-club-obsidian/
           cd dist
-          zip -r english-reading-lab-obsidian.zip english-reading-lab/
+          zip -r english-study-club-obsidian.zip english-study-club-obsidian/
 
       - name: Determine version
         id: version
@@ -71,9 +71,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.tag }}
-          name: English Reading Lab v${{ steps.version.outputs.tag }}
+          name: English Study Club v${{ steps.version.outputs.tag }}
           generate_release_notes: true
           files: |
-            dist/English-Reading-Lab.zip
-            dist/English-Reading-Lab-browser-extension.zip
-            dist/english-reading-lab-obsidian.zip
+            dist/english-study-club.zip
+            dist/english-study-club-browser-extension.zip
+            dist/english-study-club-obsidian.zip
