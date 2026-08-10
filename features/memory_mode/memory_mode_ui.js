@@ -18,6 +18,9 @@
                 memoryModeDiv.className = 'vocab-card memory-mode-card memory-rainbow-off';
             }
             
+            // 确保显示（CSS 默认隐藏）
+            memoryModeDiv.style.setProperty('display', 'block', 'important');
+
             // 清理旧的事件监听器（防止内存泄漏）
             if (memoryModeDiv._cleanup) {
                 memoryModeDiv._cleanup();
@@ -790,7 +793,7 @@
             memoryModeDiv.appendChild(modeSelectDiv);
             
             // 确保记忆模式界面可见
-            memoryModeDiv.style.display = 'block';
+            memoryModeDiv.style.setProperty('display', 'block', 'important');
 
             // 应用彩虹背景开关状态
             if (window.applyMemoryRainbow) {

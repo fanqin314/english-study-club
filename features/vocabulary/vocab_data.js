@@ -1,8 +1,9 @@
-// vocab_data.js - 生词本数据的增删改查、localStorage存储
-
+// vocab_data.js - 生词本数据的增删改查、本地文件存储
 (function() {
     // 存储键名
     const STORAGE_KEY = 'vocabData';
+    const FILE_NAME = 'vocabData.json';
+    const TS_KEY = 'vocabData_ts';  // 时间戳键，用于比较新旧
     
     // 数据结构
     let vocabData = {
@@ -14,39 +15,104 @@
     let saveTimer = null;
     const SAVE_DELAY = 300; // 300ms防抖
     
-    // 加载数据
-    function loadData() {
+    // 加载数据（比较本地文件与 localStorage 时间戳，取最新的）
+    async function loadData() {
+        const LFS = window.LocalFileStorage;
+        const localTs = parseInt(localStorage.getItem(TS_KEY) || '0');
+        
+        if (LFS && LFS.isActive()) {
+            try {
+                const data = await LFS.readJSON(FILE_NAME);
+                if (data && data.notebooks) {
+                    const fileTs = parseInt(localStorage.getItem(TS_KEY + '_file') || '0');
+                    if (fileTs >= localTs) {
+                        vocabData = data;
+                        _ensureDataIntegrity();
+                        _saveToLocalStorage(true);
+                        console.log('[VocabData] 从本地文件加载，共', Object.keys(vocabData.notebooks).length, '个生词本');
+                        return;
+                    }
+                    console.log('[VocabData] localStorage 数据更新，使用 localStorage');
+                    _saveToLocalFile();
+                    return;
+                }
+            } catch (e) {
+                console.warn('[VocabData] 本地文件加载失败，使用 localStorage:', e.message);
+            }
+        }
+        // 从 localStorage 加载
+        const loaded = _loadFromLocalStorage();
+        if (loaded) {
+            console.log('[VocabData] 从 localStorage 加载');
+            if (LFS && LFS.isActive()) _saveToLocalFile();
+        }
+    }
+    
+    // 从 localStorage 加载（返回是否成功）
+    function _loadFromLocalStorage() {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
                     vocabData = parsed;
-                    // 确保数据结构完整
-                    if (!vocabData.notebooks) vocabData.notebooks = {};
-                    if (!vocabData.currentNotebookId) {
-                        const firstId = Object.keys(vocabData.notebooks)[0];
-                        vocabData.currentNotebookId = firstId || null;
-                    }
-                    // 确保每个生词本都有 words 数组和 createdDate
-                    for (let id in vocabData.notebooks) {
-                        if (!vocabData.notebooks[id].words) {
-                            vocabData.notebooks[id].words = [];
-                        }
-                        if (!vocabData.notebooks[id].createdDate) {
-                            vocabData.notebooks[id].createdDate = new Date().toISOString();
-                        }
-                    }
+                    _ensureDataIntegrity();
+                    return true;
                 } catch(e) {
                     console.error('解析生词本数据失败:', e);
                     initDefaultData();
+                    return true;
                 }
             } else {
                 initDefaultData();
+                return true;
             }
         } catch(e) {
             console.error('加载生词本数据失败:', e);
             initDefaultData();
+            return true;
+        }
+    }
+    
+    // 保存到 localStorage（skipTs 跳过时间戳更新）
+    function _saveToLocalStorage(skipTs) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(vocabData));
+            if (!skipTs) {
+                localStorage.setItem(TS_KEY, Date.now().toString());
+            }
+        } catch (e) {
+            console.error('保存生词本到 localStorage 失败:', e);
+        }
+    }
+    
+    // 保存到本地文件
+    async function _saveToLocalFile() {
+        const LFS = window.LocalFileStorage;
+        if (LFS && LFS.isActive()) {
+            try {
+                await LFS.writeJSON(FILE_NAME, vocabData);
+                localStorage.setItem(TS_KEY + '_file', Date.now().toString());
+            } catch (e) {
+                console.error('保存生词本到本地文件失败:', e);
+            }
+        }
+    }
+    
+    // 确保数据结构完整
+    function _ensureDataIntegrity() {
+        if (!vocabData.notebooks) vocabData.notebooks = {};
+        if (!vocabData.currentNotebookId) {
+            const firstId = Object.keys(vocabData.notebooks)[0];
+            vocabData.currentNotebookId = firstId || null;
+        }
+        for (let id in vocabData.notebooks) {
+            if (!vocabData.notebooks[id].words) {
+                vocabData.notebooks[id].words = [];
+            }
+            if (!vocabData.notebooks[id].createdDate) {
+                vocabData.notebooks[id].createdDate = new Date().toISOString();
+            }
         }
     }
     
@@ -63,43 +129,24 @@
             },
             currentNotebookId: defaultId
         };
-        saveDataImmediately();
+        _saveToLocalStorage();
+        _saveToLocalFile();
     }
     
-    // 保存数据
+    // 保存数据（防抖，双写 localStorage + 本地文件）
     function saveData() {
         clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(vocabData));
-            } catch (e) {
-                console.error('保存生词本数据失败:', e);
-                // 尝试清理旧数据或通知用户
-                if (e.name === 'QuotaExceededError') {
-                    if (typeof showToast === 'function') {
-                        showToast('存储空间不足，请清理部分生词本数据');
-                    }
-                } else if (e.name === 'SecurityError') {
-                    if (typeof showToast === 'function') {
-                        showToast('安全错误：无法访问存储');
-                    }
-                } else {
-                    if (typeof showToast === 'function') {
-                        showToast('保存数据失败，请重试');
-                    }
-                }
-            }
+        saveTimer = setTimeout(async () => {
+            _saveToLocalStorage();
+            await _saveToLocalFile();
         }, SAVE_DELAY);
     }
     
-    // 立即保存数据（不使用防抖）
-    function saveDataImmediately() {
+    // 立即保存数据（不使用防抖，双写）
+    async function saveDataImmediately() {
         clearTimeout(saveTimer);
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(vocabData));
-        } catch (e) {
-            console.error('保存生词本数据失败:', e);
-        }
+        _saveToLocalStorage();
+        await _saveToLocalFile();
     }
     
     // 获取所有生词本
@@ -647,6 +694,25 @@
         importFromMarkdown
     };
     
-    // 自动加载数据
-    loadData();
+    // 自动加载数据（异步）
+    loadData().then(() => {
+        console.log('[VocabData] 初始化完成');
+    });
+
+    // 页面卸载前强制同步到 localStorage（确保不丢数据）
+    window.addEventListener('beforeunload', () => {
+        _saveToLocalStorage();
+    });
+    window.addEventListener('pagehide', () => {
+        _saveToLocalStorage();
+    });
+
+    // 监听本地文件夹就绪事件，重新加载数据
+    if (typeof EventBus !== 'undefined' && EventBus && EventBus.on) {
+        EventBus.on('localStorageReady', () => {
+            loadData().then(() => {
+                console.log('[VocabData] 已切换到本地文件存储');
+            });
+        });
+    }
 })();

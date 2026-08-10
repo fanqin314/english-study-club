@@ -41,6 +41,7 @@
         const memoryDiv = document.createElement('div');
         memoryDiv.id = 'memoryModeInterface';
         memoryDiv.className = 'vocab-card memory-mode-card';
+        memoryDiv.style.setProperty('display', 'block', 'important');
         memoryDiv.innerHTML = `
             <div style="padding: 20px; text-align: center; color: var(--text-light);">
                 <p>正在加载记忆模式界面...</p>

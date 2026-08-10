@@ -58,7 +58,7 @@
         
         // 移除已存在的记忆模式界面
         const memoryModeDiv = document.getElementById('memoryModeInterface');
-        if (memoryModeDiv) memoryModeDiv.style.display = 'none';
+        if (memoryModeDiv) memoryModeDiv.style.setProperty('display', 'none', 'important');
         
         // 创建生词本界面容器
         const vocabDiv = document.createElement('div');

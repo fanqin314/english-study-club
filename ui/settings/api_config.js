@@ -164,12 +164,12 @@
                 <div id="usageStatus" style="margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--accent-light); font-size: 13px; color: var(--text-light);">
                     <span id="usageText">加载中...</span>
                 </div>
-                <label>Base URL</label>
-                <input type="text" id="apiBaseInput" placeholder="https://api-inference.modelscope.cn/v1" style="box-shadow: inset 0px 2px 10px -2px rgba(0, 0, 0, 0.25); background-color: rgba(245, 245, 245, 0.6); border-width: 1px; border-style: solid; border-color: #ededed; opacity: 0.9;">
-                <label>API Key</label>
-                <input type="password" id="apiKeyInput" placeholder="ms-xxxxxx（魔搭SDK Token）" style="box-shadow: inset 0px 2px 10px -2px rgba(0, 0, 0, 0.25); background-color: rgba(245, 245, 245, 0.6); border-width: 1px; border-style: solid; border-color: #ededed; opacity: 0.9;">
-                <label>模型名称</label>
-                <input type="text" id="modelInput" placeholder="qwen-qwen3-5-35b-a3b" style="box-shadow: inset 0px 2px 10px -2px rgba(0, 0, 0, 0.25); background-color: rgba(245, 245, 245, 0.6); border-width: 1px; border-style: solid; border-color: #ededed; opacity: 0.9;">
+                <label style="display: none;">Base URL</label>
+                <input type="text" id="apiBaseInput" placeholder="https://api-inference.modelscope.cn/v1" style="display: none;">
+                <label style="display: none;">API Key</label>
+                <input type="password" id="apiKeyInput" placeholder="ms-xxxxxx（魔搭SDK Token）" style="display: none;">
+                <label style="display: none;">模型名称</label>
+                <input type="text" id="modelInput" placeholder="qwen-qwen3-5-35b-a3b" style="display: none;">
                 <label>代理地址（可选，用于保护 API Key）</label>
                 <input type="text" id="proxyUrlInput" placeholder="留空则直连 API" style="box-shadow: inset 0px 2px 10px -2px rgba(0, 0, 0, 0.25); background-color: rgba(245, 245, 245, 0.6); border-width: 1px; border-style: solid; border-color: #ededed; opacity: 0.9;">
                 <div class="button-group">

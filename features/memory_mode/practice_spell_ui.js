@@ -24,6 +24,7 @@
             container.innerHTML = '';
             container.id = 'memoryModeInterface';
             container.className = 'vocab-card memory-mode-card';
+            container.style.setProperty('display', 'block', 'important');
             if (window.applyMemoryRainbow) window.applyMemoryRainbow();
             const _cleanupFns = [];
 

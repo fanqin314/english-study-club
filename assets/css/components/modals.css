@@ -56,3 +56,62 @@
     font-size: 18px;
     font-weight: 600;
 }
+
+/* 设置面板操作按钮 */
+.settings-action-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.settings-action-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.settings-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.settings-action-btn-danger {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.settings-action-btn-danger:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* 导出格式复选框标签 */
+.export-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+}
+
+.export-check-label input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+/* 确认导出按钮（修改 checkbox 后变蓝） */
+.settings-action-btn.confirm-active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    font-weight: 600;
+}

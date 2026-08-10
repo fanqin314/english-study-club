@@ -203,7 +203,10 @@
                 this.safeSetStyle(this.getElement('secondaryAnalysisContainer'), 'display', 'none');
                 this.safeRemove(this.getElement('vocabInterface'));
                 this.safeRemove(this.getElement('historyInterface'));
-                this.safeSetStyle(this.getElement('memoryModeInterface'), 'display', 'none');
+                const mmi = this.getElement('memoryModeInterface');
+                if (mmi) {
+                    mmi.style.setProperty('display', 'none', 'important');
+                }
             }
 
             showCardHeaderAndBody() {

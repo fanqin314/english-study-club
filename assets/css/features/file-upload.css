@@ -1,0 +1,148 @@
+/* file-upload.css - 文件上传按钮与拖拽视觉反馈 */
+
+/* ========== 上传按钮 ========== */
+.file-upload-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card-bg, #fff);
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 5;
+    padding: 0;
+    opacity: 0.5;
+}
+
+.file-upload-btn:hover {
+    opacity: 1;
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.file-upload-btn:active {
+    transform: scale(0.95);
+}
+
+/* ========== 拖拽视觉反馈 ========== */
+#articleInput.file-drag-over {
+    border-color: var(--accent) !important;
+    border-style: dashed !important;
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-page)) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    transition: all 0.2s ease;
+}
+
+/* ========== 拖拽悬停时的提示文字（通过伪元素） ========== */
+#articleInput.file-drag-over::placeholder {
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+/* ========== 拍照按钮（与上传按钮并排，右偏移） ========== */
+.camera-btn {
+    right: 50px;
+}
+
+/* ========== 摄像头模态框 ========== */
+.camera-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+}
+
+.camera-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.camera-container {
+    position: relative;
+    margin: auto;
+    width: 90vw;
+    max-width: 640px;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.camera-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+}
+
+.camera-canvas {
+    display: none;
+}
+
+.camera-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+}
+
+.camera-capture-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    backdrop-filter: blur(4px);
+}
+
+.camera-capture-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+.camera-capture-btn:active {
+    transform: scale(0.9);
+}
+
+.camera-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    backdrop-filter: blur(4px);
+}
+
+.camera-close-btn:hover {
+    background: rgba(255, 0, 0, 0.7);
+    transform: scale(1.1);
+}

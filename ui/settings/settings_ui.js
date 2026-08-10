@@ -67,8 +67,12 @@
         });
 
         // 点击弹窗外部关闭（点击背景关闭）
-        settingsModal.addEventListener('click', (e) => {
+        settingsModal.addEventListener('click', async (e) => {
             if (e.target === settingsModal) {
+                // 关闭前自动确认导出
+                if (typeof window.triggerExportIfDirty === 'function') {
+                    await window.triggerExportIfDirty();
+                }
                 const modalContent = settingsModal.querySelector('.modal-content');
                 if (modalContent) {
                     // 关闭动画：缩小并回到按钮位置
@@ -111,11 +115,21 @@ function loadSettingsContent() {
     if (typeof window.fillMemoryBackgroundSettings === 'function') {
         window.fillMemoryBackgroundSettings(modalContent);
     }
+    if (typeof window.fillLocalStorageSettings === 'function') {
+        window.fillLocalStorageSettings(modalContent);
+    }
+    if (typeof window.fillSaveSettings === 'function') {
+        window.fillSaveSettings(modalContent);
+    }
 }
 
-    // 暴露给其他模块，用于关闭弹窗
-    window.closeSettingsModal = function() {
+    // 暴露给其他模块，用于关闭弹窗和刷新内容
+    window.closeSettingsModal = async function() {
         if (settingsModal) {
+            // 关闭前自动确认导出
+            if (typeof window.triggerExportIfDirty === 'function') {
+                await window.triggerExportIfDirty();
+            }
             const modalContent = settingsModal.querySelector('.modal-content');
             if (modalContent) {
                 // 关闭动画：缩小并回到按钮位置
@@ -142,6 +156,7 @@ function loadSettingsContent() {
 
     // 暴露填充内容的钩子，供其他模块调用
     window.settingsModalContainer = settingsModal;
+    window.loadSettingsContent = loadSettingsContent;
 
     // 初始化
     if (document.readyState === 'loading') {

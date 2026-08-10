@@ -25,6 +25,7 @@
             container.innerHTML = '';
             container.id = 'memoryModeInterface';
             container.className = 'vocab-card memory-mode-card';
+            container.style.setProperty('display', 'block', 'important');
 
             const listenHeader = document.createElement('div');
             listenHeader.className = 'fill-header';
