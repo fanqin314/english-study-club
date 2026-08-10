@@ -1,184 +1,146 @@
-# 英语精读实验室
+# 英语阅读实验室 (English Reading Lab)
 
-一个基于模块化架构的英语学习工具，提供深度解析、词汇管理、历史记录等功能。
+**文章驱动的人工智能英语精读学习工具** —— 阅读真实英文文章，AI 自动解析词性、语法、知识点与翻译，并通过闪卡、填空、听写、选词等练习模式，在语境中自然积累词汇与语法知识。
 
-## 项目简介
+<p align="center">
+  <img src="assets/screenshot_demo.png" alt="英语阅读实验室界面预览" width="90%" />
+</p>
 
-英语精读实验室是一个专注于英语深度学习的Web应用，通过AI技术提供词性分析、语法结构解析、知识点提取、翻译等功能，帮助用户深入理解英文文章。
+<p align="center">
+  <a href="https://fanqin314.github.io/English-Reading-Lab/"><strong>在线体验 Demo</strong></a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#核心功能">核心功能</a> ·
+  <a href="#技术架构">技术架构</a>
+</p>
+
+---
+
+## 为什么是"文章驱动"？
+
+传统背单词脱离语境，记住了单词却不会用。英语阅读实验室让**一切学习围绕真实文章展开**：
+
+1. 粘贴一篇英文文章，AI 逐句分析词性、语法结构、知识点并翻译
+2. 阅读中随手标注生词，自动存入生词本
+3. 用闪卡、填空、听写、选词、语境填空多种模式反复练习
+4. 用全文回顾、逐句精读、生词测验进行阶段性复习
+5. 学习统计追踪掌握度，个性化驱动复习计划
+
+**阅读是第一优先级，学习功能融入阅读而非打断它。**
+
+---
 
 ## 核心功能
 
-- **深度解析**：对英文句子进行词性分析、语法结构解析、知识点提取
-- **全文翻译**：提供整篇文章的中文翻译
-- **词汇管理**：生词本功能，支持添加、编辑、删除单词
-- **历史记录**：保存用户的分析历史
-- **词库服务**：内置词库和用户自定义词库
-- **高亮显示**：支持词性高亮，可自定义高亮设置
-- **暗黑模式**：支持明暗主题切换
+### 人工智能深度解析
+- **词性分析**：逐词标注词性并高亮（可自定义高亮配色）
+- **语法结构**：解析句子成分与句型结构
+- **知识点提取**：自动提炼值得记忆的语言点
+- **逐句 + 全文翻译**：中文对照理解
 
-## 技术架构
+### 记忆模式（4 种练习）
+| 模式 | 说明 |
+|---|---|
+| 闪卡模式 | 翻转卡片，快速记忆单词 |
+| 填空练习 | 语境填空，加深词汇理解 |
+| 听写练习 | 听音拼写，强化听写能力 |
+| 选词练习 | 释义 · 听音 · 选中文 · 填空，多维训练 |
 
-### 模块化设计
+### 复习模式（3 种方式）
+- **全文回顾**：沉浸式重读原文，7 种阅读风格可切换（书本 / 杂志 / 报纸 / 可爱 / 像素 / 极简 / 典籍）
+- **逐句精读**：逐句回看分析结果，细嚼慢咽
+- **生词测验**：针对生词本出题，检验掌握度
 
-项目采用模块化架构，通过模块注册系统和事件总线实现组件间的解耦通信。
+### 词汇管理
+- 多生词本管理，支持合并、删除、重命名
+- 点击单词即时查词，右键菜单快捷操作
+- 单词掌握度分级统计
 
-#### 核心模块 (core/)
+### 数据与生态
+- **本地文件夹持久化**：数据可保存到本地文件夹，浏览器清缓存也不丢失
+- **JSON / TXT / MD 导出**：历史记录与生词本一键导出
+- **浏览器插件 + Obsidian 插件**：网页划线、视频字幕采集进同一数据闭环
+- **文件上传 / 图片 OCR / 拍照识别**：PDF、Word、图片文字一键导入
 
-- **module_registry.js**：模块注册系统，管理模块依赖和初始化
-- **event_bus.js**：事件总线，实现模块间的事件通信
-- **error_handler.js**：统一错误处理，提供用户友好的错误提示
-- **security.js**：安全工具，提供API Key加密、输入验证、XSS防护
-- **performance.js**：性能优化，提供缓存、防抖、节流等功能
-- **cache.js**：缓存管理，统一管理句子解析缓存、全文翻译等
+### 体验细节
+- 暗色 / 浅色主题切换
+- 全键盘快捷键（ESC 退出、Enter 提交）
+- 响应式布局，桌面端与移动端均可使用
+- 学习进度在模式卡片上实时可见
 
-#### 业务模块 (modules/)
-
-- **api/**：API请求模块
-  - `api_request.js`：处理所有API请求，包括词性分析、语法结构、知识点、翻译等
-
-- **analysis/**：分析模块
-  - `split.js`：文本分割，将文章分割为句子
-  - `render.js`：渲染句子列表
-  - `full_translation.js`：全文翻译功能
-
-- **vocabulary/**：词汇模块
-  - `vocab_data.js`：词汇数据管理
-
-- **history/**：历史记录模块
-  - `history_module.js`：历史记录管理
-
-- **dictionary/**：字典模块
-  - `dict.js`：词库服务，管理外部词库和补充词库
-  - `dict.json`：外部词库数据
-
-#### 用户界面 (ui/)
-
-- **main/**：主界面
-  - `main_buttons.js`：主按钮管理（深度解析、生词本）
-
-- **analysis/**：分析界面
-  - `second_row_ui.js`：第二行按钮界面
-  - `highlight_switch.js`：高亮开关
-  - `highlight_render.js`：高亮渲染
-  - `highlight_settings.js`：高亮设置
-  - `add_all_pos.js`：添加所有词性
-  - `save_analysis.js`：保存分析结果
-  - `load_example.js`：加载示例文本
-  - `pos_button.js`：词性按钮
-  - `syntax_button.js`：语法按钮
-  - `knowledge_button.js`：知识点按钮
-  - `reload_button.js`：重新加载按钮
-
-- **vocabulary/**：词汇界面
-  - `vocab_ui.js`：生词本界面
-  - `vocab_button.js`：生词本按钮
-  - `word_menu.js`：单词菜单
-
-- **settings/**：设置界面
-  - `settings_ui.js`：设置界面
-  - `api_config.js`：API配置
-  - `dark_mode.js`：暗黑模式
-
-#### 静态资源 (assets/)
-
-- **style.css**：样式文件
-
-## 目录结构
-
-```
-英语阅读实验室/
-├── index.html                 # 主页面
-├── core/                      # 核心模块
-│   ├── module_registry.js     # 模块注册系统
-│   ├── event_bus.js           # 事件总线
-│   ├── error_handler.js      # 错误处理
-│   ├── security.js           # 安全工具
-│   ├── performance.js        # 性能优化
-│   └── cache.js              # 缓存管理
-├── modules/                   # 业务模块
-│   ├── api/                  # API请求
-│   │   └── api_request.js
-│   ├── analysis/             # 分析模块
-│   │   ├── split.js
-│   │   ├── render.js
-│   │   └── full_translation.js
-│   ├── vocabulary/           # 词汇模块
-│   │   └── vocab_data.js
-│   ├── history/              # 历史记录
-│   │   └── history_module.js
-│   └── dictionary/           # 字典模块
-│       ├── dict.js
-│       └── dict.json
-├── ui/                       # 用户界面
-│   ├── main/                 # 主界面
-│   │   └── main_buttons.js
-│   ├── analysis/             # 分析界面
-│   │   ├── second_row_ui.js
-│   │   ├── highlight_switch.js
-│   │   ├── highlight_render.js
-│   │   ├── highlight_settings.js
-│   │   ├── add_all_pos.js
-│   │   ├── save_analysis.js
-│   │   ├── load_example.js
-│   │   ├── pos_button.js
-│   │   ├── syntax_button.js
-│   │   ├── knowledge_button.js
-│   │   └── reload_button.js
-│   ├── vocabulary/           # 词汇界面
-│   │   ├── vocab_ui.js
-│   │   ├── vocab_button.js
-│   │   └── word_menu.js
-│   └── settings/            # 设置界面
-│       ├── settings_ui.js
-│       ├── api_config.js
-│       └── dark_mode.js
-├── assets/                   # 静态资源
-│   └── style.css
-└── docs/                     # 文档
-    └── README.md
-```
+---
 
 ## 快速开始
 
-### 环境要求
+### 在线体验（零配置）
 
-- 现代浏览器（Chrome、Firefox、Safari、Edge）
-- 支持ES6+的JavaScript环境
+直接访问 **https://fanqin314.github.io/English-Reading-Lab/** 即可使用。
+项目内置默认 AI API Key，打开就能体验深度解析，无需任何配置。
 
-### 安装运行
+### 本地运行
 
-1. 克隆或下载项目
-2. 在浏览器中打开 `index.html` 文件
-3. 配置API Key（点击右上角设置按钮）
-4. 开始使用
+```bash
+git clone https://github.com/fanqin314/English-Reading-Lab.git
+cd English-Reading-Lab
 
-### API配置
+# 方式一：直接用浏览器打开（纯静态应用，无需构建）
+open index.html
 
-1. 点击右上角设置按钮
-2. 输入Base URL（如：https://api.deepseek.com）
-3. 输入API Key
-4. 输入模型名称（如：deepseek-chat）
-5. 点击保存
+# 方式二：本地静态服务器（推荐，避免 CORS 问题）
+python -m http.server 8080
+# 访问 http://localhost:8080
+```
 
-## 开发指南
+### 配置自定义 API（可选）
 
-### 添加新功能
+1. 点击右上角**设置**按钮
+2. 填入 Base URL、API Key、模型名称
+3. 保存后即可使用自己的 AI 服务（默认已内置可用的默认 Key）
 
-1. **创建新模块**：在 `modules/` 下创建对应的子目录和文件
-2. **创建UI组件**：在 `ui/` 下创建对应的界面文件
-3. **注册模块**：使用 `ModuleRegistry.register()` 注册新模块
-4. **更新HTML**：在 `index.html` 中添加新的script引用
+---
+
+## 技术架构
+
+### 设计理念
+
+- **纯前端**：无后端依赖，HTML + CSS + 原生 JavaScript（ES6+）
+- **模块化架构**：ModuleRegistry 模块注册系统 + EventBus 事件总线，组件彻底解耦
+- **可扩展**：新增功能只需创建模块 → 注册 → 接入 UI，不影响既有功能
+
+### 目录结构
+
+```
+English-Reading-Lab/
+├── index.html                 # 主页面（应用入口）
+├── core/                      # 核心基础设施
+│   ├── module_registry.js     # 模块注册系统
+│   ├── event_bus.js           # 事件总线（模块通信）
+│   ├── api_request.js         # AI API 请求（重试/缓存/错误处理）
+│   ├── local_file_storage.js  # 本地文件夹持久化（File System Access API）
+│   ├── security.js            # 安全与 API Key 处理
+│   └── cache.js               # 解析结果缓存
+├── features/                  # 业务功能模块
+│   ├── deep_parse/            # 深度解析（词性/语法/知识点/翻译）
+│   ├── memory_mode/           # 记忆与复习模式
+│   ├── vocabulary/            # 生词本
+│   ├── history/               # 历史记录
+│   ├── file_upload/           # 文件上传 / OCR / 拍照
+│   └── stats_tracker.js       # 学习统计
+├── modules/                   # 业务逻辑模块
+│   ├── analysis/              # 文章分析
+│   └── dictionary/            # 词库服务
+├── ui/                        # 界面层
+│   ├── main_button.js         # 主按钮（深度解析/生词本/历史）
+│   ├── event_delegation.js    # 事件委托
+│   └── settings/              # 设置面板（API/主题/导出/存储）
+└── assets/                    # 样式与静态资源（CSS 变量主题体系）
+```
 
 ### 模块注册示例
 
 ```javascript
-ModuleRegistry.register('ModuleName', ['Dependency1', 'Dependency2'], function(Dependency1, Dependency2) {
+ModuleRegistry.register('MyModule', ['EventBus'], function (EventBus) {
     // 模块实现
-    
-    // 导出接口
-    return {
-        // 公开的方法
-    };
+    return { /* 公开接口 */ };
 });
 ```
 
@@ -186,78 +148,39 @@ ModuleRegistry.register('ModuleName', ['Dependency1', 'Dependency2'], function(D
 
 ```javascript
 // 发送事件
-EventBus.emit('eventName', data);
+EventBus.emit('analysis.completed', { articleId: 'xxx' });
 
 // 监听事件
-EventBus.on('eventName', function(data) {
-    // 处理事件
-});
-
-// 移除事件监听
-EventBus.off('eventName', handler);
-```
-
-### 错误处理示例
-
-```javascript
-const asyncFunction = ErrorHandler.wrapAsyncFunction(async function() {
-    // 异步操作
+EventBus.on('analysis.completed', function (data) {
+    // 处理
 });
 ```
 
-## 文件命名规范
+---
 
-- **核心模块**：使用下划线命名法（如：`module_registry.js`）
-- **业务模块**：使用下划线命名法（如：`api_request.js`）
-- **UI组件**：使用下划线命名法（如：`main_buttons.js`）
-- **目录名**：使用小写字母和下划线（如：`ui/analysis/`）
+## 开发指南
 
-## 代码规范
+### 添加新功能
 
-- 使用ES6+语法
-- 函数使用JSDoc注释
-- 变量命名清晰易懂
-- 避免全局变量污染
-- 使用模块化架构
+1. 在 `features/` 下创建功能目录与 JS 文件
+2. 通过 `ModuleRegistry.register()` 注册模块
+3. 在 `index.html` 中添加 `<script>` 引用
+4. 使用 `EventBus` 与既有模块通信
 
-## 安全性
+### 代码规范
 
-- API Key加密存储
-- 输入验证和过滤
-- XSS防护
-- 敏感信息过滤
+- ES6+ 语法，JSDoc 注释
+- UI 图标一律使用 SVG（禁止 emoji）
+- 颜色统一走 CSS 变量（`assets/css/variables.css`），支持暗色模式
+- 事件监听使用 `addEventListener` + `_cleanupFns` 清理，避免内存泄漏
+- 交互元素需防重入保护
 
-## 性能优化
-
-- API请求缓存
-- DOM操作优化
-- 防抖和节流
-- 懒加载
-
-## 浏览器兼容性
-
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+---
 
 ## 贡献指南
 
-欢迎提交Issue和Pull Request来改进项目。
+欢迎提交 Issue 和 Pull Request 改进项目。建议先阅读 [ARCHITECTURE.md](ARCHITECTURE.md) 了解模块化设计。
 
 ## 许可证
 
 MIT License
-
-## 更新日志
-
-### v1.0.0 (2026-04-03)
-
-- 完成模块化重构
-- 优化文件结构
-- 添加详细文档
-- 修复已知问题
-
-## 联系方式
-
-如有问题或建议，请通过Issue联系我们。
