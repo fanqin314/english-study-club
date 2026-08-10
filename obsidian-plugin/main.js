@@ -19,11 +19,11 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => EnglishReadingLabPlugin
+  default: () => EnglishStudyClubPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var DASHBOARD_VIEW_TYPE = "english-lab-dashboard";
+var DASHBOARD_VIEW_TYPE = "english-study-club-dashboard";
 var DashboardView = class extends import_obsidian.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
@@ -104,7 +104,7 @@ var DEFAULT_SETTINGS = {
   showVocabulary: true,
   showCaptures: true
 };
-var EnglishReadingLabSettingTab = class extends import_obsidian.PluginSettingTab {
+var EnglishStudyClubSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -143,7 +143,7 @@ var EnglishReadingLabSettingTab = class extends import_obsidian.PluginSettingTab
     );
   }
 };
-var EnglishReadingLabPlugin = class extends import_obsidian.Plugin {
+var EnglishStudyClubPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerView(
@@ -168,7 +168,7 @@ var EnglishReadingLabPlugin = class extends import_obsidian.Plugin {
       name: "\u5EFA\u7ACB\u53CC\u5411\u94FE\u63A5",
       callback: () => this.createBidirectionalLinks()
     });
-    this.addSettingTab(new EnglishReadingLabSettingTab(this.app, this));
+    this.addSettingTab(new EnglishStudyClubSettingTab(this.app, this));
     if (this.app.workspace.layoutReady) {
       this.initDashboard();
     } else {

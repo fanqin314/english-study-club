@@ -4,7 +4,7 @@ import { App } from "obsidian";
 // ============================================================
 // Dashboard View
 // ============================================================
-const DASHBOARD_VIEW_TYPE = "english-lab-dashboard";
+const DASHBOARD_VIEW_TYPE = "english-study-club-dashboard";
 
 interface DashboardStats {
 	totalArticles: number;
@@ -15,9 +15,9 @@ interface DashboardStats {
 }
 
 class DashboardView extends ItemView {
-	plugin: EnglishReadingLabPlugin;
+	plugin: EnglishStudyClubPlugin;
 
-	constructor(leaf: WorkspaceLeaf, plugin: EnglishReadingLabPlugin) {
+	constructor(leaf: WorkspaceLeaf, plugin: EnglishStudyClubPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 	}
@@ -113,24 +113,24 @@ class DashboardView extends ItemView {
 // ============================================================
 // Settings
 // ============================================================
-interface EnglishReadingLabSettings {
+interface EnglishStudyClubSettings {
 	reviewIntervalDays: number;
 	showArticles: boolean;
 	showVocabulary: boolean;
 	showCaptures: boolean;
 }
 
-const DEFAULT_SETTINGS: EnglishReadingLabSettings = {
+const DEFAULT_SETTINGS: EnglishStudyClubSettings = {
 	reviewIntervalDays: 7,
 	showArticles: true,
 	showVocabulary: true,
 	showCaptures: true,
 };
 
-class EnglishReadingLabSettingTab extends PluginSettingTab {
-	plugin: EnglishReadingLabPlugin;
+class EnglishStudyClubSettingTab extends PluginSettingTab {
+	plugin: EnglishStudyClubPlugin;
 
-	constructor(app: App, plugin: EnglishReadingLabPlugin) {
+	constructor(app: App, plugin: EnglishStudyClubPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -196,8 +196,8 @@ class EnglishReadingLabSettingTab extends PluginSettingTab {
 // ============================================================
 // Main Plugin
 // ============================================================
-export default class EnglishReadingLabPlugin extends Plugin {
-	settings: EnglishReadingLabSettings;
+export default class EnglishStudyClubPlugin extends Plugin {
+	settings: EnglishStudyClubSettings;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -235,7 +235,7 @@ export default class EnglishReadingLabPlugin extends Plugin {
 		});
 
 		// Settings tab
-		this.addSettingTab(new EnglishReadingLabSettingTab(this.app, this));
+		this.addSettingTab(new EnglishStudyClubSettingTab(this.app, this));
 
 		// If workspace layout is ready, register the view
 		if (this.app.workspace.layoutReady) {

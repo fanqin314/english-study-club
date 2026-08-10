@@ -1,6 +1,6 @@
 // background.js - English Study Club Service Worker
 
-const NATIVE_HOST_NAME = 'com.englishlab.nativehost';
+const NATIVE_HOST_NAME = 'com.englishstudyclub.nativehost';
 let nativePort = null;
 let pendingRequests = new Map();
 let requestId = 0;
