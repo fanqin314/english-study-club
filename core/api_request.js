@@ -12,8 +12,8 @@
 
         // 默认AI模式（默认魔搭AI）：直连魔搭免费 qwen
         const DEFAULT_AI_MODEL = 'Qwen/Qwen3.5-35B-A3B';
-        // 自定义模式下通过 fanqin 代理调用的 DeepSeek 付费模型
-        const DEEPSEEK_FLASH_MODEL = 'deepseek-v4-flash';
+        // DeepSeek 系列模型（自定义模式下使用，显式关闭思考直接输出）
+        const DEEPSEEK_MODELS = ['deepseek-v4-pro', 'deepseek-v4-flash'];
 
         /**
          * 通用 API 请求函数
@@ -29,11 +29,9 @@
             const isDefaultAI = localStorage.getItem('defaultAIMode') !== 'false';
             const proxyUrl = isDefaultAI ? '' : config.proxyUrl;
             const useProxy = !!(proxyUrl && proxyUrl.trim() !== '');
-            // 自定义模式下目标为 fanqin 代理(DeepSeek 付费)时强制其支持模型
-            const isDeepseekProxy = (proxyUrl || '').includes('api.fanqin.top');
-            const effectiveModel = isDefaultAI
-                ? DEFAULT_AI_MODEL
-                : (isDeepseekProxy ? DEEPSEEK_FLASH_MODEL : (config.model || ''));
+            // 自定义模式使用用户配置的模型；DeepSeek 系列模型显式关闭思考直接输出
+            const isDeepseekModel = DEEPSEEK_MODELS.includes((config.model || '').trim().toLowerCase());
+            const effectiveModel = isDefaultAI ? DEFAULT_AI_MODEL : (config.model || '');
             if (!useProxy && (!config || !config.apiKey)) {
                 throw new Error('请先配置 API Key');
             }
@@ -110,8 +108,8 @@
                             temperature: options.temperature ?? 0.3,
                             max_tokens: options.maxTokens || 500,
                             chat_template_kwargs: { enable_thinking: false },
-                            // DeepSeek 代理：显式关闭思考，直接输出（不产生 reasoning_content，更快更省 token）
-                            ...(isDeepseekProxy ? { thinking: { type: 'disabled' } } : {}),
+                            // DeepSeek 系列模型：显式关闭思考，直接输出（不产生 reasoning_content，更快更省 token）
+                            ...(isDeepseekModel ? { thinking: { type: 'disabled' } } : {}),
                             ...(options.responseFormat ? { response_format: { type: options.responseFormat } } : {})
                         }),
                         signal: controller.signal

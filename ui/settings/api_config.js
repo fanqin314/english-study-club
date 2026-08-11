@@ -102,11 +102,9 @@
             // 默认AI=魔搭免费qwen直连；自定义模式可填代理
             const proxyUrl = isDefaultAI ? '' : apiConfig.proxyUrl;
             const useProxy = !!(proxyUrl && proxyUrl.trim() !== '');
-            const isDeepseekProxy = (proxyUrl || '').includes('api.fanqin.top');
-            // 默认AI=魔搭qwen；fanqin代理=DeepSeek付费；其他自定义API用保存的模型
-            const testModel = isDefaultAI
-                ? 'Qwen/Qwen3.5-35B-A3B'
-                : (isDeepseekProxy ? 'deepseek-v4-flash' : (apiConfig.model || ''));
+            // 自定义模式使用用户配置的模型；DeepSeek 系列模型显式关闭思考
+            const isDeepseekModel = ['deepseek-v4-pro', 'deepseek-v4-flash'].includes((apiConfig.model || '').trim().toLowerCase());
+            const testModel = isDefaultAI ? 'Qwen/Qwen3.5-35B-A3B' : (apiConfig.model || '');
 
             if (!isDefaultAI && !useProxy && !apiConfig.apiKey) {
                 ErrorHandler.handleValidationError('请先填写 API Key 或配置代理地址');
@@ -132,8 +130,8 @@
                         model: testModel,
                         messages: [{ role: 'user', content: 'Hello' }],
                         max_tokens: 5,
-                        // DeepSeek 代理：关闭思考直接输出
-                        ...(isDeepseekProxy ? { thinking: { type: 'disabled' } } : {})
+                        // DeepSeek 系列模型：关闭思考直接输出
+                        ...(isDeepseekModel ? { thinking: { type: 'disabled' } } : {})
                     }),
                     signal: controller.signal
                 });
@@ -374,7 +372,7 @@
                     if (sBtn) { sBtn.disabled = true; sBtn.style.opacity = '0.5'; sBtn.style.cursor = 'not-allowed'; }
                     if (tBtn) { tBtn.disabled = false; tBtn.style.opacity = ''; tBtn.style.cursor = ''; }
                 } else {
-                    // 自定义API模式：显示并恢复所有输入，代理地址可填（如 api.fanqin.top 走DeepSeek付费）
+                    // 自定义API模式：显示并恢复所有输入，代理地址可填（可选，用于保护 API Key）
                     showCustom(true);
                     if (proxyInput) {
                         proxyInput.disabled = false;
