@@ -20,8 +20,10 @@
         async function callAPI(messages, options = {}) {
             const config = getApiConfig();
             
-            // 使用代理时不需要 apiKey（代理自带 Key）
-            const useProxy = config.proxyUrl && config.proxyUrl.trim() !== '';
+            // 默认AI模式：强制使用代理
+            const isDefaultAI = localStorage.getItem('defaultAIMode') !== 'false';
+            const proxyUrl = isDefaultAI ? 'https://api.fanqin.top' : config.proxyUrl;
+            const useProxy = isDefaultAI || (config.proxyUrl && config.proxyUrl.trim() !== '');
             if (!useProxy && (!config || !config.apiKey)) {
                 throw new Error('请先配置 API Key');
             }
@@ -33,7 +35,7 @@
             }
 
             // 验证API配置
-            const targetUrl = useProxy ? config.proxyUrl : config.baseUrl;
+            const targetUrl = useProxy ? proxyUrl : config.baseUrl;
             if (!Security.validateUrl(targetUrl).valid) {
                 throw new Error('API 地址格式不正确');
             }
@@ -74,7 +76,7 @@
 
             while (retries <= maxRetries) {
                 try {
-                    const url = useProxy ? `${config.proxyUrl.replace(/\/+$/, '')}/api/v1/chat/completions` : `${config.baseUrl}/chat/completions`;
+                    const url = useProxy ? `${proxyUrl.replace(/\/+$/, '')}/api/v1/chat/completions` : `${config.baseUrl}/chat/completions`;
                     if (isDebug) console.log('API请求URL:', url);
                     
                     // 添加请求超时设置
