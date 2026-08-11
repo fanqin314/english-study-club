@@ -167,14 +167,60 @@
                         border-color: #334155;
                         color: #f1f5f9;
                     }
-                    .ai-mode-toggle .ai-toggle-text {
+                    .default-ai-toggle-btn {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 4px 10px 4px 6px;
+                        border: 1.5px solid #d1d5db;
+                        border-radius: 20px;
+                        background: #f3f4f6;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.25s ease;
+                        outline: none;
+                        white-space: nowrap;
+                    }
+                    .default-ai-toggle-btn:hover {
+                        border-color: #9ca3af;
+                    }
+                    .default-ai-toggle-btn .ai-toggle-dot {
+                        width: 14px;
+                        height: 14px;
+                        border-radius: 50%;
+                        background: #9ca3af;
+                        transition: all 0.25s ease;
+                        flex-shrink: 0;
+                    }
+                    .default-ai-toggle-btn .ai-toggle-text {
+                        color: #6b7280;
+                        font-weight: 500;
                         transition: color 0.25s ease;
                     }
-                    .ai-mode-toggle input:checked ~ .ai-toggle-text.active {
-                        color: var(--accent);
+                    .default-ai-toggle-btn.active {
+                        background: #ecfdf5;
+                        border-color: #10b981;
                     }
-                    .ai-mode-toggle input:not(:checked) ~ .ai-toggle-text.active {
-                        color: var(--text-light);
+                    .default-ai-toggle-btn.active .ai-toggle-dot {
+                        background: #10b981;
+                        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+                    }
+                    .default-ai-toggle-btn.active .ai-toggle-text {
+                        color: #059669;
+                    }
+                    [data-theme="dark"] .default-ai-toggle-btn {
+                        background: #1e293b;
+                        border-color: #475569;
+                    }
+                    [data-theme="dark"] .default-ai-toggle-btn .ai-toggle-text {
+                        color: #94a3b8;
+                    }
+                    [data-theme="dark"] .default-ai-toggle-btn.active {
+                        background: rgba(16, 185, 129, 0.12);
+                        border-color: #10b981;
+                    }
+                    [data-theme="dark"] .default-ai-toggle-btn.active .ai-toggle-text {
+                        color: #34d399;
                     }
                 </style>
                 <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> API 配置</h3>
@@ -189,14 +235,10 @@
                 <input type="text" id="modelInput" placeholder="qwen-qwen3-5-35b-a3b" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                     <label>代理地址（可选，用于保护 API Key）</label>
-                    <div class="glass-toggle ai-mode-toggle" style="display: flex; align-items: center; gap: 8px;">
-                        <span class="ai-toggle-text" style="font-size: 12px; color: var(--text-light);">自定义</span>
-                        <input type="checkbox" id="defaultAICheck" checked>
-                        <label for="defaultAICheck" class="toggle-label">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span class="ai-toggle-text active" style="font-size: 12px; color: var(--accent); font-weight: 600;">默认AI</span>
-                    </div>
+                    <button id="defaultAIToggle" class="default-ai-toggle-btn" title="切换默认魔搭AI / 自定义API">
+                        <span class="ai-toggle-dot"></span>
+                        <span class="ai-toggle-text">默认魔搭AI</span>
+                    </button>
                 </div>
                 <input type="text" id="proxyUrlInput" placeholder="留空则直连 API" style="box-shadow: inset 0px 2px 10px -2px rgba(0, 0, 0, 0.25); background-color: rgba(245, 245, 245, 0.6); border-width: 1px; border-style: solid; border-color: #ededed; opacity: 0.9;">
                 <div class="button-group">
@@ -273,8 +315,8 @@
             if (saveBtn) saveBtn.addEventListener('click', saveApiConfig);
             if (testBtn) testBtn.addEventListener('click', testApiConnection);
 
-            // === 默认AI切换开关 ===
-            const toggleCheck = document.getElementById('defaultAICheck');
+            // === 默认AI切换按钮 ===
+            const toggleBtn = document.getElementById('defaultAIToggle');
             const DEFAULT_PROXY_URL = 'https://api.fanqin.top';
             const TOGGLE_KEY = 'defaultAIMode';
             
@@ -282,7 +324,15 @@
                 const isActive = active !== undefined ? active : (localStorage.getItem(TOGGLE_KEY) !== 'false');
                 localStorage.setItem(TOGGLE_KEY, isActive ? 'true' : 'false');
                 
-                if (toggleCheck) toggleCheck.checked = isActive;
+                if (toggleBtn) {
+                    if (isActive) {
+                        toggleBtn.classList.add('active');
+                        toggleBtn.querySelector('.ai-toggle-text').textContent = '默认魔搭AI';
+                    } else {
+                        toggleBtn.classList.remove('active');
+                        toggleBtn.querySelector('.ai-toggle-text').textContent = '自定义API';
+                    }
+                }
                 
                 const proxyInput = document.getElementById('proxyUrlInput');
                 const baseInput = document.getElementById('apiBaseInput');
@@ -292,6 +342,7 @@
                 const tBtn = document.getElementById('testApiBtn');
                 
                 if (isActive) {
+                    // 默认AI模式：自动填代理地址，禁用所有输入
                     if (proxyInput) {
                         proxyInput.value = DEFAULT_PROXY_URL;
                         proxyInput.disabled = true;
@@ -304,6 +355,7 @@
                     if (sBtn) { sBtn.disabled = true; sBtn.style.opacity = '0.5'; sBtn.style.cursor = 'not-allowed'; }
                     if (tBtn) { tBtn.disabled = true; tBtn.style.opacity = '0.5'; tBtn.style.cursor = 'not-allowed'; }
                 } else {
+                    // 自定义API模式：恢复所有输入
                     if (proxyInput) {
                         if (proxyInput.value === DEFAULT_PROXY_URL) proxyInput.value = '';
                         proxyInput.disabled = false;
@@ -318,9 +370,12 @@
                 }
             }
             
-            if (toggleCheck) {
-                toggleCheck.addEventListener('change', () => {
-                    setDefaultAIMode(toggleCheck.checked);
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const currentlyActive = toggleBtn.classList.contains('active');
+                    setDefaultAIMode(!currentlyActive);
                 });
                 // 初始化状态
                 setDefaultAIMode();
