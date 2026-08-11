@@ -99,8 +99,15 @@
         // 测试API连接
         async function testApiConnection() {
             const isDefaultAI = localStorage.getItem('defaultAIMode') !== 'false';
-            const useProxy = isDefaultAI || (apiConfig.proxyUrl && apiConfig.proxyUrl.trim() !== '');
-            
+            // 默认AI=魔搭免费qwen直连；自定义模式可填代理
+            const proxyUrl = isDefaultAI ? '' : apiConfig.proxyUrl;
+            const useProxy = !!(proxyUrl && proxyUrl.trim() !== '');
+            const isDeepseekProxy = (proxyUrl || '').includes('api.fanqin.top');
+            // 默认AI=魔搭qwen；fanqin代理=DeepSeek付费；其他自定义API用保存的模型
+            const testModel = isDefaultAI
+                ? 'Qwen/Qwen3.5-35B-A3B'
+                : (isDeepseekProxy ? 'deepseek-v4-flash' : (apiConfig.model || ''));
+
             if (!isDefaultAI && !useProxy && !apiConfig.apiKey) {
                 ErrorHandler.handleValidationError('请先填写 API Key 或配置代理地址');
                 return;
@@ -112,7 +119,6 @@
             const timeoutId = setTimeout(() => controller.abort(), 30000);
             
             try {
-                const proxyUrl = isDefaultAI ? 'https://api.fanqin.top' : apiConfig.proxyUrl;
                 const url = useProxy ? `${proxyUrl.replace(/\/+$/, '')}/api/v1/chat/completions` : `${apiConfig.baseUrl}/chat/completions`;
                 const headers = { 'Content-Type': 'application/json' };
                 if (!useProxy) {
@@ -123,9 +129,11 @@
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
-                        model: apiConfig.model,
+                        model: testModel,
                         messages: [{ role: 'user', content: 'Hello' }],
-                        max_tokens: 5
+                        max_tokens: 5,
+                        // DeepSeek 代理：关闭思考直接输出
+                        ...(isDeepseekProxy ? { thinking: { type: 'disabled' } } : {})
                     }),
                     signal: controller.signal
                 });
@@ -227,12 +235,12 @@
                 <div id="usageStatus" style="margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--accent-light); font-size: 13px; color: var(--text-light);">
                     <span id="usageText">加载中...</span>
                 </div>
-                <label style="display: none;">Base URL</label>
+                <label id="apiBaseLabel" style="display: none;">Base URL</label>
                 <input type="text" id="apiBaseInput" placeholder="https://api-inference.modelscope.cn/v1" style="display: none;">
-                <label style="display: none;">API Key</label>
+                <label id="apiKeyLabel" style="display: none;">API Key</label>
                 <input type="password" id="apiKeyInput" placeholder="ms-xxxxxx（魔搭SDK Token）" style="display: none;">
-                <label style="display: none;">模型名称</label>
-                <input type="text" id="modelInput" placeholder="qwen-qwen3-5-35b-a3b" style="display: none;">
+                <label id="modelLabel" style="display: none;">模型名称</label>
+                <input type="text" id="modelInput" placeholder="如 Qwen/Qwen3.5-35B-A3B 或 deepseek-v4-flash" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                     <label>代理地址（可选，用于保护 API Key）</label>
                     <button id="defaultAIToggle" class="default-ai-toggle-btn" title="切换默认魔搭AI / 自定义API">
@@ -292,13 +300,15 @@
             
             observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
             
-            if (apiBaseInput && apiConfig.baseUrl) {
+            // 仅回填用户自己保存的自定义配置；默认魔搭AI的内置配置（Base URL/API Key/模型名）不显示在前端
+            const hasCustomConfig = Security.hasSavedCustomConfig();
+            if (apiBaseInput && hasCustomConfig && apiConfig.baseUrl) {
                 apiBaseInput.value = apiConfig.baseUrl;
             }
-            if (apiKeyInput && apiConfig.apiKey) {
+            if (apiKeyInput && hasCustomConfig && apiConfig.apiKey) {
                 apiKeyInput.value = apiConfig.apiKey;
             }
-            if (modelInput && apiConfig.model) {
+            if (modelInput && hasCustomConfig && apiConfig.model) {
                 modelInput.value = apiConfig.model;
             }
             if (proxyUrlInput && apiConfig.proxyUrl) {
@@ -317,7 +327,6 @@
 
             // === 默认AI切换按钮 ===
             const toggleBtn = document.getElementById('defaultAIToggle');
-            const DEFAULT_PROXY_URL = 'https://api.fanqin.top';
             const TOGGLE_KEY = 'defaultAIMode';
             
             function setDefaultAIMode(active) {
@@ -340,11 +349,21 @@
                 const modelInput = document.getElementById('modelInput');
                 const sBtn = document.getElementById('saveApiBtn');
                 const tBtn = document.getElementById('testApiBtn');
+                // 自定义API的字段组（仅自定义模式显示）
+                const customFields = [
+                    document.getElementById('apiBaseLabel'), baseInput,
+                    document.getElementById('apiKeyLabel'), keyInput,
+                    document.getElementById('modelLabel'), modelInput
+                ];
+                const showCustom = (show) => {
+                    customFields.forEach(el => { if (el) el.style.display = show ? '' : 'none'; });
+                };
                 
                 if (isActive) {
-                    // 默认AI模式：自动填代理地址，禁用所有输入
+                    // 默认AI模式：直连魔搭免费qwen，隐藏自定义字段，禁用代理/保存
+                    showCustom(false);
                     if (proxyInput) {
-                        proxyInput.value = DEFAULT_PROXY_URL;
+                        proxyInput.value = '';
                         proxyInput.disabled = true;
                         proxyInput.style.opacity = '0.5';
                         proxyInput.style.cursor = 'not-allowed';
@@ -353,11 +372,11 @@
                     if (keyInput) { keyInput.disabled = true; keyInput.style.opacity = '0.5'; keyInput.style.cursor = 'not-allowed'; }
                     if (modelInput) { modelInput.disabled = true; modelInput.style.opacity = '0.5'; modelInput.style.cursor = 'not-allowed'; }
                     if (sBtn) { sBtn.disabled = true; sBtn.style.opacity = '0.5'; sBtn.style.cursor = 'not-allowed'; }
-                    if (tBtn) { tBtn.disabled = true; tBtn.style.opacity = '0.5'; tBtn.style.cursor = 'not-allowed'; }
+                    if (tBtn) { tBtn.disabled = false; tBtn.style.opacity = ''; tBtn.style.cursor = ''; }
                 } else {
-                    // 自定义API模式：恢复所有输入
+                    // 自定义API模式：显示并恢复所有输入，代理地址可填（如 api.fanqin.top 走DeepSeek付费）
+                    showCustom(true);
                     if (proxyInput) {
-                        if (proxyInput.value === DEFAULT_PROXY_URL) proxyInput.value = '';
                         proxyInput.disabled = false;
                         proxyInput.style.opacity = '';
                         proxyInput.style.cursor = '';

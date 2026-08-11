@@ -69,7 +69,7 @@
             return {
                 baseUrl: encryptedBaseUrl ? decrypt(encryptedBaseUrl) : 'https://api-inference.modelscope.cn/v1',
                 apiKey: getApiKey(),
-                model: encryptedModelName ? decrypt(encryptedModelName) : 'qwen-qwen3-5-35b-a3b',
+                model: encryptedModelName ? decrypt(encryptedModelName) : 'Qwen/Qwen3.5-35B-A3B',
                 proxyUrl: getProxyUrl()
             };
         }
@@ -93,6 +93,13 @@
             clearApiKey();
             localStorage.removeItem(API_BASE_STORAGE_KEY);
             localStorage.removeItem(MODEL_NAME_STORAGE_KEY);
+        }
+
+        // 用户是否保存过自定义API配置（未保存时不应在前端显示内置默认值）
+        function hasSavedCustomConfig() {
+            return localStorage.getItem(API_BASE_STORAGE_KEY) !== null ||
+                   localStorage.getItem(MODEL_NAME_STORAGE_KEY) !== null ||
+                   localStorage.getItem(API_KEY_STORAGE_KEY) !== null;
         }
 
         // 输入验证 - 验证URL
@@ -213,6 +220,7 @@
             clearApiConfig,
             setProxyUrl,
             getProxyUrl,
+            hasSavedCustomConfig,
             validateUrl,
             validateApiKey,
             validateText,

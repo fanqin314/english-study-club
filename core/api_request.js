@@ -10,6 +10,11 @@
             return Security.getApiConfig();
         }
 
+        // 默认AI模式（默认魔搭AI）：直连魔搭免费 qwen
+        const DEFAULT_AI_MODEL = 'Qwen/Qwen3.5-35B-A3B';
+        // 自定义模式下通过 fanqin 代理调用的 DeepSeek 付费模型
+        const DEEPSEEK_FLASH_MODEL = 'deepseek-v4-flash';
+
         /**
          * 通用 API 请求函数
          * @param {Array} messages - API请求消息数组
@@ -20,10 +25,15 @@
         async function callAPI(messages, options = {}) {
             const config = getApiConfig();
             
-            // 默认AI模式：强制使用代理
+            // 默认AI模式（默认魔搭AI）：直连魔搭免费 qwen，不使用代理
             const isDefaultAI = localStorage.getItem('defaultAIMode') !== 'false';
-            const proxyUrl = isDefaultAI ? 'https://api.fanqin.top' : config.proxyUrl;
-            const useProxy = isDefaultAI || (config.proxyUrl && config.proxyUrl.trim() !== '');
+            const proxyUrl = isDefaultAI ? '' : config.proxyUrl;
+            const useProxy = !!(proxyUrl && proxyUrl.trim() !== '');
+            // 自定义模式下目标为 fanqin 代理(DeepSeek 付费)时强制其支持模型
+            const isDeepseekProxy = (proxyUrl || '').includes('api.fanqin.top');
+            const effectiveModel = isDefaultAI
+                ? DEFAULT_AI_MODEL
+                : (isDeepseekProxy ? DEEPSEEK_FLASH_MODEL : (config.model || ''));
             if (!useProxy && (!config || !config.apiKey)) {
                 throw new Error('请先配置 API Key');
             }
@@ -59,7 +69,7 @@
                 console.log('API配置信息:', {
                     baseUrl: targetUrl,
                     apiKey: maskedApiKey,
-                    model: config.model,
+                    model: effectiveModel,
                     useProxy
                 });
                 console.log('API请求参数:', {
@@ -95,11 +105,13 @@
                         method: 'POST',
                         headers,
                         body: JSON.stringify({
-                            model: config.model,
+                            model: effectiveModel,
                             messages: messages,
                             temperature: options.temperature ?? 0.3,
                             max_tokens: options.maxTokens || 500,
                             chat_template_kwargs: { enable_thinking: false },
+                            // DeepSeek 代理：显式关闭思考，直接输出（不产生 reasoning_content，更快更省 token）
+                            ...(isDeepseekProxy ? { thinking: { type: 'disabled' } } : {}),
                             ...(options.responseFormat ? { response_format: { type: options.responseFormat } } : {})
                         }),
                         signal: controller.signal
@@ -584,7 +596,7 @@
                     const content = await callAPI([
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: text }
-                    ], { maxTokens: 2000 });
+                    ], { maxTokens: 8000 });
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
