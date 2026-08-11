@@ -74,7 +74,7 @@
 
             while (retries <= maxRetries) {
                 try {
-                    const url = useProxy ? config.proxyUrl : `${config.baseUrl}/chat/completions`;
+                    const url = useProxy ? `${config.proxyUrl.replace(/\/+$/, '')}/api/v1/chat/completions` : `${config.baseUrl}/chat/completions`;
                     if (isDebug) console.log('API请求URL:', url);
                     
                     // 添加请求超时设置

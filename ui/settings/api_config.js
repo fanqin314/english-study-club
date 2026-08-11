@@ -105,7 +105,7 @@
             const timeoutId = setTimeout(() => controller.abort(), 30000);
             
             try {
-                const url = useProxy ? apiConfig.proxyUrl : `${apiConfig.baseUrl}/chat/completions`;
+                const url = useProxy ? `${apiConfig.proxyUrl.replace(/\/+$/, '')}/api/v1/chat/completions` : `${apiConfig.baseUrl}/chat/completions`;
                 const headers = { 'Content-Type': 'application/json' };
                 if (!useProxy) {
                     headers['Authorization'] = `Bearer ${apiConfig.apiKey}`;
