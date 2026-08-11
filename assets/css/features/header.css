@@ -69,3 +69,231 @@
 header#app-header > div.card {
     margin-bottom: 0px;
 }
+
+/* ================================================================
+   移动端适配 - 导航栏 & 按钮组
+   ================================================================ */
+
+/* 平板及以下：header card 垂直堆叠 */
+@media (max-width: 768px) {
+    header#app-header > div.card {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px 0;
+        gap: 8px;
+    }
+
+    .card-left {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .main-buttons {
+        width: 100%;
+        justify-content: space-evenly;
+        padding: 6px 4px;
+        gap: 4px;
+        border-radius: 32px;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+        padding: 8px 16px 4px;
+        gap: 10px;
+    }
+
+    .api-status {
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* 手机端：进一步紧凑化 */
+@media (max-width: 640px) {
+    header#app-header > div.card {
+        border-radius: 12px;
+        padding: 6px 0;
+        gap: 4px;
+        position: relative;
+    }
+
+    /* 标题行：card-header 左侧 + header-actions 右侧定位 */
+    .card-header {
+        padding-right: 130px; /* 为右侧 header-actions 留空 */
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* header-actions 定位到标题行右侧 */
+    .header-actions {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        width: auto;
+        padding: 0;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    /* 导航按钮：手机端显示标签（无 hover 依赖） */
+    .main-buttons .link,
+    .main-buttons .memory-mode-button {
+        width: auto;
+        min-width: 44px;
+        height: 44px;
+        padding: 0 10px;
+        border-radius: 22px;
+        flex: 1 1 auto;
+        max-width: none;
+    }
+
+    .main-buttons .link .link-title,
+    .main-buttons .memory-mode-button .memory-mode-title {
+        transform: translateX(0);
+        opacity: 1;
+        text-indent: 0;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .main-buttons .link-icon,
+    .main-buttons .memory-mode-icon {
+        position: static;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    .main-buttons .link-icon svg,
+    .main-buttons .memory-mode-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .main-buttons .link:hover,
+    .main-buttons .link:focus,
+    .main-buttons .link.active {
+        width: auto;
+        margin-right: 0;
+        background: var(--accent);
+        color: white;
+    }
+
+    .main-buttons .link.active .link-icon svg,
+    .main-buttons .link:hover .link-icon svg,
+    .main-buttons .link:focus .link-icon svg {
+        color: white;
+    }
+
+    .main-buttons .memory-mode-button:hover,
+    .main-buttons .memory-mode-button.active {
+        width: auto;
+        margin-right: 0;
+    }
+
+    .main-buttons .link:before {
+        display: none;
+    }
+
+    .main-buttons {
+        padding: 4px;
+        gap: 2px;
+        border-radius: 28px;
+        flex-wrap: nowrap;
+    }
+
+    .main-buttons .link {
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .main-buttons .memory-mode-button {
+        gap: 4px;
+        justify-content: center;
+    }
+
+    /* 记忆模式按钮移动端简化 */
+    .memory-mode-hover-effect {
+        display: none;
+    }
+
+    .memory-mode-button {
+        background: var(--card-bg);
+        box-shadow: none;
+        border: 1px solid var(--border);
+        backdrop-filter: none;
+        color: var(--text);
+    }
+
+    .memory-mode-button:hover,
+    .memory-mode-button.active {
+        background: var(--accent);
+        color: white;
+        box-shadow: none;
+    }
+
+    .memory-mode-icon svg {
+        color: var(--accent);
+    }
+
+    .memory-mode-button:hover .memory-mode-icon svg,
+    .memory-mode-button.active .memory-mode-icon svg {
+        color: white;
+    }
+
+    [data-theme="dark"] .memory-mode-button {
+        background: var(--card-bg);
+        border-color: var(--border);
+    }
+
+    [data-theme="dark"] .memory-mode-button:hover,
+    [data-theme="dark"] .memory-mode-button.active {
+        background: var(--accent);
+    }
+
+    .app-header {
+        top: 2px;
+    }
+
+    .main-content {
+        gap: 4px;
+    }
+}
+
+/* 超小屏：按钮文字缩小 */
+@media (max-width: 380px) {
+    .main-buttons .link,
+    .main-buttons .memory-mode-button {
+        min-width: 36px;
+        height: 40px;
+        padding: 0 6px;
+    }
+
+    .main-buttons .link .link-title,
+    .main-buttons .memory-mode-button .memory-mode-title {
+        font-size: 10px;
+    }
+
+    .main-buttons .link-icon,
+    .main-buttons .memory-mode-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .main-buttons .link-icon svg,
+    .main-buttons .memory-mode-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .api-status {
+        font-size: 11px;
+    }
+}

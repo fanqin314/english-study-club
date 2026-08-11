@@ -100,8 +100,9 @@
     z-index: auto;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     padding: 10px 16px 12px;
     border-bottom: 2px solid var(--border);
     background: transparent;
@@ -130,7 +131,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 16px;
+    margin-top: 12px;
     margin-bottom: 0;
     padding: 6px 10px;
     background: var(--card-bg);
@@ -178,11 +179,11 @@
     background: rgba(255,255,255,0.06);
 }
 
-/* 闪卡容器 - 居中并自适应大小，保持固定宽高比约 600:496 */
+/* 闪卡容器 - 居中并自适应大小，保持固定宽高比 1000:827，同时受宽高双向约束 */
 .card-3d {
-    width: min(85vw, 1000px);
-    height: calc(min(85vw, 1000px) * 0.827);
-    max-height: 85vh;
+    width: min(85vw, 1000px, calc(85vh * 1.209));
+    aspect-ratio: 1000 / 827;
+    height: auto;
     border-radius: 48px;
     padding: 0;
     box-shadow: 0 25px 40px -12px rgba(0,0,0,0.25), 0 0 0 1px var(--card-border-inset) inset;
@@ -234,8 +235,6 @@
     gap: 0;
     z-index: 10;
     width: 46px;
-    margin-left: 36px;
-    margin-right: 36px;
     padding: 0;
     background-color: transparent;
     border-width: 1.5px;
@@ -412,8 +411,8 @@ button#generateExampleBtn {
 /* 单词区域 */
 .word-section {
     text-align: center;
-    margin-bottom: auto;
-    padding-top: 16px;
+    margin-bottom: 14px;
+    padding-top: 8px;
 }
 .word-section.animate .word {
     animation: fadeSlide 0.25s ease-out;
@@ -433,7 +432,7 @@ button#generateExampleBtn {
     color: transparent;
     text-shadow: var(--word-shadow);
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 .pos {
     font-size: clamp(0.8rem, 2.5vw, 0.95rem);
@@ -441,7 +440,7 @@ button#generateExampleBtn {
     display: inline-block;
     padding: 5px 14px;
     border-radius: 40px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     color: var(--pos-color);
     box-shadow: inset 0 2px 5px var(--pos-shadow-inset), 0 1px 0 var(--pos-shadow-outset);
     font-weight: 500;
@@ -458,8 +457,8 @@ button#generateExampleBtn {
 .example-area {
     background: var(--example-bg);
     border-radius: 20px;
-    padding: 16px;
-    margin: 12px 0;
+    padding: 16px 72px 16px 18px;
+    margin: 0 0 14px;
     border: 1px solid var(--example-border);
     backdrop-filter: blur(8px);
     transition: all 0.25s;
@@ -469,7 +468,7 @@ button#generateExampleBtn {
     align-items: start;
     gap: 6px 12px;
     flex: 1;
-    min-height: 80px;
+    min-height: 72px;
 }
 .example-en {
     font-size: clamp(0.85rem, 2.5vw, 1rem);
@@ -589,7 +588,7 @@ button#generateExampleBtn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 12px;
+    margin-top: 0;
     gap: 12px;
 }
 
@@ -725,7 +724,7 @@ button#generateExampleBtn {
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin-top: 18px;
+    margin-top: 12px;
 }
 
 .mastery-btn {
@@ -822,6 +821,288 @@ button#generateExampleBtn {
     .flip-front { font-size: 2rem; }
     .flip-back { font-size: 1.5rem; }
     .nav-btn { padding: 8px 16px; font-size: 0.85rem; }
+}
+
+/* ================================================================
+   移动端闪卡模式优化
+   ================================================================ */
+
+@media (max-width: 640px) {
+    #flashcardModeContainer {
+        padding: 8px;
+        gap: 6px;
+        min-height: 0;
+    }
+
+    #flashcardModeContainer .fill-header {
+        padding: 8px 12px 10px;
+        gap: 8px;
+        border-radius: 18px 18px 0 0;
+    }
+
+    #flashcardModeContainer .fill-header h3 {
+        font-size: 15px;
+    }
+
+    /* 卡片尺寸调整：移动端留更多呼吸空间 */
+    .card-3d {
+        width: min(96vw, 600px);
+        height: auto;
+        min-height: 420px;
+        aspect-ratio: 600 / 496;
+        border-radius: 32px;
+        box-shadow: 0 15px 30px -8px rgba(0,0,0,0.2), 0 0 0 1px var(--card-border-inset) inset;
+    }
+
+    .card-face {
+        padding: 20px 16px;
+    }
+
+    /* 单词区域 */
+    .word-section {
+        padding-top: 6px;
+        margin-bottom: 8px;
+    }
+
+    .word {
+        font-size: clamp(2rem, 8vw, 2.8rem);
+        margin-bottom: 8px;
+    }
+
+    .pos {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        margin-bottom: 8px;
+    }
+
+    .meaning {
+        font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+    }
+
+    /* 例句区域 */
+    .example-area {
+        padding: 12px 56px 12px 12px;
+        margin: 0 0 8px;
+        border-radius: 16px;
+        gap: 4px 10px;
+        min-height: 60px;
+        flex: 0 0 auto;
+    }
+
+    .example-en {
+        font-size: 0.8rem;
+    }
+
+    .example-zh {
+        font-size: 0.7rem;
+    }
+
+    /* 右侧胶囊按钮：缩小并贴边 */
+    #magicCard .card-face .fill-bottom {
+        right: 4px;
+        width: 40px;
+        margin-left: 0;
+        margin-right: 0;
+        border-radius: 20px;
+        border-width: 1px;
+    }
+
+    #magicCard .card-face .fill-bottom button {
+        height: 40px;
+    }
+
+    /* 导航按钮 */
+    .nav-buttons {
+        margin-top: 8px;
+        gap: 8px;
+    }
+
+    .nav-btn {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        border-radius: 50px;
+        gap: 4px;
+    }
+
+    .nav-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .counter {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    /* 掌握度评级按钮 */
+    .mastery-ratings {
+        margin-top: 8px;
+        gap: 6px;
+    }
+
+    .mastery-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+        border-radius: 16px;
+        gap: 4px;
+    }
+
+    .mastery-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .mastery-btn span {
+        display: inline;
+    }
+
+    /* 进度条 */
+    #flashcardModeContainer .fill-progress-wrap {
+        margin-top: 8px;
+        padding: 5px 8px;
+        border-radius: 10px;
+    }
+
+    #flashcardModeContainer .fill-progress-track {
+        height: 6px;
+    }
+
+    #flashcardModeContainer .fill-progress-text {
+        font-size: 10px;
+        min-width: 60px;
+    }
+
+    /* 反馈覆盖层 */
+    .feedback-overlay {
+        border-radius: 32px;
+    }
+
+    .feedback-content {
+        padding: 12px;
+    }
+
+    .feedback-icon {
+        font-size: 40px;
+    }
+
+    .feedback-text {
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    .feedback-detail {
+        font-size: 12px;
+        max-width: 240px;
+    }
+
+    /* 翻转模式 */
+    .flipper {
+        max-width: 90vw;
+        height: clamp(80px, 22vw, 110px);
+    }
+
+    .flip-front {
+        font-size: 1.8rem;
+        border-radius: 28px;
+    }
+
+    .flip-back {
+        font-size: 1.3rem;
+        border-radius: 28px;
+    }
+
+    /* 暗色模式 */
+    [data-theme="dark"] .card-3d {
+        box-shadow: 0 15px 30px -8px rgba(0,0,0,0.4), 0 0 0 1px var(--card-border-inset) inset;
+    }
+}
+
+/* 超小屏：极致紧凑 */
+@media (max-width: 380px) {
+    .card-3d {
+        border-radius: 24px;
+        min-height: 380px;
+    }
+
+    .card-face {
+        padding: 14px 10px;
+    }
+
+    .word {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+    }
+
+    .pos {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+        margin-bottom: 4px;
+    }
+
+    .meaning {
+        font-size: 0.85rem;
+    }
+
+    .example-area {
+        padding: 8px 48px 8px 10px;
+        margin: 0 0 6px;
+        border-radius: 12px;
+        gap: 2px 8px;
+    }
+
+    .example-en {
+        font-size: 0.7rem;
+    }
+
+    .example-zh {
+        font-size: 0.65rem;
+    }
+
+    #magicCard .card-face .fill-bottom {
+        width: 36px;
+    }
+
+    #magicCard .card-face .fill-bottom button {
+        height: 36px;
+    }
+
+    .nav-btn {
+        padding: 6px 10px;
+        font-size: 0.7rem;
+    }
+
+    .nav-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .mastery-btn {
+        padding: 5px 10px;
+        font-size: 10px;
+        border-radius: 14px;
+    }
+
+    .mastery-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .counter {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+    }
+
+    .feedback-overlay {
+        border-radius: 24px;
+    }
+
+    .feedback-icon {
+        font-size: 32px;
+    }
+
+    .feedback-text {
+        font-size: 16px;
+    }
 }
 
 /* 统一总结样式 - 使用 fill-practice.css 中的 .fill-summary 系列样式 */

@@ -823,9 +823,105 @@
                 currentTiltRotateY = 0;
                 updateCardTransform();
                 glare.style.opacity = '0';
-                // 重置按钮倾斜
                 applyReverseTilt(0, 0);
             });
+
+            // ================================================================
+            // 陀螺仪倾斜效果（移动端）
+            // ================================================================
+            let _gyroActive = false;
+            let _gyroBeta = 0;   // 前后倾斜
+            let _gyroGamma = 0;  // 左右倾斜
+
+            function initGyroTilt() {
+                // 检查是否支持陀螺仪
+                if (!window.DeviceOrientationEvent) return;
+
+                function handleOrientation(e) {
+                    if (card.classList.contains('flipped')) return;
+                    if (e.beta === null || e.gamma === null) return;
+
+                    // 平滑插值：beta(前后) → rotateX, gamma(左右) → rotateY
+                    // 限制范围：±45度，映射到 ±22度
+                    const targetBeta = Math.max(-45, Math.min(45, e.beta || 0));
+                    const targetGamma = Math.max(-45, Math.min(45, e.gamma || 0));
+
+                    // 低通滤波平滑
+                    _gyroBeta += (targetBeta - _gyroBeta) * 0.15;
+                    _gyroGamma += (targetGamma - _gyroGamma) * 0.15;
+
+                    currentTiltRotateX = (_gyroBeta / 45) * -22;
+                    currentTiltRotateY = (_gyroGamma / 45) * 22;
+
+                    updateCardTransform();
+
+                    // 光晕跟随
+                    const gX = ((_gyroGamma + 45) / 90) * 100;
+                    const gY = ((_gyroBeta + 45) / 90) * 100;
+                    const isDark = document.body.classList.contains('dark');
+                    glare.style.background = `radial-gradient(circle at ${gX}% ${gY}%, rgba(255,255,255,${isDark ? 0.3 : 0.6}) 0%, transparent 70%)`;
+                    glare.style.opacity = isDark ? '0.7' : '1';
+
+                    applyReverseTilt(currentTiltRotateX, currentTiltRotateY);
+                }
+
+                function startGyroLoop() {
+                    _gyroActive = true;
+                    // 禁用鼠标倾斜（移动端优先陀螺仪）
+                    card.style.pointerEvents = 'auto';
+                }
+
+                function stopGyroLoop() {
+                    _gyroActive = false;
+                    _gyroBeta = 0;
+                    _gyroGamma = 0;
+                    currentTiltRotateX = 0;
+                    currentTiltRotateY = 0;
+                    updateCardTransform();
+                    glare.style.opacity = '0';
+                    applyReverseTilt(0, 0);
+                }
+
+                // iOS 13+ 需要用户手势触发权限请求
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // 在卡片上添加一次性点击来请求权限
+                    function requestGyroPermission(e) {
+                        e.stopPropagation();
+                        DeviceOrientationEvent.requestPermission()
+                            .then(state => {
+                                if (state === 'granted') {
+                                    window.addEventListener('deviceorientation', handleOrientation);
+                                    startGyroLoop();
+                                }
+                            })
+                            .catch(() => {
+                                console.log('陀螺仪权限被拒绝，使用触摸倾斜');
+                            });
+                        card.removeEventListener('click', requestGyroPermission);
+                    }
+                    card.addEventListener('click', requestGyroPermission, { once: true });
+                    _cleanupFns.push(() => {
+                        card.removeEventListener('click', requestGyroPermission);
+                    });
+                } else {
+                    // Android / 桌面：直接监听
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    startGyroLoop();
+                }
+
+                _cleanupFns.push(() => {
+                    window.removeEventListener('deviceorientation', handleOrientation);
+                    stopGyroLoop();
+                });
+            }
+
+            // 检测是否为移动设备（粗略判断），优先启用陀螺仪
+            const isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+                || window.matchMedia('(pointer: coarse)').matches;
+
+            if (isMobileDevice) {
+                initGyroTilt();
+            }
 
             // 初始化按钮倾斜为0
             applyReverseTilt(0, 0);
