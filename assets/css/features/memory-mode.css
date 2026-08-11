@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* memory-mode.css - 记忆模式样式 */
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* memory-mode.css - 记忆模式样式 */
 
 .memory-mode-section {
     margin-bottom: 20px;
@@ -34,7 +34,7 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 60px;
+    width: 120px;
     height: 40px;
     border: 0;
     overflow: hidden;
@@ -54,11 +54,11 @@
     padding: 0;
     font-family: inherit;
     transform-origin: center left;
+    flex-shrink: 0;
 }
 
 .memory-mode-button:hover,
 .memory-mode-button.active {
-    width: 120px;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25), 0 0 0 1px #ffffff inset;
     color: #0f172a;
