@@ -41,6 +41,23 @@
     box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.075);
 }
 
+/* 按钮展开时用负margin抵消宽度增长，不挤开相邻按钮 */
+.main-buttons .link,
+.main-buttons .memory-mode-button {
+    position: relative;
+    margin-right: 0;
+    transition: width 0.2s ease-in, margin-right 0.2s ease-in;
+}
+
+.main-buttons .link:hover,
+.main-buttons .link:focus,
+.main-buttons .link.active,
+.main-buttons .memory-mode-button:hover,
+.main-buttons .memory-mode-button.active {
+    margin-right: -60px;
+    z-index: 2;
+}
+
 /* 操作按钮组 */
 .action-buttons {
     display: flex;
