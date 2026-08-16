@@ -1,0 +1,30 @@
+# 英研社 (English Study Club)
+
+> 文章驱动的人工智能英语精读学习工具：粘贴真实英文文章，AI 自动解析词性、语法结构、知识点与翻译；并通过闪卡、填空、听写、选词等练习与复习模式，在真实语境中积累词汇与语法。纯前端、无后端、可部署到 GitHub Pages。
+
+## Demo
+- [在线体验 Live Demo](https://fanqin314.github.io/english-study-club/)
+
+## Features
+- AI 深度解析：逐词词性标注 (POS)、语法结构、知识点提取、中英翻译
+- 4 种记忆模式：闪卡 (Flashcards)、填空 (Cloze)、听写 (Dictation)、选词 (Word Choice)
+- 3 种复习模式：全文回顾、逐句精读、生词测验
+- 生词本管理（合并/删除/重命名）、掌握度统计
+- 本地文件夹持久化 (File System Access API)、JSON / TXT / MD 导出
+- 浏览器插件 + Obsidian 插件，网页划线与字幕采集进同一数据闭环
+- 文件上传 / 图片 OCR / 拍照识别，PDF、Word 一键导入
+- 暗色 / 浅色主题、全键盘快捷键、桌面端与移动端响应式
+
+## Docs
+- [中文 README](README.md)
+- [English README](README.en.md)
+- [架构说明 Architecture](ARCHITECTURE.md)
+- [项目结构 Project Structure](PROJECT_STRUCTURE.md)
+- [贡献指南 Contributing](CONTRIBUTING.md)
+
+## Ecosystem
+- [浏览器插件 Browser Extension](browser-extension/)
+- [Obsidian 插件](obsidian-plugin/)
+
+## Topics
+english-learning, language-learning, vocabulary, grammar, reading, spaced-repetition, static-site, ai, llm, education, open-source, flashcards, deep-reading, article-driven

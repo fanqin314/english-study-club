@@ -33,6 +33,7 @@
             const isDeepseekModel = DEEPSEEK_MODELS.includes((config.model || '').trim().toLowerCase());
             const effectiveModel = isDefaultAI ? DEFAULT_AI_MODEL : (config.model || '');
             if (!useProxy && (!config || !config.apiKey)) {
+                ErrorHandler.showOfflineHint('AI 解析需要配置 API Key。你仍可使用阅读、标记生词与复习功能；点击右上角「设置」填入自己的 Key 即可启用 AI 解析。');
                 throw new Error('请先配置 API Key');
             }
 
@@ -197,6 +198,9 @@
                         throw new Error('API 响应被截断，请增大 max_tokens 参数');
                     }
 
+                    // 一次成功调用即代表 AI 可用，清除离线提示
+                    ErrorHandler.clearOfflineHint();
+
                     return msg.content;
                 } catch (error) {
                     if (isDebug) {
@@ -219,10 +223,13 @@
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     } else if (error.name === 'AbortError') {
+                        ErrorHandler.showOfflineHint('AI 请求超时，你仍可阅读、标记生词和复习。请稍后重试，或在「设置」中配置自己的 API Key。');
                         throw new Error('API 请求超时');
                     } else if (error.message === 'MODEL_OVERLOAD') {
+                        ErrorHandler.showOfflineHint('AI 服务繁忙，你仍可阅读、标记生词和复习。请稍后重试。');
                         throw new Error('模型服务繁忙，请稍后重试（已重试多次仍失败）');
                     }
+                    ErrorHandler.showOfflineHint('AI 服务暂时不可用，你仍可正常使用阅读、标记生词与复习功能。请稍后重试，或在「设置」中配置自己的 API Key。');
                     throw error;
                 }
             }

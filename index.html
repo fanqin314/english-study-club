@@ -2810,6 +2810,13 @@
     <div id="editWordModal" class="modal"></div>
     <div id="toast" class="toast"></div>
 
+    <!-- AI 离线降级提示：API 不可用或未完成配置时显示，本地阅读/标词/复习功能不受影响 -->
+    <div id="ai-offline-hint" hidden style="position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;max-width:min(560px,92vw);box-sizing:border-box;display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-radius:10px;background:#1f2937;color:#f9fafb;font-size:13px;line-height:1.55;box-shadow:0 6px 20px rgba(0,0,0,.28);">
+      <span style="flex:0 0 auto;">&#9888;</span>
+      <span id="ai-offline-hint-text" style="flex:1 1 auto;"></span>
+      <button type="button" id="ai-offline-hint-close" aria-label="关闭提示" style="flex:0 0 auto;background:transparent;border:none;color:#f9fafb;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;">&times;</button>
+    </div>
+
     <!-- Script Loading -->
     <script src="core/module_registry.js"></script>
     <script src="core/module_interface_spec.js"></script>
