@@ -103,8 +103,6 @@
 ├── test/                               # 测试目录
 │   └── optimization_evaluation.js      # 优化评估测试
 ├── ui/                                 # 用户界面目录
-│   ├── analysis/                       # 分析界面
-│   │   └── second_row_ui.js            # 第二行按钮UI
 │   ├── second_row/                     # 第二行操作
 │   │   ├── load_example.js             # 加载示例
 │   │   ├── reload_button.js            # 重新加载按钮
@@ -284,7 +282,6 @@
 | 文件 | 功能说明 |
 |------|----------|
 | `README.md` | UI说明文档 |
-| `analysis/second_row_ui.js` | 分析界面第二行按钮UI管理 |
 | `second_row/load_example.js` | 加载示例文本功能 |
 | `second_row/reload_button.js` | 重新加载按钮组件 |
 | `second_row/save_analysis.js` | 保存分析结果功能 |
