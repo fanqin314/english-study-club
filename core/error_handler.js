@@ -116,36 +116,17 @@
         // 初始化
         function init() {
             setupGlobalErrorHandler();
-            initOfflineHintClose();
         }
 
-        // 显示 AI 离线/降级提示横幅（API 不可用或未完成配置时）
+        // AI 离线/降级提示：复用应用自带的轻量 toast，视觉与全局通知一致
+        // （原独立底部横幅已移除，避免突兀的深色大块）
         function showOfflineHint(message) {
-            const hint = document.getElementById('ai-offline-hint');
-            const text = document.getElementById('ai-offline-hint-text');
-            if (!hint || !text) return;
-            text.textContent = message;
-            hint.hidden = false;
-            // 惰性绑定关闭按钮（模块系统的 init 未必被调用）
-            const close = document.getElementById('ai-offline-hint-close');
-            if (close && !close.dataset.bound) {
-                close.dataset.bound = '1';
-                close.addEventListener('click', clearOfflineHint);
-            }
+            showError(message, ERROR_TYPES.NETWORK_ERROR);
         }
 
-        // 隐藏 AI 离线/降级提示横幅（AI 恢复正常时）
+        // AI 恢复正常时无需手动清除：toast 会自动淡出
         function clearOfflineHint() {
-            const hint = document.getElementById('ai-offline-hint');
-            if (hint) hint.hidden = true;
-        }
-
-        // 绑定横幅关闭按钮
-        function initOfflineHintClose() {
-            const close = document.getElementById('ai-offline-hint-close');
-            if (close) {
-                close.addEventListener('click', clearOfflineHint);
-            }
+            // no-op
         }
 
         // 获取模块名称
