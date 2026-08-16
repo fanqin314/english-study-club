@@ -12,19 +12,15 @@
     // 按钮处理函数映射
     // 每个处理函数接收事件对象作为参数
     const buttonHandlers = {
-        // 解析按钮
+        // 解析按钮（始终执行解析，不做折叠切换）
         parseBtn: async function(e) {
             if (e) e.preventDefault();
-            if (window.toggleSentencesSection) {
-                await window.toggleSentencesSection();
-            } else if (window.deepParse) {
+            if (window.deepParse) {
                 await window.deepParse();
-            } else {
+            } else if (window.ModuleRegistry) {
                 const ErrorHandler = window.ModuleRegistry.get('ErrorHandler');
                 if (ErrorHandler) {
                     ErrorHandler.handleValidationError('深度解析功能未准备好，请先配置 API Key 并刷新页面。');
-                } else {
-                    alert('深度解析功能未准备好，请先配置 API Key 并刷新页面。');
                 }
             }
         },

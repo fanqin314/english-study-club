@@ -6,6 +6,9 @@
     ModuleRegistry.register('MemoryModeUI', ['GlobalManager'], function(GlobalManager) {
 
         function showMemoryModeInterface(container) {
+            // 回到记忆模式菜单，恢复侧边栏显示
+            document.body.classList.remove('mode-sub-interface');
+
             // 隐藏生词本界面
             container.style.display = 'none';
             
@@ -290,15 +293,19 @@
                     if (mode.id === 'flashcard') {
                         const flashcardMode = GlobalManager.getGlobalObject('FlashcardMode');
                         if (flashcardMode && flashcardMode.showFlashcardModeInterface) {
+                            document.body.classList.add('mode-sub-interface');
                             flashcardMode.showFlashcardModeInterface(memoryModeDiv);
                         } else {
                             _showToast('闪卡模式模块未加载');
                         }
                     } else if (mode.id === 'fill') {
+                        document.body.classList.add('mode-sub-interface');
                         showFillPracticeInterface(memoryModeDiv);
                     } else if (mode.id === 'spelling') {
+                        document.body.classList.add('mode-sub-interface');
                         showSpellingPracticeInterface(memoryModeDiv);
                     } else if (mode.id === 'choice') {
+                        document.body.classList.add('mode-sub-interface');
                         showChoicePracticeInterface(memoryModeDiv);
                     }
                 };
@@ -707,6 +714,7 @@
                         _showToast('请先选择一篇文章');
                         return;
                     }
+                    document.body.classList.add('mode-sub-interface');
                     if (mode.id === 'cloze') {
                         showClozeModeInterface(memoryModeDiv, selectedArticleId, selectedNotebookIds);
                     } else if (mode.id === 'review') {

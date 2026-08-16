@@ -555,12 +555,16 @@ div#vocabInterface > div.batch-actions-bar.show {
     margin-left: 0;
     margin-right: 0;
     display: flex;
+    flex: 1 1 100%;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 .empty-icon {
-    font-size: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 16px;
     opacity: 0.5;
 }

@@ -29,19 +29,19 @@
         // 向右箭头图标（收起时显示）
         const BACK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
         
-        // 更新解析按钮图标
-        function updateParseButtonIcon(isBack) {
+        // 更新解析按钮：始终保持“解析”状态（不再做折叠切换）
+        function updateParseButtonIcon() {
             const parseBtn = document.getElementById('parseBtn');
             if (!parseBtn) return;
             
             const iconSpan = parseBtn.querySelector('span span:first-child');
             if (iconSpan) {
-                iconSpan.innerHTML = isBack ? BACK_ICON : SEARCH_ICON;
+                iconSpan.innerHTML = SEARCH_ICON;
             }
             
             const textSpan = parseBtn.querySelector('span span:last-child');
             if (textSpan) {
-                textSpan.textContent = isBack ? '收起' : '解析';
+                textSpan.textContent = '解析';
             }
         }
         
@@ -98,11 +98,11 @@
             }
         }
 
-        // 折叠图标（左箭头）
-        const COLLAPSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+        // 折叠图标（向上箭头：收起输入面板）
+        const COLLAPSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
         
-        // 展开图标（右箭头）
-        const EXPAND_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        // 展开图标（向下箭头：展开输入面板）
+        const EXPAND_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
         // 切换输入面板显示状态
         function toggleInputPanel() {

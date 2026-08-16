@@ -127,7 +127,14 @@
                         </span>
                     </div>
                     <div class="empty-state">
-                        <div class="empty-icon">📖</div>
+                        <div class="empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                <line x1="9" y1="7" x2="16" y2="7"/>
+                                <line x1="9" y1="11" x2="16" y2="11"/>
+                            </svg>
+                        </div>
                         <div class="empty-title">暂无单词</div>
                         <div class="empty-subtitle">请先在生词本中添加单词</div>
                     </div>
@@ -139,6 +146,9 @@
                 const backBtn = document.getElementById('backBtn');
                 if (backBtn) {
                     function handleBackClick() {
+                        // 返回记忆模式菜单，恢复侧边栏
+                        document.body.classList.remove('mode-sub-interface');
+
                         // 移除闪卡容器
                         if (flashcardContainer) {
                             flashcardContainer.remove();
@@ -536,6 +546,9 @@
 
             // 返回按钮事件
             function handleBackBtnClick() {
+                // 返回记忆模式菜单，恢复侧边栏
+                document.body.classList.remove('mode-sub-interface');
+
                 // 调用所有清理函数
                 _cleanupFns.forEach(fn => fn());
                 _cleanupFns.length = 0;

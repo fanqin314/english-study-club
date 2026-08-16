@@ -198,9 +198,7 @@
                         throw new Error('API 响应被截断，请增大 max_tokens 参数');
                     }
 
-                    // 一次成功调用即代表 AI 可用，清除离线提示
                     ErrorHandler.clearOfflineHint();
-
                     return msg.content;
                 } catch (error) {
                     if (isDebug) {
@@ -229,7 +227,6 @@
                         ErrorHandler.showOfflineHint('AI 服务繁忙，你仍可阅读、标记生词和复习。请稍后重试。');
                         throw new Error('模型服务繁忙，请稍后重试（已重试多次仍失败）');
                     }
-                    ErrorHandler.showOfflineHint('AI 服务暂时不可用，你仍可正常使用阅读、标记生词与复习功能。请稍后重试，或在「设置」中配置自己的 API Key。');
                     throw error;
                 }
             }
@@ -315,6 +312,24 @@
                 jsonStr = jsonStr.replace(/```(?:json)?\s*/g, '');
                 // 3. 修复中文引号等特殊字符
                 jsonStr = jsonStr.replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"');
+                // 4. 修复字符串值内的裸换行（JSON 字符串内不允许裸换行，状态机扫描）
+                {
+                    let fixed = '', inString = false, escaped = false;
+                    for (let i = 0; i < jsonStr.length; i++) {
+                        const ch = jsonStr[i];
+                        if (inString) {
+                            if (escaped) { fixed += ch; escaped = false; }
+                            else if (ch === '\\') { fixed += ch; escaped = true; }
+                            else if (ch === '"') { fixed += ch; inString = false; }
+                            else if (ch === '\n' || ch === '\r') { fixed += '\\n'; }
+                            else { fixed += ch; }
+                        } else {
+                            if (ch === '"') inString = true;
+                            fixed += ch;
+                        }
+                    }
+                    jsonStr = fixed;
+                }
                 return JSON.parse(jsonStr);
             } catch (e2) {
                 // 如果仍然失败，记录原始内容便于调试
@@ -415,28 +430,87 @@
             // 使用缓存
             const cacheKey = generateCacheKey('syntax', sentence);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语语言学专家。返回JSON格式：
+                const systemPrompt = `你是英语语言学专家。请按以下三套分类体系分析句子、提取从句，并分析句子成分。返回JSON格式：
 {
-  "syntax": "该句的语法结构描述（主语、谓语、宾语、定语、状语等）"
+  "structure": "按句子结构分：只能是 简单句/并列句/复合句/并列复合句",
+  "function": "按句子功能分：只能是 陈述句/疑问句/祈使句/感叹句",
+  "pattern": "按动词类型的基本句式：只能是 SV/SVO/SVP/SVOO/SVOC",
+  "clauses": [
+    {
+      "category": "从句类别：定语从句(形容词性) / 状语从句(副词性) / 主语从句 / 宾语从句 / 表语从句 / 同位语从句",
+      "subtype": "状语从句的细分逻辑关系（时间/原因/条件/让步/目的结果/方式/比较/地点），非状语从句留空字符串",
+      "trigger": "引导词，如 that/which/who/whom/whose/where/when/because/if/unless/although/so that 等，无则留空",
+      "text": "该从句在原文中对应的英文文本，尽量逐词与原文一致；若原文包含双引号，请改为单引号，避免破坏JSON"
+    }
+  ],
+  "constituents": [
+    {
+      "name": "成分名：只能是 主语/谓语/宾语/表语/定语/状语/补语",
+      "type": "该成分的具体分类（见下方分类清单），只列句子中实际存在的成分",
+      "text": "该成分在句中对应的英文文本，可空字符串",
+      "note": "一句话说明该分类的判断依据，可空字符串"
+    }
+  ],
+  "syntax": "综合三套体系的判定依据 + 完整语法结构描述（主谓宾定状补成分）"
 }
+句子成分分类清单（type 字段取其一）：
+- 状语（修饰动词/形容词/句子，9类）：时间状语/地点状语/原因状语/目的状语/结果状语/条件状语/让步状语/方式状语/程度状语
+- 定语（修饰名词，按位置2类）：前置定语/后置定语
+- 宾语（按数目3类）：单宾语/双宾语/复合宾语
+- 表语（按词性）：名词性表语/形容词性表语/介词短语或副词表语/表语从句
+- 主语（按真假2类）：逻辑主语/形式主语
+- 谓语（按动词构成2类）：简单谓语/复合谓语
+- 补语（按补充对象2类）：宾语补足语/主语补足语
+判定规则：
+- structure 按包含几套主谓结构：简单句只有一套；并列句两套或多套用 and/but/so/or 等连接；复合句一套主句+从句（定语/状语/名词性）；并列复合句并列分句中再含从句。
+- function 按语气：陈述（句号）/疑问（问号）/祈使（省略主语 you 的指令）/感叹（how/what 或感叹语气）。
+- pattern 按动词类型：SV（不及物）/SVO（单宾）/SVP（系动词+表语）/SVOO（双宾）/SVOC（宾+宾补）。
+- clauses：仅当句子含从句时列出；简单句和并列句为空数组。
+- constituents：逐类检查句子是否含该成分，实际存在的才列出，不存在的类别不要写。
+- JSON字符串值内禁止出现未转义的双引号和换行符。
 只返回JSON，不要其他文字。`;
 
                 const userContent = `分析句子: "${sentence}"`;
                 
-                try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userContent }
-                    ], { maxTokens: 500, temperature: 0 });
+                // JSON 解析失败时自动重试一次（模型偶尔会输出格式错误）
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        const content = await callAPI([
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userContent }
+                        ], { maxTokens: 3072, temperature: 0 });
 
-                    const parsed = extractAndParseJSON(content, 'syntax');
-                    if (parsed) return parsed.syntax || '暂无语法结构';
-                    ErrorHandler.handleApiError(new Error('JSON解析失败'));
-                    return '暂无语法结构';
-                } catch (error) {
-                    ErrorHandler.handleApiError(error);
-                    return '暂无语法结构';
+                        const parsed = extractAndParseJSON(content, 'syntax');
+                        if (parsed) {
+                            return {
+                                structure: parsed.structure || '',
+                                function: parsed.function || '',
+                                pattern: parsed.pattern || '',
+                                syntax: parsed.syntax || '暂无语法结构',
+                                clauses: Array.isArray(parsed.clauses) ? parsed.clauses : [],
+                                constituents: Array.isArray(parsed.constituents) ? parsed.constituents : []
+                            };
+                        }
+
+                        if (attempt === 0) {
+                            // 第一次解析失败，短暂延迟后重试
+                            if (window.DEBUG_MODE) console.log('[syntax] JSON解析失败，1秒后重试...');
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            continue;
+                        }
+
+                        ErrorHandler.handleApiError(new Error('JSON解析失败'));
+                        return { structure: '', function: '', pattern: '', syntax: '暂无语法结构', clauses: [], constituents: [] };
+                    } catch (error) {
+                        if (attempt === 0 && error.message === 'MODEL_OVERLOAD') {
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            continue;
+                        }
+                        ErrorHandler.handleApiError(error);
+                        return { structure: '', function: '', pattern: '', syntax: '暂无语法结构', clauses: [], constituents: [] };
+                    }
                 }
+                return { structure: '', function: '', pattern: '', syntax: '暂无语法结构', clauses: [], constituents: [] };
             });
         });
 

@@ -1,5 +1,393 @@
 /* layout.css - 布局样式 */
 
+/* =============================================
+   侧边栏布局（对齐设计稿 sidebar-v5）
+   ============================================= */
+:root { --sidebar-width: 264px; }
+body.sidebar-collapsed { --sidebar-width: 72px; }
+
+/* 侧边栏 */
+.app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--study-card);
+    border-right: 1px solid var(--study-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 40;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 12px 16px;
+    transition: justify-content 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-logo {
+    width: 28px;
+    height: 28px;
+    color: var(--study-primary);
+    flex-shrink: 0;
+}
+
+.app-sidebar-title {
+    font-family: var(--study-font-serif);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--study-foreground);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.25s ease 0.05s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar-divider {
+    height: 1px;
+    background: var(--study-border);
+    margin: 0 20px;
+}
+
+.app-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 12px;
+}
+
+/* 导航标签 */
+.sidebar-nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--study-font-sans);
+    color: var(--study-muted-foreground);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease, color 0.15s ease, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s cubic-bezier(0.4, 0, 0.2, 1), justify-content 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-nav-tab:hover { background: var(--study-muted); color: var(--study-foreground); }
+.sidebar-nav-tab:focus-visible { outline: 2px solid var(--study-ring); outline-offset: 2px; }
+
+.sidebar-nav-tab.active {
+    background: var(--study-primary);
+    color: var(--study-primary-foreground);
+}
+
+.sidebar-nav-tab .sidebar-nav-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.sidebar-nav-tab .sidebar-nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.25s ease 0.05s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 记忆模式特殊样式 —— 与设计稿一致 */
+.sidebar-nav-tab.memory-special {
+    background: linear-gradient(135deg, #EEF1F5, #F8F9FB);
+    border: 1px solid var(--study-primary);
+    border-radius: 6px;
+}
+.sidebar-nav-tab.memory-special:hover { background: var(--study-accent); border-color: var(--study-accent); color: var(--study-accent-foreground); }
+.sidebar-nav-tab.memory-special.active { background: var(--study-primary); color: var(--study-primary-foreground); }
+
+/* 侧边栏底部 */
+.app-sidebar-footer {
+    margin-top: auto;
+    padding: 12px;
+    border-top: 1px solid var(--study-border);
+    flex-shrink: 0;
+}
+
+.sidebar-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    margin-top: 12px;
+}
+
+.api-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--study-muted-foreground);
+    font-size: 12px;
+}
+.api-status-badge .status-dot { margin: 0; transition: opacity 0.25s ease 0.05s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.api-status-badge .status-dot,
+.api-status-badge span#apiStatusText {
+    transition: opacity 0.25s ease 0.05s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), line-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+/* 折叠交互 */
+.sidebar-nav-tab .sidebar-nav-label,
+.app-sidebar-title {
+    opacity: 1;
+    max-width: 200px;
+    transition: opacity 0.25s ease 0.05s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-collapsed .app-sidebar-header { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+body.sidebar-collapsed .sidebar-nav-tab { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+body.sidebar-collapsed .sidebar-nav-tab .sidebar-nav-icon { width: 20px; height: 20px; }
+body.sidebar-collapsed .sidebar-nav-tab .sidebar-nav-label,
+body.sidebar-collapsed .app-sidebar-title {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* =============================================
+   设置滑动面板（对齐设计稿）
+   ============================================= */
+.settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(32, 32, 32, 0.3);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.settings-overlay.open { opacity: 1; pointer-events: auto; }
+
+.settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 380px;
+    max-width: 90vw;
+    background: var(--study-card);
+    z-index: 60;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--study-shadow-lg);
+    display: flex;
+    flex-direction: column;
+}
+.settings-panel.open { transform: translateX(0); }
+
+.settings-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--study-border);
+    flex-shrink: 0;
+}
+.settings-panel-header .app-sidebar-title {
+    font-family: var(--study-font-serif);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--study-foreground);
+    letter-spacing: -0.01em;
+}
+.settings-panel .settings-close-btn {
+    background: var(--study-muted);
+    color: var(--study-muted-foreground);
+}
+.settings-panel .settings-close-btn:hover {
+    background: var(--study-border);
+    color: var(--study-foreground);
+}
+
+.settings-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.settings-panel-body::-webkit-scrollbar { display: none; }
+
+.settings-panel-body .modal-content {
+    display: block;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+}
+.settings-panel-body .modal-content h3 {
+    font-family: var(--study-font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--study-muted-foreground);
+    margin: 0 0 12px;
+}
+.settings-panel-body .modal-content > * + h3 { margin-top: 24px; }
+.settings-panel-body .modal-content label {
+    display: block;
+    font-size: 13px;
+    color: var(--study-muted-foreground);
+    margin-bottom: 6px;
+}
+.settings-panel-body .modal-content input[type="text"],
+.settings-panel-body .modal-content input[type="password"] {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
+    border: 1px solid var(--study-border);
+    border-radius: var(--study-radius-md);
+    background: var(--study-background);
+    color: var(--study-foreground);
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+.settings-panel-body .modal-content input:focus {
+    outline: 2px solid var(--study-ring);
+    outline-offset: -1px;
+    border-color: transparent;
+}
+.settings-panel-body .modal-content .button-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.settings-panel-body .modal-content button {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--study-border);
+    border-radius: var(--study-radius-md);
+    background: var(--study-primary);
+    color: var(--study-primary-foreground);
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+}
+.settings-panel-body .modal-content button:hover { background: var(--study-accent); }
+.settings-panel-body .modal-content button.secondary {
+    background: var(--study-muted);
+    color: var(--study-foreground);
+    border-color: var(--study-border);
+}
+.settings-panel-body .modal-content button.secondary:hover { background: var(--study-border); }
+
+/* =============================================
+   侧边栏折叠按钮
+   ============================================= */
+.sidebar-collapse-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--study-font-sans);
+    color: var(--study-muted-foreground);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: background 0.15s ease, color 0.15s ease, justify-content 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-collapse-btn:hover { background: var(--study-muted); color: var(--study-foreground); }
+.sidebar-collapse-btn .sidebar-collapse-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.sidebar-collapse-icon-right { display: none; }
+.sidebar-collapse-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: left;
+    transition: opacity 0.25s ease 0.05s, max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.sidebar-collapsed .sidebar-collapse-icon-left { display: none; }
+body.sidebar-collapsed .sidebar-collapse-icon-right { display: inline-block; }
+body.sidebar-collapsed .sidebar-collapse-btn { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+body.sidebar-collapsed .sidebar-collapse-label {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+}
+body.sidebar-collapsed .api-status-badge {
+    gap: 0;
+}
+body.sidebar-collapsed .api-status-badge .status-dot {
+    opacity: 0;
+    transform: scale(0);
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+body.sidebar-collapsed .api-status-badge span#apiStatusText {
+    opacity: 0;
+    max-width: 0;
+    line-height: 0;
+    font-size: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+}
+/* 折叠时底部排列居中，避免 dot 与齿轮在窄侧栏内挤在一起/错位 */
+body.sidebar-collapsed .sidebar-status-row {
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+}
+/* 折叠时：状态点隐藏，绿光转移到设置按钮（带过渡动画） */
+body.sidebar-collapsed button.settings-btn {
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 35%, transparent),
+                0 0 12px 2px color-mix(in srgb, var(--success) 55%, transparent);
+    animation: settings-btn-glow-pulse 2.4s ease-in-out infinite;
+}
+body.sidebar-collapsed[data-api-status="error"] button.settings-btn {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent),
+                0 0 12px 2px color-mix(in srgb, var(--danger) 55%, transparent);
+    animation: none;
+}
+@keyframes settings-btn-glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 35%, transparent),
+                            0 0 10px 1px color-mix(in srgb, var(--success) 45%, transparent); }
+    50%      { box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 45%, transparent),
+                            0 0 16px 4px color-mix(in srgb, var(--success) 65%, transparent); }
+}
+/* 记忆模式二级界面：隐藏侧边栏，主内容区占满整行 */
+body.mode-sub-interface .app-sidebar,
+body.mode-sub-interface .sidebar-collapse-btn {
+    display: none !important;
+}
+body.mode-sub-interface .main-content {
+    margin-left: 0;
+}
+
 /* 模块化容器样式 */
 .app-container {
     max-width: 100%;
@@ -21,6 +409,7 @@
 .main-content {
     flex: 1;
     min-height: 0;
+    margin-left: var(--sidebar-width, 264px);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -28,6 +417,7 @@
     overflow-x: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .main-content::-webkit-scrollbar {
@@ -82,79 +472,43 @@ template {
     display: none;
 }
 
-/* 两栏布局 */
+/* =============================================
+   深度解析 —— 杂志式居中阅读栏布局
+   结构：顶部输入区（栏眉 + 编辑纸卡）+ 下方阅读精解栏（居中正文列）
+   ============================================= */
 .two-column-container {
-    display: flex;
-    width: 100%;
-    gap: 6px;
-    flex: 1;
-    min-height: 0;
-}
-
-.left-column {
-    flex: 1 1 100%;
-    min-width: 0;
+    position: relative;
     display: flex;
     flex-direction: column;
-    transition: flex 0.3s ease;
-}
-
-.right-column {
-    flex: 0 0 0%;
-    min-width: 0;
-    overflow-y: auto;
-    padding-right: 8px;
-    padding-left: 8px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease, flex 0.3s ease;
+    width: 100%;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
+    padding: 24px 28px 48px;
+    box-sizing: border-box;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
+.two-column-container::-webkit-scrollbar { display: none; }
 
-.right-column::-webkit-scrollbar {
-    display: none;
+/* 顶部输入区 —— 粗格随界面自由伸缩 */
+.input-panel-section {
+    flex: 0 0 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
-.right-column.visible {
-    opacity: 1;
-    visibility: visible;
-}
-
-.two-column-container.show-right .left-column {
-    flex: 0 0 50%;
-}
-
-.two-column-container.show-right .right-column,
-.two-column-container.show-right .sentences-panel-section {
-    flex: 0 0 50%;
-    opacity: 1;
-    visibility: visible;
-}
-
-.right-column::-webkit-scrollbar-track {
-    background: var(--bg-page);
-    border-radius: 4px;
-}
-
-.right-column::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-
-.right-column::-webkit-scrollbar-thumb:hover {
-    background: var(--text-light);
-}
-
-/* 输入面板区域 */
+/* 编辑纸卡 */
 .input-panel {
     background: var(--card-bg);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-    padding: 14px;
-    flex: 1;
+    border: 1px solid var(--study-border);
+    border-top: 2px solid var(--study-primary);
+    border-radius: 4px 4px 14px 14px;
+    box-shadow: var(--shadow-sm);
+    padding: 20px 22px;
+    flex: 0 0 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -172,156 +526,90 @@ template {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
+.input-panel-content::-webkit-scrollbar { display: none; }
 
-.input-panel-content::-webkit-scrollbar {
-    display: none;
-}
-
-/* 面板切换按钮 — 单按钮双位置动画 */
+/* 阅读栏眉右侧的面板切换按钮（圆形小按钮） */
 .panel-toggle-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: calc(50% - 14px);
-    width: 28px;
-    height: 56px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-top-left-radius: 0px;
-    border-bottom-left-radius: 0px;
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-    cursor: pointer;
-    display: none;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-light);
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-    transition: left 0.4s ease-in-out;
-    padding-left: 0px;
-    padding-right: 0px;
-    margin-left: 6px;
-    margin-right: 6px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: var(--study-muted);
+    color: var(--study-muted-foreground);
+    border: 1px solid var(--study-border);
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.2s var(--ease-smooth);
 }
-
-/* 解析后显示按钮 */
-.two-column-container.has-sentences .panel-toggle-btn {
-    display: flex;
-}
-
-/* 折叠状态：按钮移到左侧 */
-.two-column-container.collapsed .panel-toggle-btn {
-    left: -14px;
-}
-
 .panel-toggle-btn:hover {
-    background: var(--btn-hover-bg);
+    background: var(--study-border);
+    color: var(--study-foreground);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.panel-toggle-btn svg {
+    width: 16px;
+    height: 16px;
+    display: block;
 }
 
-/* 禁用点击时的缩放动效 */
-.panel-toggle-btn:active {
-    transform: translateY(-50%) !important;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* 按钮提示文字 */
-.panel-toggle-btn::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    white-space: nowrap;
-    background: var(--text);
-    color: var(--bg-page);
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
+/* 阅读精解栏 —— 随内容自然撑开，整页统一滚动 */
+.sentences-panel-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.2s ease;
-    pointer-events: none;
-    z-index: 200;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.35s var(--ease-smooth), visibility 0.35s var(--ease-smooth), max-height 0.35s var(--ease-smooth);
 }
 
-/* 默认状态（折叠按钮位置在右侧）：提示文字在左侧 */
-.panel-toggle-btn::after {
-    right: 40px;
-    top: 50%;
-    transform: translateY(-50%);
+/* 阅读栏眉 */
+.reading-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--study-border);
+}
+.reading-toolbar-label {
+    font-family: var(--study-font-serif);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--study-foreground);
+    letter-spacing: -0.01em;
 }
 
-/* 折叠状态（展开按钮位置在左侧）：提示文字在右侧 */
-.two-column-container.collapsed .panel-toggle-btn::after {
-    right: auto;
-    left: 40px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.panel-toggle-btn:hover::after {
+/* 解析后：阅读栏显示，随内容自然增长，交给 main-content 整页滚动 */
+.two-column-container.has-sentences .sentences-panel-section {
     opacity: 1;
     visibility: visible;
+    max-height: none;
+    overflow: visible;
 }
 
-.input-panel::-webkit-scrollbar {
+/* 折叠输入面板时：输入区隐藏，阅读栏独占全文 */
+.two-column-container.collapsed .input-panel-section {
     display: none;
 }
 
-.input-panel-section {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.sentences-panel-section {
-    flex: 0 0 0%;
-    min-width: 0;
-    opacity: 0;
-    visibility: hidden;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
-
-.two-column-container.has-sentences .sentences-panel-section {
-    flex: 0 0 50%;
-    opacity: 1;
-    visibility: visible;
-    height: 100%;
-    overflow-y: auto;
-}
-
-/* 折叠状态 */
-.two-column-container.collapsed .input-panel-section {
-    flex: 0 0 0%;
-    opacity: 0;
-    visibility: hidden;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.two-column-container.collapsed .sentences-panel-section {
-    flex: 0 0 100%;
-}
-
-.two-column-container.collapsed.has-sentences .sentences-panel-section {
-    flex: 0 0 100%;
-}
-
-/* 句子面板区域 */
+/* 句子区域：不设内部滚动，随内容自然撑开，整页滚动 */
 #deepParseSentencesContainer {
     flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    width: 100%;
+    overflow: visible;
+    padding: 4px 2px 32px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
-
-#deepParseSentencesContainer::-webkit-scrollbar {
-    display: none;
-}
+#deepParseSentencesContainer::-webkit-scrollbar { display: none; }
 
 /* 内容区域 */
 .content-area {
@@ -451,6 +739,45 @@ template {
     color: var(--text-light);
     line-height: 1.6;
     word-break: break-word;
+}
+
+/* 带序号的翻译条目（点击跳转到对应句子） */
+.translation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 8px;
+    margin: 3px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background var(--duration-normal) var(--ease-smooth), color var(--duration-normal) var(--ease-smooth);
+}
+.translation-item:hover {
+    background: var(--card-bg);
+}
+.translation-item:hover .translation-seq {
+    background: var(--study-primary);
+    color: #fff;
+}
+.translation-seq {
+    flex: 0 0 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    border-radius: 50%;
+    font-family: var(--study-font-serif);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--study-accent);
+    background: var(--study-muted);
+    border: 1px solid var(--study-border);
+    transition: background var(--duration-normal) var(--ease-smooth), color var(--duration-normal) var(--ease-smooth);
+}
+.translation-item-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .secondary-sentences {

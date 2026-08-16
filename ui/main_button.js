@@ -1,4 +1,4 @@
-// main_button.js - 主按钮生成与模式切换（模块化重构版）
+// main_button.js - 侧边栏导航与模式切换（杂志风设计稿适配版）
 (function() {
     'use strict';
 
@@ -12,34 +12,16 @@
             MEMORY: 'memory'
         };
 
-        const MAIN_BUTTONS_CONFIG = [
-            { id: 'deepParseMainBtn', text: '深度解析', mode: MODES.ANALYSIS, icon: 'search' },
-            { id: 'vocabMainBtn', text: '生词本', mode: MODES.VOCAB, icon: 'book' },
-            { id: 'historyMainBtn', text: '历史记录', mode: MODES.HISTORY, icon: 'history' }
+        // 侧边栏导航标签：data-mode 与界面模式一一对应
+        const NAV_TABS = [
+            { id: 'deepParseMainBtn', mode: MODES.ANALYSIS },
+            { id: 'vocabMainBtn', mode: MODES.VOCAB },
+            { id: 'historyMainBtn', mode: MODES.HISTORY },
+            { id: 'memoryModeBtn', mode: MODES.MEMORY }
         ];
-
-        const ICONS = {
-            search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>`,
-            book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>`,
-            history: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 8v4l3 3"></path>
-                <circle cx="12" cy="12" r="10"></circle>
-            </svg>`
-        };
 
         const DEEP_PARSE_SECTION_HTML = `
             <div class="two-column-container">
-                <button id="panelToggleBtn" class="panel-toggle-btn" aria-label="折叠输入面板" data-tooltip="折叠输入面板">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
                 <section class="input-panel-section">
                     <div id="inputPanel" class="input-panel">
                         <div id="inputPanelContent" class="input-panel-content">
@@ -62,6 +44,14 @@
                     </div>
                 </section>
                 <section class="sentences-panel-section">
+                    <div class="reading-toolbar">
+                        <span class="reading-toolbar-label">阅读精解</span>
+                        <button id="panelToggleBtn" class="panel-toggle-btn" aria-label="折叠输入面板" data-tooltip="折叠输入面板">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="18 15 12 9 6 15"></polyline>
+                            </svg>
+                        </button>
+                    </div>
                     <section id="deepParseSentencesContainer" class="sentences-container"></section>
                 </section>
             </div>
@@ -73,11 +63,6 @@
                 this.deepParseModule = null;
                 this.vocabModule = null;
                 this.memoryModule = null;
-                this.buttons = [...MAIN_BUTTONS_CONFIG];
-            }
-
-            getIconSVG(iconType) {
-                return ICONS[iconType] || ICONS.search;
             }
 
             getElement(id) {
@@ -96,92 +81,55 @@
                 }
             }
 
-            generateMainButtons() {
-                const container = this.getElement('mainButtonContainer');
-                if (!container) return;
-
-                container.innerHTML = '';
-
-                this.buttons.forEach((btn) => {
-                    const linkBtn = document.createElement('button');
-                    linkBtn.className = 'link';
-                    linkBtn.id = btn.id;
-
-                    const iconSpan = document.createElement('span');
-                    iconSpan.className = 'link-icon';
-                    iconSpan.innerHTML = this.getIconSVG(btn.icon);
-
-                    const titleSpan = document.createElement('span');
-                    titleSpan.className = 'link-title';
-                    titleSpan.textContent = btn.text;
-
-                    linkBtn.appendChild(iconSpan);
-                    linkBtn.appendChild(titleSpan);
-
-                    if (this.currentMode === btn.mode) {
-                        linkBtn.classList.add('active');
-                    }
-
-                    linkBtn.addEventListener('click', () => {
-                        if (btn.mode !== this.currentMode) {
-                            this.switchMode(btn.mode);
+            // 绑定侧边栏导航标签的点击事件
+            bindNavTabs() {
+                NAV_TABS.forEach(tab => {
+                    const el = this.getElement(tab.id);
+                    if (!el) return;
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (tab.mode !== this.currentMode) {
+                            this.switchMode(tab.mode);
                         }
                     });
-
-                    container.appendChild(linkBtn);
                 });
-
-                const memoryModeBtn = document.createElement('button');
-                memoryModeBtn.className = 'memory-mode-button';
-                memoryModeBtn.innerHTML = `
-                    <span class="memory-mode-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
-                            <line x1="12" y1="2" x2="12" y2="6"/>
-                            <line x1="12" y1="18" x2="12" y2="22"/>
-                            <line x1="2" y1="12" x2="6" y2="12"/>
-                            <line x1="18" y1="12" x2="22" y2="12"/>
-                        </svg>
-                    </span>
-                    <span class="memory-mode-title">记忆模式</span>
-                    <div class="memory-mode-hover-effect">
-                        <div></div>
-                    </div>
-                `;
-                memoryModeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (this.currentMode !== MODES.MEMORY) {
-                        this.switchMode(MODES.MEMORY);
-                    }
-                });
-
-                if (this.currentMode === MODES.MEMORY) {
-                    memoryModeBtn.classList.add('active');
-                }
-
-                container.appendChild(memoryModeBtn);
             }
 
+            // 更新侧边栏标签高亮
             updateButtonHighlight() {
-                this.buttons.forEach(btn => {
-                    const link = this.getElement(btn.id);
-                    if (link) {
-                        link.classList.toggle('active', this.currentMode === btn.mode);
+                NAV_TABS.forEach(tab => {
+                    const el = this.getElement(tab.id);
+                    if (el) {
+                        const isActive = this.currentMode === tab.mode;
+                        el.classList.toggle('active', isActive);
+                        el.setAttribute('aria-selected', isActive ? 'true' : 'false');
                     }
                 });
             }
 
             updateMemoryModeButtonState() {
-                const memoryBtn = document.querySelector('.memory-mode-button');
+                const memoryBtn = this.getElement('memoryModeBtn');
                 if (memoryBtn) {
                     memoryBtn.classList.toggle('active', this.currentMode === MODES.MEMORY);
                 }
             }
 
+            // 初始绑定侧边栏折叠按钮
+            bindSidebarCollapse() {
+                const btn = this.getElement('sidebarCollapseBtn');
+                if (!btn) return;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+                    btn.setAttribute('aria-label', collapsed ? '展开侧边栏' : '折叠侧边栏');
+                    btn.title = collapsed ? '展开侧边栏' : '折叠侧边栏';
+                });
+            }
+
             switchMode(mode) {
+                if (mode === this.currentMode) return;
                 this.currentMode = mode;
                 this.updateButtonHighlight();
                 this.updateMemoryModeButtonState();
@@ -209,30 +157,6 @@
                 }
             }
 
-            showCardHeaderAndBody() {
-                const cardHeader = document.querySelector('.card-header');
-                const cardBody = document.querySelector('.card-body');
-                this.safeSetStyle(cardHeader, 'display', 'flex');
-                this.safeSetStyle(cardBody, 'display', 'block');
-            }
-
-            hideCardHeaderAndBody() {
-                const cardHeader = document.querySelector('.card-header');
-                const cardBody = document.querySelector('.card-body');
-                this.safeSetStyle(cardHeader, 'display', 'none');
-                this.safeSetStyle(cardBody, 'display', 'none');
-            }
-
-            hideHeader() {
-                const header = document.getElementById('app-header');
-                this.safeSetStyle(header, 'display', 'none');
-            }
-
-            showHeader() {
-                const header = document.getElementById('app-header');
-                this.safeSetStyle(header, 'display', 'flex');
-            }
-
             showSecondaryButtons() {
                 const loadExampleBtn = document.getElementById('loadExampleBtn');
                 if (loadExampleBtn) loadExampleBtn.style.display = '';
@@ -249,7 +173,7 @@
             ensureDeepParseSection() {
                 let section = this.getElement('deep-parse-section');
                 const isNewlyCreated = !section;
-                
+
                 if (!section) {
                     section = document.createElement('section');
                     section.id = 'deep-parse-section';
@@ -257,17 +181,17 @@
                     section.innerHTML = DEEP_PARSE_SECTION_HTML;
 
                     const mainContent = this.getElement('main-content');
-                    const secondaryContainer = this.getElement('secondaryAnalysisContainer');
-                    if (mainContent && secondaryContainer) {
-                        mainContent.insertBefore(section, secondaryContainer);
+                    const contentSection = this.getElement('content-section');
+                    if (mainContent && contentSection) {
+                        mainContent.insertBefore(section, contentSection);
                     }
                 }
-                
+
                 // 如果是新创建的，重新初始化相关模块
                 if (isNewlyCreated && window.FullTranslation && typeof window.FullTranslation.init === 'function') {
                     window.FullTranslation.init();
                 }
-                
+
                 return section;
             }
 
@@ -293,6 +217,15 @@
                     if (mainContent && secondaryContainer) {
                         mainContent.insertBefore(section, secondaryContainer);
                     }
+                }
+
+                // 保证内容区包含 sentencesContainer
+                let contentArea = this.getElement('contentArea');
+                if (contentArea && !this.getElement('sentencesContainer')) {
+                    const sc = document.createElement('div');
+                    sc.id = 'sentencesContainer';
+                    sc.className = 'sentences-list';
+                    contentArea.appendChild(sc);
                 }
                 return section;
             }
@@ -339,11 +272,9 @@
                 // 恢复缓存的内容
                 this.restoreCachedContent();
 
-                // 完全移除 content-section
+                // 完全移除 content-section（由深度解析区替代）
                 this.removeContentSection();
 
-                this.showCardHeaderAndBody();
-                this.showHeader();
                 this.showSecondaryButtons();
                 this.hideAllInterfaces();
 
@@ -371,13 +302,13 @@
                     window.SentenceRenderer.setContainer(container);
                     window.SentenceRenderer.setSentencesData(sentences, sentenceData || {});
                     window.SentenceRenderer.renderAll();
-                    
+
                     // 显示右栏
                     const twoColumnContainer = document.querySelector('.two-column-container');
                     if (twoColumnContainer) {
                         twoColumnContainer.classList.add('show-right', 'has-sentences');
                     }
-                    
+
                     // 触发句子卡片重新渲染完成事件，通知其他模块重新绑定
                     if (eventBus && eventBus.emit) {
                         eventBus.emit('sentencesRendered');
@@ -389,8 +320,6 @@
                 this.removeDeepParseSection();
                 this.ensureContentSection();
 
-                this.showCardHeaderAndBody();
-                this.showHeader();
                 this.hideAllInterfaces();
 
                 this.renderVocabInterface();
@@ -400,8 +329,6 @@
                 this.removeDeepParseSection();
                 this.ensureContentSection();
 
-                this.showCardHeaderAndBody();
-                this.showHeader();
                 this.hideAllInterfaces();
 
                 this.renderVocabInterface();
@@ -423,8 +350,6 @@
                 this.removeDeepParseSection();
                 this.ensureContentSection();
 
-                this.showCardHeaderAndBody();
-                this.showHeader();
                 this.hideAllInterfaces();
 
                 this.safeSetStyle(this.getElement('contentArea'), 'display', '');
@@ -493,19 +418,11 @@
                 this.safeSetStyle(this.getElement('contentArea'), 'display', 'none');
                 this.safeSetStyle(this.getElement('sentencesContainer'), 'display', 'none');
 
-                this.hideCardHeaderAndBody();
-                this.hideHeader();
-
                 this.safeSetStyle(this.getElement('secondaryAnalysisContainer'), 'display', 'block');
 
                 if (eventBus && eventBus.emit) {
                     eventBus.emit('analyzeText', { text, historyItem });
                 }
-            }
-
-            addButton(button) {
-                this.buttons.push(button);
-                this.generateMainButtons();
             }
 
             getCurrentMode() {
@@ -530,16 +447,30 @@
                     return;
                 }
 
-                eventBus.on('addMainButton', (button) => this.addButton(button));
                 eventBus.on('navigateToSecondaryAnalysis', (data) => {
                     this.showSecondaryAnalysisMode(data.text, data.historyItem);
                 });
             }
 
             init() {
-                this.generateMainButtons();
+                this.bindNavTabs();
+                this.bindSidebarCollapse();
                 this.setupEventListeners();
+                this.updateButtonHighlight();
+                this.updateMemoryModeButtonState();
                 this.showAnalysisMode();
+                // 默认折叠侧边栏
+                this.setSidebarCollapsed(true);
+            }
+
+            // 设置侧边栏折叠状态并同步按钮文案
+            setSidebarCollapsed(collapsed) {
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+                const btn = this.getElement('sidebarCollapseBtn');
+                if (btn) {
+                    btn.setAttribute('aria-label', collapsed ? '展开侧边栏' : '折叠侧边栏');
+                    btn.title = collapsed ? '展开侧边栏' : '折叠侧边栏';
+                }
             }
         }
 

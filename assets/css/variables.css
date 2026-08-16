@@ -1,113 +1,228 @@
-/* variables.css - CSS变量和主题 */
+/* ========================================
+   variables.css — 60-25-15 黄金比例配色系统
+   Brand prefix: study
+   ======================================== */
+
+/* ========== 字体引入 ========== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
 
 :root {
-    /* ========== 字体系统 ========== */
-    --font-heading: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  /* =============================================
+     60% — 中性色 · 白色纸感基底
+     ============================================= */
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
 
-    --text-xs: 11px;
-    --text-sm: 13px;
-    --text-base: 15px;
-    --text-lg: 18px;
-    --text-xl: 22px;
-    --text-2xl: 28px;
-    --text-3xl: 32px;
+  /* =============================================
+     25% — 主品牌色 · 低饱和蓝灰（南京靛青）
+     ============================================= */
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
 
-    /* ========== 主色 ========== */
-    --accent: #3b82f6;
-    --accent-dark: #2563eb;
-    --accent-hover: #2563eb;
-    --accent-light: rgba(59, 130, 246, 0.08);
-    --accent-subtle: rgba(59, 130, 246, 0.04);
+  /* =============================================
+     15% — 强调色 · 珊瑚橙
+     ============================================= */
+  --study-accent: #E07B5A;
+  --study-accent-foreground: #FFFFFF;
+  --study-accent-hover: #CE6E4E;
 
-    /* ========== 语义色 ========== */
-    --success: #10b981;
-    --success-dark: #059669;
-    --success-light: rgba(16, 185, 129, 0.08);
-    --warning: #f59e0b;
-    --warning-light: rgba(245, 158, 11, 0.08);
-    --danger: #ef4444;
-    --danger-dark: #dc2626;
-    --danger-light: rgba(239, 68, 68, 0.08);
-    --purple: #6366f1;
+  /* =============================================
+     中性面 · 低饱和灰蓝
+     ============================================= */
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
 
-    /* RGB 分量（用于 rgba 构建） */
-    --accent-rgb: 59, 130, 246;
-    --success-rgb: 16, 185, 129;
-    --danger-rgb: 239, 68, 68;
-    --warning-rgb: 245, 158, 11;
-    --purple-rgb: 99, 102, 241;
+  /* =============================================
+     边框与输入控件
+     ============================================= */
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
 
-    /* ========== 中性色 ========== */
-    --bg-page: #f5f7fb;
-    --card-bg: #ffffff;
-    --on-accent: #ffffff;
-    --text: #1e293b;
-    --text-light: #64748b;
-    --text-muted: #94a3b8;
-    --border: #e2e8f0;
-    --border-light: rgba(226, 232, 240, 0.5);
+  /* =============================================
+     低饱和状态色
+     ============================================= */
+  --state-success: #5A8A6E;
+  --state-warning: #C8A87C;
+  --state-error: #C07A7A;
+  --state-info: #506080;
 
-    /* 按钮 */
-    --btn-bg: #f1f5f9;
-    --btn-color: #1e293b;
-    --btn-hover-bg: #e2e8f0;
-    --btn-hover-color: #1e293b;
-    --btn-active-bg: #3b82f6;
-    --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  /* =============================================
+     Radius Scale
+     ============================================= */
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
 
-    /* 示例/边框 */
-    --example-border: #e2e8f0;
+  /* =============================================
+     扁平纸感阴影
+     ============================================= */
+  --study-shadow-sm: 0 1px 2px rgba(32, 32, 32, 0.04);
+  --study-shadow-md: 0 4px 12px rgba(32, 32, 32, 0.05);
+  --study-shadow-lg: 0 8px 24px rgba(32, 32, 32, 0.08);
 
-    /* ========== 阴影层级 ========== */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
-    --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10);
+  /* =============================================
+     杂志排版字体
+     ============================================= */
+  --study-font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --study-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-    /* ========== 动画系统 ========== */
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-    --duration-fast: 150ms;
-    --duration-normal: 250ms;
-    --duration-slow: 400ms;
+  /* =============================================
+     旧版变量映射（向后兼容）
+     ============================================= */
+  /* 中性色 */
+  --bg-page: var(--study-muted);
+  --card-bg: var(--study-card);
+  --on-accent: var(--study-primary-foreground);
+  --text: var(--study-foreground);
+  --text-light: var(--study-muted-foreground);
+  --text-muted: var(--study-muted-foreground);
+  --border: var(--study-border);
+  --border-light: var(--study-border);
+
+  /* 主色（旧版 accent 映射到 study-primary） */
+  --accent: var(--study-primary);
+  --accent-dark: #3D4D6A;
+  --accent-hover: #3D4D6A;
+  --accent-light: color-mix(in srgb, var(--study-primary) 12%, transparent);
+  --accent-subtle: color-mix(in srgb, var(--study-primary) 6%, transparent);
+  --accent-rgb: 80, 96, 128;
+
+  /* 强调色（旧版 btn-active 映射到 study-accent） */
+  --btn-active-bg: var(--study-accent);
+
+  /* 按钮 */
+  --btn-bg: var(--study-muted);
+  --btn-color: var(--study-foreground);
+  --btn-hover-bg: var(--study-border);
+  --btn-hover-color: var(--study-foreground);
+  --btn-shadow: 0 2px 4px rgba(32, 32, 32, 0.05), 0 1px 2px rgba(32, 32, 32, 0.02);
+
+  /* 语义色 */
+  --success: var(--state-success);
+  --success-dark: #4A7A5E;
+  --success-light: color-mix(in srgb, var(--state-success) 12%, transparent);
+  --success-rgb: 90, 138, 110;
+  --warning: var(--state-warning);
+  --warning-light: color-mix(in srgb, var(--state-warning) 12%, transparent);
+  --warning-rgb: 200, 168, 124;
+  --danger: var(--state-error);
+  --danger-dark: #A86A6A;
+  --danger-light: color-mix(in srgb, var(--state-error) 12%, transparent);
+  --danger-rgb: 192, 122, 122;
+  --purple: #6A5A7A;
+  --purple-rgb: 106, 90, 122;
+
+  /* 示例/边框 */
+  --example-border: var(--study-border);
+
+  /* 阴影层级 */
+  --shadow-sm: var(--study-shadow-sm);
+  --shadow-md: var(--study-shadow-md);
+  --shadow-lg: var(--study-shadow-lg);
+  --shadow-xl: 0 16px 40px rgba(32, 32, 32, 0.10);
+  --shadow: var(--study-shadow-md);
+
+  /* 字体 */
+  --font-heading: var(--study-font-sans);
+  --font-body: var(--study-font-sans);
+  --font-mono: var(--study-font-mono);
+
+  /* 字体大小 */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 32px;
+
+  /* 动画系统 */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ========== 暗色模式 ========== */
+/* =============================================
+   暗色模式
+   ============================================= */
 [data-theme="dark"] {
-    /* 中性色 */
-    --bg-page: #0f172a;
-    --card-bg: #1e293b;
-    --text: #f1f5f9;
-    --text-light: #94a3b8;
-    --text-muted: #64748b;
-    --border: #334155;
-    --border-light: rgba(51, 65, 85, 0.5);
+  /* 60% 中性色 */
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
 
-    /* 按钮 */
-    --btn-bg: #334155;
-    --btn-color: #f1f5f9;
-    --btn-hover-bg: #475569;
-    --btn-hover-color: #f1f5f9;
-    --btn-active-bg: #3b82f6;
-    --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08);
+  /* 25% 主品牌色 */
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
 
-    /* 示例/边框 */
-    --example-border: #475569;
+  /* 15% 强调色 */
+  --study-accent: #D07A5A;
+  --study-accent-foreground: #1A1C1E;
+  --study-accent-hover: #C06A4A;
 
-    /* 主色 */
-    --accent-light: rgba(99, 102, 241, 0.12);
-    --accent-subtle: rgba(99, 102, 241, 0.06);
+  /* 中性面 */
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
 
-    /* 语义色 */
-    --success-light: rgba(16, 185, 129, 0.12);
-    --warning-light: rgba(245, 158, 11, 0.12);
-    --danger-light: rgba(239, 68, 68, 0.12);
+  /* 边框 */
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
 
-    /* 阴影层级 */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
-    --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.3);
+  /* 状态色 */
+  --state-success: #6A9A7E;
+  --state-warning: #B8A07A;
+  --state-error: #B07A7A;
+  --state-info: #7A8AAA;
+
+  /* 阴影 */
+  --study-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --study-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --study-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* 旧版变量映射 */
+  --bg-page: var(--study-muted);
+  --card-bg: var(--study-card);
+  --on-accent: var(--study-primary-foreground);
+  --text: var(--study-foreground);
+  --text-light: var(--study-muted-foreground);
+  --text-muted: var(--study-muted-foreground);
+  --border: var(--study-border);
+  --border-light: var(--study-border);
+
+  --accent: var(--study-primary);
+  --accent-dark: #6A7A9A;
+  --accent-hover: #6A7A9A;
+  --accent-light: color-mix(in srgb, var(--study-primary) 15%, transparent);
+  --accent-subtle: color-mix(in srgb, var(--study-primary) 8%, transparent);
+  --accent-rgb: 122, 138, 170;
+
+  --btn-bg: var(--study-muted);
+  --btn-color: var(--study-foreground);
+  --btn-hover-bg: var(--study-border);
+  --btn-hover-color: var(--study-foreground);
+  --btn-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08);
+
+  --success-light: color-mix(in srgb, var(--state-success) 15%, transparent);
+  --warning-light: color-mix(in srgb, var(--state-warning) 15%, transparent);
+  --danger-light: color-mix(in srgb, var(--state-error) 15%, transparent);
+
+  --shadow-sm: var(--study-shadow-sm);
+  --shadow-md: var(--study-shadow-md);
+  --shadow-lg: var(--study-shadow-lg);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.3);
+  --shadow: var(--study-shadow-md);
+
+  --example-border: var(--study-border);
 }

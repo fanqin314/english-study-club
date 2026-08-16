@@ -162,7 +162,11 @@
                     const translationArea = document.getElementById('fullTranslationArea');
                     const translationText = document.getElementById('fullTranslationText');
                     if (translationArea && translationText && data.fullTranslation) {
-                        translationText.innerText = data.fullTranslation;
+                        if (window.FullTranslation && window.FullTranslation.set) {
+                            window.FullTranslation.set(data.fullTranslation);
+                        } else {
+                            translationText.innerText = data.fullTranslation;
+                        }
                         translationArea.style.display = 'block';
                     }
                 }

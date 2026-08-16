@@ -1,20 +1,21 @@
 /* base.css - 基础样式和排版 */
 
 body {
-    font-family: var(--font-body);
-    background: var(--bg-page);
-    color: var(--text);
+    font-family: var(--study-font-sans);
+    background: var(--study-background);
+    color: var(--study-foreground);
     line-height: 1.5;
-    padding: 6px;
+    letter-spacing: 0.01em;
     transition: background 0.2s, color 0.2s;
     height: 100vh;
     overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    color: var(--text);
+    font-family: var(--study-font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--study-foreground);
 }
 
 .container {

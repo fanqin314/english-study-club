@@ -15,9 +15,11 @@
             if (isDefaultAI || hasKey || hasProxy) {
                 dot.className = 'status-dot status-green';
                 text.innerText = '已配置';
+                document.body.dataset.apiStatus = 'ok';
             } else {
                 dot.className = 'status-dot status-red';
                 text.innerText = '未配置';
+                document.body.dataset.apiStatus = 'error';
             }
         }
 

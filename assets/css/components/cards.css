@@ -20,31 +20,251 @@
 
 .sentence-card {
     background: var(--card-bg);
-    border-radius: 16px;
+    border-radius: 6px;
     border: 1px solid var(--border);
-    margin-bottom: 12px;
+    border-left: 2px solid transparent;
+    margin-bottom: 14px;
     transition: all var(--duration-normal) var(--ease-smooth);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    box-shadow: none;
+    overflow: visible;
     cursor: pointer;
     position: relative;
+    animation: sentence-in var(--duration-normal) var(--ease-smooth) both;
 }
 
+@keyframes sentence-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 轻微错落入场 */
+.sentence-card:nth-child(2)  { animation-delay: 0.04s; }
+.sentence-card:nth-child(3)  { animation-delay: 0.08s; }
+.sentence-card:nth-child(4)  { animation-delay: 0.12s; }
+.sentence-card:nth-child(5)  { animation-delay: 0.16s; }
+.sentence-card:nth-child(6)  { animation-delay: 0.20s; }
+.sentence-card:nth-child(n+7) { animation-delay: 0.24s; }
+
 .sentence-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--border-light);
+    border-color: var(--study-primary);
+    border-left-color: var(--study-accent);
+    background: color-mix(in srgb, var(--card-bg) 98%, var(--study-primary));
 }
 
 .sentence-text {
-    font-size: 1rem;
-    font-weight: 500;
-    padding: 16px;
-    background: var(--bg-page);
+    font-family: var(--study-font-serif);
+    font-size: 1.05rem;
+    font-weight: 400;
+    letter-spacing: 0.005em;
+    padding: 18px 20px 16px;
+    background: var(--card-bg);
     border-radius: 0;
     border-bottom: 1px solid var(--border);
+    line-height: 1.9;
+    word-break: break-word;
+    color: var(--study-foreground);
+    position: relative;
+}
+
+/* 语法勾圈标注（旧版，已弃用） */
+
+/* 句子右上角旋转45°的类型标签 */
+.sentence-text.has-type-badge {
+    padding-right: 96px;
+}
+
+.sentence-type-badge {
+    position: absolute;
+    top: 44px;
+    right: 6px;
+    transform: rotate(45deg);
+    transform-origin: top right;
+    z-index: 2;
+    font-family: var(--study-font-no-serif, sans-serif);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: var(--type-color, var(--study-primary));
+    padding: 5px 11px 5px 5px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* 面板内旧版类型标签（已弃用） */
+.syntax-annotation-overlay,
+.syntax-legend,
+.syntax-legend-item,
+.syntax-arc {
+    display: none;
+}
+
+/* ========== 语法结构面板：三套分类标签 ========== */
+.syntax-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 10px;
+}
+
+.syntax-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    border-radius: 12px;
+    padding: 3px 10px 3px 7px;
+    background: var(--accent-light);
+    border: 1px solid color-mix(in srgb, var(--study-primary) 28%, var(--border));
+}
+
+.syntax-badge-label {
+    font-weight: 600;
+    color: var(--study-primary);
+    padding-right: 6px;
+    border-right: 1px solid color-mix(in srgb, var(--study-primary) 30%, transparent);
+}
+
+.syntax-badge-value {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* ========== 语法结构面板：从句分析 ========== */
+.syntax-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 2px 0 6px;
+    letter-spacing: 0.03em;
+}
+
+.syntax-clause {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px 8px;
+    margin-bottom: 6px;
+    background: var(--card-bg);
+}
+
+.syntax-clause-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.syntax-clause-cat {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--clause-color, var(--study-primary));
+    padding: 2px 8px;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.syntax-clause-trigger {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--accent-subtle);
+    border: 1px solid var(--border);
+    padding: 1px 7px;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+/* ========== 句子成分：原句上的小徽章 ========== */
+.constituent-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--constituent-color, var(--study-primary));
+    padding: 0 4px;
+    border-radius: 6px;
+    line-height: 1.6;
+    margin: 0 2px;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: 0.3em;
+    transition: opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.constituent-badge:hover {
+    opacity: 0.85;
+}
+
+.constituent-badge.constituent-badge-open {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--constituent-color, var(--study-primary)) 35%, transparent);
+}
+
+/* 成分徽章展开后的详细分类 tip（绝对定位于徽章上方） */
+.constituent-tip {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    z-index: 8;
+    min-width: 120px;
+    max-width: 240px;
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.55;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+    pointer-events: none;
+    font-family: var(--study-font-sans, sans-serif);
+    text-align: left;
+}
+
+.constituent-tip strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+
+.constituent-tip-text {
+    color: var(--text);
+    word-break: break-word;
+}
+
+.constituent-tip-note {
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.syntax-clause-text {
+    font-size: 13px;
+    color: var(--text);
     line-height: 1.6;
     word-break: break-word;
+    margin-bottom: 2px;
+}
+
+.syntax-clause-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ========== 语法结构面板：综合判定描述 ========== */
+.syntax-description {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-top: 1px dashed var(--border);
+    padding-top: 8px;
 }
 
 .sentence-buttons {
@@ -146,7 +366,8 @@
     border-top: 1px solid var(--border);
     opacity: 1;
     transform: translateY(0);
-    max-height: 600px;
+    max-height: 800px;
+    overflow-y: auto;
 }
 
 .detail-panel strong {

@@ -134,7 +134,7 @@
             }
         }
 
-        // 隐藏 AI 离线/降级提示横幅（API 恢复正常时）
+        // 隐藏 AI 离线/降级提示横幅（AI 恢复正常时）
         function clearOfflineHint() {
             const hint = document.getElementById('ai-offline-hint');
             if (hint) hint.hidden = true;
