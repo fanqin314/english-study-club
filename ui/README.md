@@ -33,16 +33,6 @@ MainButtonManager.init();
 
 提供深度解析相关的所有界面组件。
 
-#### second_row_ui.js
-**第二行界面管理**
-
-管理分析模式下的第二行按钮和界面元素。
-
-**主要功能：**
-- 创建第二行按钮
-- 管理界面元素显示/隐藏
-- 处理用户交互
-
 #### highlight_switch.js
 **高亮开关**
 
@@ -261,10 +251,6 @@ MainButtonManager.init();
 main/main_buttons.js
     ↓ 依赖
 EventBus
-
-analysis/second_row_ui.js
-    ↓ 依赖
-无直接依赖
 
 analysis/highlight_switch.js
     ↓ 依赖

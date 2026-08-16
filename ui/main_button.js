@@ -268,6 +268,7 @@
                 this.safeSetStyle(twoColumn, 'display', 'flex');
                 this.safeSetStyle(inputPanel, 'display', 'block');
                 this.ensureTextarea();
+                this.renderSecondRowButtons();
 
                 // 恢复缓存的内容
                 this.restoreCachedContent();
@@ -281,6 +282,50 @@
                 // 触发事件通知其他模块深度解析模式已激活
                 if (eventBus && eventBus.emit) {
                     eventBus.emit('showAnalysisMode');
+                }
+            }
+
+            // 生成第二行按钮（解析 / 词性高亮 / 保存当前分析 / 加载示例）
+            // 容器 secondRowContainer 由 ensureDeepParseSection 同步创建，此处直接同步渲染即可，无需延时轮询
+            renderSecondRowButtons() {
+                const container = document.getElementById('secondRowContainer');
+                if (!container) return;
+
+                const buttons = [
+                    { id: 'parseBtn', text: '解析', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' },
+                    { id: 'highlightToggleBtn', text: '词性高亮', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l3 3-3 3" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.8" /><path d="M12 6h8" /><path d="M12 12h8" /><path d="M12 18h8" /></svg>' },
+                    { id: 'saveAnalysisBtn', text: '保存当前分析', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>' },
+                    { id: 'loadExampleBtn', text: '加载示例', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' }
+                ];
+
+                container.innerHTML = '';
+                buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.id = btn.id;
+                    button.classList.add('secondary');
+
+                    const buttonContent = document.createElement('span');
+                    buttonContent.style.display = 'flex';
+                    buttonContent.style.alignItems = 'center';
+                    buttonContent.style.gap = '8px';
+
+                    if (btn.icon) {
+                        const iconSpan = document.createElement('span');
+                        iconSpan.innerHTML = btn.icon;
+                        buttonContent.appendChild(iconSpan);
+                    }
+
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = btn.text;
+                    buttonContent.appendChild(textSpan);
+
+                    button.appendChild(buttonContent);
+                    container.appendChild(button);
+                });
+
+                // 通知词性高亮控制器按钮已重新生成，便于其重新绑定事件
+                if (eventBus && eventBus.emit) {
+                    eventBus.emit('secondRowButtonsGenerated');
                 }
             }
 
