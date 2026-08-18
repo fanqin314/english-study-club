@@ -1,0 +1,536 @@
+/* ============================================================
+   英研社 Mobile Theme — self-contained component styles
+   设计还原自「深度解析 等 5 个设计」稿（study-* token 系统）
+   说明：不依赖 Tailwind 运行时，仅用 .esc-* 组件类即可完整呈现
+   ============================================================ */
+
+/* ---------- 1. Design Tokens（与稿一致） ---------- */
+:root {
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
+  --study-success: #5A8A6E;
+  --study-success-foreground: #FFFFFF;
+  --study-warning: #C8A87C;
+  --study-warning-foreground: #FFFFFF;
+  --study-error: #C07A7A;
+  --study-error-foreground: #FFFFFF;
+  --study-info: #506080;
+  --study-info-foreground: #FFFFFF;
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
+  --study-shadow-sm: 0 1px 2px rgba(32,32,32,.04);
+  --study-shadow-md: 0 4px 12px rgba(32,32,32,.05);
+  --study-shadow-lg: 0 8px 24px rgba(32,32,32,.08);
+  --study-font-sans: 'Inter','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,-apple-system,sans-serif;
+  --study-font-serif: 'Playfair Display','Noto Serif SC','Songti SC','STSong',serif;
+  --study-font-mono: 'JetBrains Mono','Fira Code',monospace;
+  /* 字体大小档位由设置页控制，默认「中」 */
+  --study-font-scale: 1;
+}
+
+[data-theme="dark"] {
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
+  --study-success: #6A9A7E;
+  --study-success-foreground: #1A1C1E;
+  --study-warning: #B8A07A;
+  --study-warning-foreground: #1A1C1E;
+  --study-error: #B07A7A;
+  --study-error-foreground: #1A1C1E;
+  --study-info: #7A8AAA;
+  --study-info-foreground: #1A1C1E;
+  --study-shadow-sm: 0 1px 2px rgba(0,0,0,.15);
+  --study-shadow-md: 0 4px 12px rgba(0,0,0,.2);
+  --study-shadow-lg: 0 8px 24px rgba(0,0,0,.25);
+}
+
+/* 字体大小档位 */
+[data-fontsize="small"] { --study-font-scale: .9; }
+[data-fontsize="large"] { --study-font-scale: 1.12; }
+
+/* ---------- 2. Reset / Base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--study-font-sans);
+  background: var(--study-background);
+  color: var(--study-foreground);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 { font-family: var(--study-font-serif); }
+textarea, input, button { font-family: inherit; }
+button { cursor: pointer; border: none; background: none; color: inherit; }
+a { text-decoration: none; color: inherit; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+[hidden] { display: none !important; }
+
+/* 图标默认尺寸（lucide 会把 <i data-lucide> 替换为 <svg class="esc-ico ...">，此处兜底尺寸） */
+.esc-ico { width: 18px; height: 18px; display: inline-block; vertical-align: middle; flex: 0 0 auto; }
+.esc-nav-item svg { width: 22px; height: 22px; }
+.esc-nav-item.is-active svg { color: var(--study-primary); }
+
+/* ---------- 3. App Frame ---------- */
+.esc-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 448px;          /* ≈ max-w-md */
+  margin: 0 auto;
+  background: var(--study-background);
+  position: relative;
+  overflow: hidden;
+}
+.esc-main {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.esc-page {
+  padding: 16px 16px 88px;   /* 底部留出导航高度 */
+  max-width: 448px;
+  margin: 0 auto;
+}
+
+/* ---------- 4. Header ---------- */
+.esc-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  background: color-mix(in srgb, var(--study-background) 95%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--study-border);
+}
+.esc-header h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+.esc-header .esc-title-row { display: flex; align-items: center; gap: 10px; }
+.esc-header .esc-title-row .esc-logo { width: 24px; height: 24px; color: var(--study-primary); }
+.esc-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; margin-right: -8px;
+  border-radius: var(--study-radius-md);
+  color: var(--study-muted-foreground);
+  transition: background-color .15s ease;
+}
+.esc-icon-btn:hover { background: var(--study-muted); }
+.esc-icon-btn:active { background: var(--study-border); }
+
+/* ---------- 5. Card ---------- */
+.esc-card {
+  background: var(--study-card);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg);
+  box-shadow: var(--study-shadow-sm);
+  padding: 16px;
+}
+.esc-card + .esc-card { margin-top: 12px; }
+.esc-section-title {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 12px;
+  font-size: 15px; font-weight: 600;
+}
+.esc-section-title .esc-ico { width: 16px; height: 16px; color: var(--study-primary); }
+
+/* badge / pill */
+.esc-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--study-primary) 10%, transparent);
+  color: var(--study-primary);
+  font-size: 12px; font-weight: 600;
+}
+.esc-badge .esc-ico { width: 14px; height: 14px; }
+
+/* ---------- 6. Buttons ---------- */
+.esc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 40px; padding: 0 16px;
+  border-radius: var(--study-radius-md);
+  font-size: 14px; font-weight: 500;
+  transition: opacity .15s ease, background-color .15s ease, border-color .15s ease;
+  white-space: nowrap;
+}
+.esc-btn:active { opacity: .82; }
+.esc-btn-primary { background: var(--study-primary); color: var(--study-primary-foreground); }
+.esc-btn-ghost { background: var(--study-card); border: 1px solid var(--study-border); color: var(--study-foreground); }
+.esc-btn-ghost:hover { background: var(--study-muted); }
+.esc-btn-block { width: 100%; }
+.esc-btn[disabled] { opacity: .5; pointer-events: none; }
+.esc-btn .esc-ico { width: 16px; height: 16px; }
+
+/* 按钮行（如 上传 / 开始解析） */
+.esc-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.esc-btn-row .esc-btn-ghost { flex: 1; }
+.esc-btn-row .esc-btn-primary { flex: 2; }
+
+/* 小药丸按钮（快捷操作 / 筛选 tab） */
+.esc-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--study-card); border: 1px solid var(--study-border);
+  color: var(--study-muted-foreground); font-size: 12px;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+  white-space: nowrap;
+}
+.esc-pill:hover { background: var(--study-muted); color: var(--study-foreground); }
+.esc-pill .esc-ico { width: 12px; height: 12px; }
+.esc-pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* 选中态 tab（生词本筛选） */
+.esc-tab {
+  flex: 0 0 auto;
+  padding: 6px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+  background: var(--study-card); border: 1px solid var(--study-border);
+  color: var(--study-muted-foreground);
+  transition: color .15s, background-color .15s, border-color .15s;
+}
+.esc-tab.is-active {
+  background: var(--study-primary); color: var(--study-primary-foreground); border-color: var(--study-primary);
+}
+.esc-tab-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 20px; }
+
+/* ---------- 7. Inputs ---------- */
+.esc-input, .esc-textarea {
+  width: 100%;
+  background: var(--study-muted);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-md);
+  padding: 12px;
+  font-size: 14px;
+  color: var(--study-foreground);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.esc-input::placeholder, .esc-textarea::placeholder { color: var(--study-muted-foreground); }
+.esc-input:focus, .esc-textarea:focus {
+  outline: none; border-color: var(--study-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--study-ring) 20%, transparent);
+}
+.esc-textarea { resize: none; min-height: 120px; line-height: 1.6; }
+.esc-input-wrap { position: relative; }
+.esc-input-wrap .esc-ico-search {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--study-muted-foreground); pointer-events: none;
+}
+.esc-input-wrap .esc-input { padding-left: 36px; }
+
+/* ---------- 8. Bottom Navigation ---------- */
+.esc-nav {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 56px;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--study-card);
+  border-top: 1px solid var(--study-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 30;
+}
+.esc-nav-item {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--study-muted-foreground);
+  transition: color .2s ease;
+}
+.esc-nav-item .esc-ico { width: 22px; height: 22px; }
+.esc-nav-item.is-active { color: var(--study-primary); }
+
+/* ---------- 9. Stats Grid ---------- */
+.esc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.esc-stat {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  padding: 12px; text-align: center;
+}
+.esc-stat .esc-num { font-size: 22px; font-weight: 600; color: var(--study-primary); line-height: 1.1; }
+.esc-stat .esc-num.is-foreground { color: var(--study-foreground); }
+.esc-stat .esc-num.is-success { color: var(--study-success); }
+.esc-stat .esc-num.is-warning { color: var(--study-warning); }
+.esc-stat .esc-label { font-size: 12px; color: var(--study-muted-foreground); margin-top: 4px; }
+.esc-stat-grid + .esc-stat-grid { margin-top: 16px; }
+
+/* progress bar */
+.esc-progress { width: 100%; height: 6px; background: var(--study-muted); border-radius: 999px; overflow: hidden; }
+.esc-progress > i { display: block; height: 100%; background: var(--study-primary); border-radius: 999px; transition: width .5s ease; }
+
+/* ---------- 10. Sentence Card（深度解析逐句） ---------- */
+.esc-sentence {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-left: 4px solid var(--study-primary);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  padding: 16px; margin-bottom: 12px;
+}
+.esc-sentence-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.esc-sentence-idx {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 999px;
+  background: var(--study-primary); color: var(--study-primary-foreground);
+  font-size: 12px; font-weight: 600; flex: 0 0 auto;
+}
+.esc-sentence-type { font-size: 12px; color: var(--study-muted-foreground); }
+.esc-sentence-en { font-size: 14px; line-height: 1.7; color: var(--study-foreground); margin: 0 0 8px; }
+.esc-sentence-zh { font-size: 12px; line-height: 1.7; color: var(--study-muted-foreground); margin: 0 0 12px; }
+.esc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.esc-tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--study-radius-sm);
+  background: var(--study-muted); color: var(--study-muted-foreground);
+  font-size: 12px; white-space: nowrap;
+}
+
+/* ---------- 11. Word Card（生词本） ---------- */
+.esc-word {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  overflow: hidden; margin-bottom: 12px;
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+.esc-word:active { background: var(--study-muted); }
+.esc-word-inner { display: flex; }
+.esc-word-accent { width: 4px; background: var(--study-primary); flex: 0 0 auto; border-radius: var(--study-radius-lg) 0 0 var(--study-radius-lg); }
+.esc-word-body { flex: 1 1 auto; padding: 16px; min-width: 0; }
+.esc-word-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.esc-word-name { font-size: 18px; font-weight: 700; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0; }
+.esc-word-phon { font-size: 12px; color: var(--study-muted-foreground); }
+.esc-word-mean { font-size: 14px; color: color-mix(in srgb, var(--study-foreground) 80%, transparent); margin: 4px 0 0; }
+.esc-word-mark {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--study-primary); transition: background-color .15s ease;
+}
+.esc-word-mark:hover { background: var(--study-muted); }
+.esc-word-mark.is-mastered { background: color-mix(in srgb, var(--study-success) 12%, transparent); color: var(--study-success); }
+.esc-word-mark .esc-ico { width: 16px; height: 16px; }
+.esc-word-ex {
+  margin-top: 10px; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--study-primary) 20%, transparent);
+}
+.esc-word-ex-en { font-size: 12px; font-style: italic; color: var(--study-muted-foreground); margin: 0; }
+.esc-word-ex-zh { font-size: 12px; color: var(--study-muted-foreground); margin: 2px 0 0; }
+.esc-word-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.esc-word-pron {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--study-muted-foreground);
+  transition: color .15s ease;
+}
+.esc-word-pron:hover { color: var(--study-primary); }
+.esc-word-pron .esc-ico { width: 14px; height: 14px; }
+.esc-dot { width: 4px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--study-muted-foreground) 30%, transparent); }
+.esc-word-date { font-size: 12px; color: var(--study-muted-foreground); }
+
+/* ---------- 12. History Card（历史记录） ---------- */
+.esc-history {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-left: 3px solid var(--study-primary);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  overflow: hidden; margin-bottom: 12px;
+}
+.esc-history:nth-child(2) { border-left-color: var(--study-success); }
+.esc-history:nth-child(3) { border-left-color: var(--study-warning); }
+.esc-history:nth-child(4) { border-left-color: var(--study-info); }
+.esc-history:nth-child(5) { border-left-color: var(--study-primary); }
+.esc-history-body { padding: 14px; }
+.esc-history-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.esc-history-title { font-size: 15px; font-weight: 600; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.esc-history-meta { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.esc-history-meta span { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--study-muted-foreground); }
+.esc-history-meta .esc-ico { width: 12px; height: 12px; }
+.esc-history-snip { font-size: 12px; color: var(--study-muted-foreground); line-height: 1.6; margin: 8px 0 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.esc-history-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--study-border); }
+.esc-mini-btn {
+  padding: 6px 10px; border-radius: var(--study-radius-sm);
+  font-size: 11px; font-weight: 500; background: var(--study-muted);
+  color: var(--study-primary); transition: background-color .15s ease;
+}
+.esc-mini-btn.esc-muted { color: var(--study-muted-foreground); }
+.esc-mini-btn:hover { background: var(--study-border); }
+
+/* ---------- 13. Memory Mode ---------- */
+.esc-ring-wrap { position: relative; flex: 0 0 auto; }
+.esc-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.esc-ring-center .esc-num { font-size: 18px; font-weight: 600; line-height: 1; color: var(--study-foreground); }
+.esc-ring-center .esc-sub { font-size: 10px; color: var(--study-muted-foreground); }
+
+.esc-mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.esc-mode {
+  background: var(--study-card); border: 1px solid var(--study-border); border-top: 2px solid var(--study-primary);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  padding: 14px; text-align: left; display: flex; flex-direction: column; gap: 8px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.esc-mode:active { transform: scale(.98); }
+.esc-mode-ico {
+  width: 32px; height: 32px; border-radius: var(--study-radius-md);
+  background: var(--study-muted); display: flex; align-items: center; justify-content: center;
+  color: var(--study-primary);
+}
+.esc-mode-ico .esc-ico { width: 16px; height: 16px; }
+.esc-mode-name { font-size: 14px; font-weight: 600; color: var(--study-foreground); line-height: 1.2; }
+.esc-mode-desc { font-size: 11px; color: var(--study-muted-foreground); line-height: 1.3; }
+
+.esc-plan { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.esc-plan-name { font-size: 14px; font-weight: 600; color: var(--study-foreground); }
+.esc-plan-state { font-size: 12px; font-weight: 500; color: var(--study-success); background: var(--study-muted); padding: 2px 8px; border-radius: 999px; }
+.esc-plan-foot { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--study-muted-foreground); }
+
+.esc-quick {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  padding: 16px; transition: box-shadow .15s ease;
+}
+.esc-quick:active { box-shadow: var(--study-shadow-md); }
+.esc-quick-ico { width: 40px; height: 40px; border-radius: 999px; background: var(--study-primary); display: flex; align-items: center; justify-content: center; color: var(--study-primary-foreground); flex: 0 0 auto; }
+.esc-quick-ico .esc-ico { width: 20px; height: 20px; }
+.esc-quick-title { font-size: 14px; font-weight: 600; color: var(--study-foreground); }
+.esc-quick-desc { font-size: 12px; color: var(--study-muted-foreground); margin-top: 2px; }
+
+/* ---------- 14. Settings ---------- */
+.esc-group-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--study-muted-foreground); margin: 20px 4px 8px; }
+.esc-list {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  overflow: hidden;
+}
+.esc-list > .esc-row + .esc-row { border-top: 1px solid var(--study-border); }
+.esc-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; gap: 12px;
+}
+.esc-row-label { font-size: 14px; color: var(--study-foreground); }
+.esc-row-label.esc-danger { color: var(--study-error); }
+.esc-row-sub { font-size: 12px; color: var(--study-muted-foreground); margin-top: 2px; }
+.esc-row-ico { width: 16px; height: 16px; color: var(--study-muted-foreground); }
+.esc-row-left { display: flex; align-items: center; gap: 10px; }
+.esc-row-right { display: flex; align-items: center; gap: 8px; color: var(--study-muted-foreground); font-size: 13px; }
+.esc-row.esc-clickable:active { background: var(--study-muted); }
+
+/* stepper（每日目标 ±） */
+.esc-stepper { display: flex; align-items: center; gap: 8px; }
+.esc-step-btn { width: 28px; height: 28px; border-radius: 999px; background: var(--study-muted); display: flex; align-items: center; justify-content: center; color: var(--study-muted-foreground); transition: background-color .15s; }
+.esc-step-btn:hover { background: var(--study-border); }
+.esc-step-btn .esc-ico { width: 14px; height: 14px; }
+.esc-step-val { font-size: 14px; font-weight: 600; width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* segmented control（解析模式 / 字体大小） */
+.esc-seg { display: flex; background: var(--study-muted); border-radius: var(--study-radius-sm); padding: 2px; }
+.esc-seg button { padding: 6px 12px; border-radius: var(--study-radius-sm); font-size: 12px; font-weight: 500; color: var(--study-muted-foreground); transition: background-color .15s, color .15s; }
+.esc-seg button.is-active { background: var(--study-primary); color: var(--study-primary-foreground); }
+.esc-seg.is-square button { padding: 6px 0; width: 32px; text-align: center; }
+
+/* toggle switch */
+.esc-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+.esc-toggle input { opacity: 0; width: 0; height: 0; }
+.esc-toggle .esc-slider { position: absolute; cursor: pointer; inset: 0; background: var(--study-border); border-radius: 12px; transition: .2s; }
+.esc-toggle .esc-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.esc-toggle input:checked + .esc-slider { background: var(--study-primary); }
+.esc-toggle input:checked + .esc-slider:before { transform: translateX(20px); }
+
+/* profile */
+.esc-profile { display: flex; align-items: center; gap: 16px; }
+.esc-avatar { width: 56px; height: 56px; border-radius: 999px; background: var(--study-muted); display: flex; align-items: center; justify-content: center; color: var(--study-muted-foreground); flex: 0 0 auto; }
+.esc-avatar .esc-ico { width: 28px; height: 28px; }
+.esc-profile-name { font-size: 15px; font-weight: 600; color: var(--study-foreground); }
+.esc-profile-mail { font-size: 13px; color: var(--study-muted-foreground); }
+
+/* ---------- 15. Empty State ---------- */
+.esc-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 16px; text-align: center; }
+.esc-empty-ico { width: 64px; height: 64px; border-radius: 999px; background: var(--study-muted); display: flex; align-items: center; justify-content: center; color: var(--study-muted-foreground); margin-bottom: 16px; }
+.esc-empty-ico .esc-ico { width: 28px; height: 28px; }
+.esc-empty-title { font-size: 15px; font-weight: 600; color: var(--study-foreground); margin: 0 0 4px; }
+.esc-empty-desc { font-size: 13px; color: var(--study-muted-foreground); max-width: 280px; margin: 0; }
+
+/* ---------- 16. Modal / Overlay（练习、详情） ---------- */
+.esc-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  background: color-mix(in srgb, var(--study-background) 96%, transparent);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column;
+  animation: esc-fade .15s ease;
+}
+@keyframes esc-fade { from { opacity: 0; } to { opacity: 1; } }
+.esc-overlay-head { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; border-bottom: 1px solid var(--study-border); }
+.esc-overlay-body { flex: 1 1 auto; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; }
+.esc-overlay-title { font-size: 16px; font-weight: 600; }
+
+/* flashcard */
+.esc-flash {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+  perspective: 1000px; margin: 8px 0 16px;
+}
+.esc-flash-inner {
+  width: 100%; min-height: 240px; border-radius: var(--study-radius-lg);
+  border: 1px solid var(--study-border); box-shadow: var(--study-shadow-md);
+  background: var(--study-card); padding: 28px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  cursor: pointer; transition: transform .4s ease;
+}
+.esc-flash-word { font-size: 32px; font-weight: 700; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0; }
+.esc-flash-phon { font-size: 14px; color: var(--study-muted-foreground); margin: 8px 0 0; }
+.esc-flash-back { font-size: 18px; color: var(--study-foreground); margin: 0; }
+.esc-flash-back.esc-muted { font-size: 14px; color: var(--study-muted-foreground); margin-top: 10px; font-style: italic; }
+.esc-flash-hint { font-size: 12px; color: var(--study-muted-foreground); margin-top: 12px; }
+.esc-flash-actions { display: flex; gap: 12px; }
+.esc-flash-actions .esc-btn { flex: 1; }
+
+/* quiz (选择/填空) */
+.esc-quiz-q { font-size: 16px; color: var(--study-foreground); line-height: 1.6; margin: 0 0 4px; }
+.esc-quiz-ex { font-size: 13px; color: var(--study-muted-foreground); margin: 0 0 20px; font-style: italic; }
+.esc-quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.esc-quiz-opt {
+  text-align: left; padding: 14px 16px; border-radius: var(--study-radius-md);
+  border: 1px solid var(--study-border); background: var(--study-card);
+  font-size: 14px; color: var(--study-foreground); transition: border-color .15s, background-color .15s;
+}
+.esc-quiz-opt.is-correct { border-color: var(--study-success); background: color-mix(in srgb, var(--study-success) 10%, transparent); }
+.esc-quiz-opt.is-wrong { border-color: var(--study-error); background: color-mix(in srgb, var(--study-error) 10%, transparent); }
+.esc-quiz-input { margin-bottom: 16px; }
+.esc-quiz-feedback { font-size: 13px; margin-top: 12px; min-height: 18px; }
+.esc-quiz-feedback.is-ok { color: var(--study-success); }
+.esc-quiz-feedback.is-bad { color: var(--study-error); }
+
+/* loading */
+.esc-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 12px; color: var(--study-muted-foreground); font-size: 13px; }
+.esc-spinner { width: 28px; height: 28px; border: 3px solid var(--study-border); border-top-color: var(--study-primary); border-radius: 999px; animation: esc-spin .8s linear infinite; }
+@keyframes esc-spin { to { transform: rotate(360deg); } }
+
+/* ---------- 17. Toast（轻提示，复用桌面端风格） ---------- */
+.esc-toast {
+  position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  background: var(--study-foreground); color: var(--study-background);
+  padding: 10px 20px; border-radius: 999px; font-size: 14px;
+  z-index: 60; opacity: 0; transition: opacity .2s ease; pointer-events: none;
+  text-align: center;
+}
+.esc-toast.is-show { opacity: 1; }
+
+/* 隐藏（用于条件渲染） */
+.esc-hidden { display: none !important; }

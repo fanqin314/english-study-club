@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-fontsize="medium">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>英研社 · 移动端</title>
+  <meta name="description" content="英研社移动端：文章驱动的 AI 英语精读学习工具——深度解析、生词本、历史记录、记忆模式与设置。" />
+  <!-- 图标（lucide CDN；离线时图标不显示但布局不受影响） -->
+  <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+  <!-- 自包含主题与组件样式（还原「深度解析 等 5 个设计」稿） -->
+  <link rel="stylesheet" href="css/theme.css" />
+</head>
+<body>
+  <div class="esc-app">
+    <main class="esc-main">
+      <!-- 5 个视图容器，由路由按需填充并切换可见性 -->
+      <section class="esc-view" data-view="home" hidden></section>
+      <section class="esc-view" data-view="vocab" hidden></section>
+      <section class="esc-view" data-view="history" hidden></section>
+      <section class="esc-view" data-view="memory" hidden></section>
+      <section class="esc-view" data-view="settings" hidden></section>
+    </main>
+
+    <!-- 底部全局导航 -->
+    <nav class="esc-nav" data-mobile-nav="global">
+      <a data-nav-key="home" class="esc-nav-item" aria-label="深度解析"><i data-lucide="search"></i></a>
+      <a data-nav-key="vocab" class="esc-nav-item" aria-label="生词本"><i data-lucide="book-open"></i></a>
+      <a data-nav-key="history" class="esc-nav-item" aria-label="历史记录"><i data-lucide="clock"></i></a>
+      <a data-nav-key="memory" class="esc-nav-item" aria-label="记忆模式"><i data-lucide="flame"></i></a>
+      <a data-nav-key="settings" class="esc-nav-item" aria-label="设置"><i data-lucide="settings"></i></a>
+    </nav>
+
+    <!-- 轻提示 -->
+    <div id="esc-toast" class="esc-toast"></div>
+  </div>
+
+  <!-- 模块按依赖顺序加载：先基础，后视图，最后引导 -->
+  <script src="js/ui.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/vocab.js"></script>
+  <script src="js/views/history.js"></script>
+  <script src="js/views/memory.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
