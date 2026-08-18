@@ -395,3 +395,282 @@
         max-width: 100%;
     }
 }
+
+/* =============================================
+   移动端适配（≤768px）
+   桌面固定侧边栏 → 左侧抽屉 + 顶部导航栏
+   ============================================= */
+
+/* 移动端顶栏与遮罩：桌面端隐藏 */
+.mobile-topbar,
+.mobile-sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* ---- 视口：适配 iOS 动态高度与刘海屏 ---- */
+    body {
+        height: 100vh;
+        height: 100dvh;
+        padding: 0;
+    }
+
+    /* ---- 移动端顶部导航栏 ---- */
+    .mobile-topbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 45;
+        box-sizing: border-box;
+        height: calc(env(safe-area-inset-top, 0px) + 52px);
+        padding: env(safe-area-inset-top, 0px) 12px 0;
+        background: var(--study-card);
+        border-bottom: 1px solid var(--study-border);
+    }
+
+    .mobile-menu-btn,
+    .mobile-settings-btn {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid var(--study-border);
+        background: var(--study-muted);
+        color: var(--study-muted-foreground);
+        box-shadow: var(--study-shadow-sm);
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .mobile-menu-btn:active,
+    .mobile-settings-btn:active {
+        background: var(--study-primary);
+        color: var(--study-primary-foreground);
+    }
+
+    .mobile-topbar-title {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        font-family: var(--study-font-serif);
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--study-foreground);
+        letter-spacing: -0.01em;
+    }
+    .mobile-topbar-logo {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: var(--study-primary);
+    }
+
+    /* ---- 侧边栏 → 抽屉 ---- */
+    .app-sidebar {
+        width: 280px;
+        max-width: 85vw;
+        z-index: 46;
+        transform: translateX(-100%);
+        box-shadow: var(--study-shadow-lg);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+    }
+    .app-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    /* 抽屉底部留出安全区 */
+    .app-sidebar-footer {
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    }
+    /* 移动端隐藏折叠按钮（抽屉固定展开全部导航） */
+    .sidebar-collapse-btn {
+        display: none;
+    }
+
+    /* ---- 侧边栏遮罩 ---- */
+    .mobile-sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(18, 20, 24, 0.42);
+        z-index: 44;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .mobile-sidebar-overlay.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* ---- 主内容区：让出顶栏，取消左侧留白 ---- */
+    .main-content {
+        margin-left: 0;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 52px);
+    }
+
+    /* ---- 覆盖默认折叠状态（移动端抽屉恒为展开样式） ---- */
+    body.sidebar-collapsed { --sidebar-width: 280px; }
+    body.sidebar-collapsed .app-sidebar-header {
+        justify-content: flex-start;
+        padding: 20px 12px 16px;
+        gap: 12px;
+    }
+    body.sidebar-collapsed .sidebar-nav-tab {
+        justify-content: flex-start;
+        padding: 8px 12px;
+        gap: 10px;
+    }
+    body.sidebar-collapsed .sidebar-nav-tab .sidebar-nav-icon {
+        width: 18px;
+        height: 18px;
+    }
+    body.sidebar-collapsed .sidebar-nav-tab .sidebar-nav-label,
+    body.sidebar-collapsed .app-sidebar-title {
+        opacity: 1;
+        max-width: 200px;
+        overflow: visible;
+        white-space: nowrap;
+    }
+    body.sidebar-collapsed .sidebar-status-row {
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 8px;
+    }
+    body.sidebar-collapsed .api-status-badge {
+        gap: 6px;
+    }
+    body.sidebar-collapsed .api-status-badge .status-dot {
+        opacity: 1;
+        transform: none;
+        width: 10px;
+        height: 10px;
+        margin-right: 6px;
+        padding: 0;
+    }
+    body.sidebar-collapsed .api-status-badge span#apiStatusText {
+        opacity: 1;
+        max-width: 200px;
+        line-height: normal;
+        font-size: 12px;
+        height: auto;
+        padding: 0;
+        margin: 0;
+    }
+    body.sidebar-collapsed button.settings-btn {
+        box-shadow: none;
+        animation: none;
+    }
+
+    /* ---- 深度解析：紧凑化 ---- */
+    .two-column-container {
+        padding: 12px 12px 36px;
+        gap: 14px;
+    }
+    .input-panel {
+        padding: 14px;
+    }
+    .reading-toolbar {
+        gap: 8px;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+    .reading-toolbar-label {
+        font-size: 18px;
+    }
+    .panel-toggle-btn {
+        width: 40px;
+        height: 40px;
+    }
+    /* 输入区：文本域在上、操作按钮在下方居中排成一行 */
+    #textareaContainer {
+        flex-direction: column;
+        gap: 10px;
+    }
+    #secondRowContainer {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* ---- 二级分析界面：紧凑化 ---- */
+    .secondary-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 12px;
+        position: sticky;
+        top: calc(env(safe-area-inset-top, 0px) + 52px);
+        z-index: 30;
+    }
+    .secondary-header h2 {
+        font-size: 1rem;
+    }
+    .secondary-header .back-btn,
+    .secondary-header .icon-only-btn,
+    .secondary-header .copy-btn {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        padding: 0;
+        justify-content: center;
+    }
+    .secondary-sentences {
+        height: auto;
+        overflow: visible;
+        padding: 12px;
+    }
+    .original-text,
+    .secondary-translation {
+        padding: 12px;
+    }
+
+    /* ---- 阅读正文：不小于 16px ---- */
+    .sentence-text,
+    .text-body,
+    .translation-content {
+        font-size: 16px;
+    }
+
+    /* ---- 记忆模式子界面：全屏沉浸，隐藏顶栏 ---- */
+    body.mode-sub-interface .mobile-topbar {
+        display: none;
+    }
+    body.mode-sub-interface .main-content {
+        padding-top: 0;
+    }
+
+    /* ---- 设置面板：占满窄屏 ---- */
+    .settings-panel {
+        width: 100%;
+        max-width: 100vw;
+    }
+}
+
+/* ---- 触屏设备：增大点击区，去掉悬停态残留 ---- */
+@media (pointer: coarse) and (max-width: 768px) {
+    .sidebar-nav-tab {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    .back-btn,
+    .icon-only-btn,
+    .copy-btn,
+    .collapse-info-btn {
+        width: 44px;
+        height: 44px;
+    }
+}

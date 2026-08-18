@@ -89,6 +89,9 @@
                     el.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (this.closeMobileSidebar) {
+                            this.closeMobileSidebar();
+                        }
                         if (tab.mode !== this.currentMode) {
                             this.switchMode(tab.mode);
                         }
@@ -500,12 +503,59 @@
             init() {
                 this.bindNavTabs();
                 this.bindSidebarCollapse();
+                this.bindMobileNavigation();
                 this.setupEventListeners();
                 this.updateButtonHighlight();
                 this.updateMemoryModeButtonState();
                 this.showAnalysisMode();
                 // 默认折叠侧边栏
                 this.setSidebarCollapsed(true);
+            }
+
+            // 移动端：侧边栏抽屉开关（汉堡按钮 / 遮罩 / Esc / 模式切换后自动关闭）
+            bindMobileNavigation() {
+                const menuBtn = this.getElement('mobileMenuBtn');
+                const overlay = this.getElement('mobileSidebarOverlay');
+                const sidebar = this.getElement('app-sidebar');
+                if (!menuBtn || !overlay || !sidebar) return;
+
+                const setMobileSidebar = (open) => {
+                    sidebar.classList.toggle('mobile-open', open);
+                    overlay.classList.toggle('show', open);
+                    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    menuBtn.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
+                    document.body.classList.toggle('mobile-nav-open', open);
+                };
+                this.closeMobileSidebar = () => setMobileSidebar(false);
+
+                menuBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMobileSidebar(!sidebar.classList.contains('mobile-open'));
+                });
+
+                overlay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setMobileSidebar(false);
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+                        setMobileSidebar(false);
+                    }
+                });
+
+                // 移动端顶栏设置按钮（复用现有设置面板）
+                const mobileSettingsBtn = this.getElement('mobileSettingsBtn');
+                if (mobileSettingsBtn) {
+                    mobileSettingsBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (window.openSettingsModal) {
+                            window.openSettingsModal();
+                        }
+                    });
+                }
             }
 
             // 设置侧边栏折叠状态并同步按钮文案

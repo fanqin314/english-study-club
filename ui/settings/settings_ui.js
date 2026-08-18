@@ -102,6 +102,9 @@
         if (typeof window.fillDarkModeSettings === 'function') {
             window.fillDarkModeSettings(contentEl);
         }
+        if (typeof window.fillThemeColorSettings === 'function') {
+            window.fillThemeColorSettings(contentEl);
+        }
         if (typeof window.fillMemoryBackgroundSettings === 'function') {
             window.fillMemoryBackgroundSettings(contentEl);
         }
