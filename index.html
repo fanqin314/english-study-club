@@ -2,6 +2,19 @@
 <html lang="zh-CN" data-theme="light" class=""><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <!-- 窄屏自动切换到移动端界面（与桌面端共享同一份 localStorage 数据） -->
+    <script>
+      (function () {
+        function isNarrow() { return window.matchMedia('(max-width: 768px)').matches; }
+        if (isNarrow()) { window.location.replace('mobile/index.html'); return; }
+        var t;
+        window.addEventListener('resize', function () {
+          clearTimeout(t);
+          t = setTimeout(function () { if (isNarrow()) window.location.replace('mobile/index.html'); }, 300);
+        });
+      })();
+    </script>
+
     <title>英研社 | 人工智能英语精读学习工具</title>
     <meta name="description" content="英研社是一款文章驱动的人工智能英语精读学习工具。粘贴英文文章，AI 自动解析词性、语法结构、知识点与翻译，支持闪卡、填空、听写、选词等记忆模式与全文回顾复习，在真实语境中积累词汇。">
     <meta name="keywords" content="英语学习,英语精读,英语阅读,英研社,AI学英语,背单词,生词本,语法分析,英语翻译,开源,English Study,English Learning,AI English,flashcards,vocabulary">

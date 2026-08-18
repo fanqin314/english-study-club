@@ -1,15 +1,11 @@
 /* ============================================================
    views/memory.js — 记忆模式（底部导航 memory）
-   组件与交互：
-   · 顶部栏：标题 + 连续学习 N 天徽章
-   · 学习进度卡：SVG 环形进度 + 今日目标/已完成 + 预计时间
-   · 模式选择网格：闪卡 / 填空 / 听写 / 选择 / 单词测验 / 全文回顾
-   · 学习计划卡：每日目标 + 进度 + 下次复习
-   · 快速统计：待复习 / 已掌握 / 正确率
-   · 快速复习入口
-   · 练习弹层（overlay）：闪卡翻转、选择题、填空、听写、全文回顾
-   状态：来自 Store.progress + settings.dailyGoal
-   事件：模式卡点击（启动对应练习）、快速复习、练习内 认识/不认识、选项点击、提交
+   对齐网页版「记忆模式」：顶部「单词 / 文章」两个标签切换。
+   · 单词标签：生词本选择器 + 4 个模式（闪卡 / 填空 / 听写 / 选词）
+   · 文章标签：文章选择器 + 4 个模式（语境填空 / 全文回顾 / 逐句精读 / 生词测验）
+   · 顶部保留学习进度卡（连续学习 / 环形进度 / 待复习·已掌握·正确率）
+   状态：currentTab（'word'|'article'）、selectedArticleId、练习 session
+   事件：标签切换、模式卡点击（启动对应练习）、文章选择、练习内交互
    ============================================================ */
 (function (global) {
   'use strict';
@@ -17,13 +13,19 @@
   const UI = Mobile.UI, Store = Mobile.Store, Speech = Mobile.Speech, Router = Mobile.Router;
   const esc = UI.esc, icon = UI.icon;
 
-  const MODES = [
-    { key: 'flashcard', name: '闪卡模式', desc: '翻转卡片记忆单词', ico: 'layers' },
-    { key: 'cloze', name: '填空练习', desc: '根据上下文填写单词', ico: 'text-cursor-input' },
-    { key: 'dictation', name: '听写练习', desc: '听发音拼写单词', ico: 'volume-2' },
-    { key: 'choice', name: '选择练习', desc: '选择题形式巩固记忆', ico: 'list-checks' },
-    { key: 'quiz', name: '单词测验', desc: '综合测试词汇掌握', ico: 'brain' },
-    { key: 'fullreview', name: '全文回顾', desc: '回顾完整文章内容', ico: 'book-open' }
+  // 单词标签的 4 个练习模式
+  const WORD_MODES = [
+    { key: 'flashcard', name: '闪卡模式', desc: '翻转卡片，快速记忆单词', ico: 'layers' },
+    { key: 'fill', name: '填空练习', desc: '语境填空，加深词汇理解', ico: 'text-cursor-input' },
+    { key: 'spelling', name: '听写练习', desc: '听音拼写，强化记忆', ico: 'volume-2' },
+    { key: 'choice', name: '选词练习', desc: '释义选词，巩固掌握', ico: 'list-checks' }
+  ];
+  // 文章标签的 4 个练习模式
+  const ARTICLE_MODES = [
+    { key: 'cloze', name: '语境填空', desc: '基于文章填空记忆生词', ico: 'text-cursor-input' },
+    { key: 'review', name: '全文回顾', desc: '回顾全文，巩固阅读', ico: 'book-open' },
+    { key: 'sentence', name: '逐句精读', desc: '逐句精读，深入理解', ico: 'align-left' },
+    { key: 'vocabQuiz', name: '生词测验', desc: '测验文章生词掌握度', ico: 'brain' }
   ];
 
   const FALLBACK = [
@@ -35,15 +37,59 @@
   ];
 
   let rootEl = null;
+  let currentTab = 'word';
+  let selectedArticleId = null;
 
-  function getQueue() {
+  // ---------- 数据辅助 ----------
+  function getVocabSet() {
+    return new Set(Store.getVocab().map((w) => (w.word || '').toLowerCase()).filter(Boolean));
+  }
+  function splitSentences(text) {
+    if (!text) return [];
+    return text.split(/\n+/).map((b) => b.trim()).filter(Boolean)
+      .flatMap((b) => b.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean));
+  }
+  function getArticle(id) {
+    if (!id) return null;
+    return Store.getHistory().find((h) => h.id === id) || null;
+  }
+  // 单词练习队列：生词优先，未掌握在前，取前 10
+  function buildWordQueue() {
     const vocab = Store.getVocab();
     let pool = vocab.length ? vocab.slice() : FALLBACK.map((w) => Object.assign({ id: 'fb-' + w.word }, w));
-    // 未掌握优先
     pool.sort((a, b) => (a.status === 'mastered' ? 1 : 0) - (b.status === 'mastered' ? 1 : 0));
     return pool.slice(0, 10);
   }
+  // 文章「语境填空」队列：取含生词的句子，挖空该生词
+  function buildArticleClozeQueue(item) {
+    const sentences = splitSentences(item.text);
+    const vocabSet = getVocabSet();
+    const queue = [];
+    sentences.forEach((s) => {
+      const words = s.match(/\b([A-Za-z][A-Za-z'-]+)\b/g) || [];
+      const hit = words.find((w) => vocabSet.has(w.toLowerCase()));
+      if (hit) queue.push({ example: s, word: hit });
+    });
+    if (queue.length === 0) {
+      // 文章无匹配生词：退化为挖最长词，仍可练习
+      sentences.slice(0, 8).forEach((s) => {
+        const words = s.match(/\b([A-Za-z][A-Za-z'-]+)\b/g) || [];
+        if (words.length) {
+          const longest = words.slice().sort((a, b) => b.length - a.length)[0];
+          queue.push({ example: s, word: longest });
+        }
+      });
+    }
+    return queue.slice(0, 10);
+  }
+  // 文章「生词测验」队列：文章中出现过的生词
+  function buildArticleVocabQueue(item) {
+    const text = (item.text || '').toLowerCase();
+    const found = Store.getVocab().filter((w) => w.word && text.includes(w.word.toLowerCase()));
+    return (found.length ? found : Store.getVocab()).slice(0, 10);
+  }
 
+  // ---------- 渲染 ----------
   function render(container) {
     const p = Store.getProgress();
     const s = Store.getSettings();
@@ -54,6 +100,7 @@
     const mins = Math.max(1, Math.round((remain * 0.4)));
     const circ = 2 * Math.PI * 42;
     const offset = circ * (1 - pct / 100);
+    const vocabCount = Store.getVocab().length;
 
     container.innerHTML = `
       <div class="esc-page">
@@ -62,7 +109,8 @@
           <div class="esc-badge">${icon('flame')}<span>连续学习 <b style="color:var(--study-warning)">${esc(p.streak)}</b> 天</span></div>
         </header>
 
-        <section class="esc-card" style="margin-top:20px">
+        <!-- 学习进度卡 -->
+        <section class="esc-card" style="margin-top:16px">
           <div class="esc-section-title">${icon('target')}<span>今日学习进度</span></div>
           <div style="display:flex;align-items:center;gap:16px">
             <div class="esc-ring-wrap">
@@ -79,50 +127,106 @@
               <p style="font-size:12px;color:var(--study-muted-foreground);display:flex;align-items:center;gap:4px;margin:0">${icon('clock')}预计还需 <b style="color:var(--study-foreground)">${mins} 分钟</b></p>
             </div>
           </div>
-        </section>
-
-        <section style="margin-top:20px">
-          <div class="esc-section-title">${icon('layers')}<span>选择练习模式</span></div>
-          <div class="esc-mode-grid">
-            ${MODES.map((m) => `
-              <button class="esc-mode" data-mode="${m.key}">
-                <div class="esc-mode-ico">${icon(m.ico)}</div>
-                <div><p class="esc-mode-name">${esc(m.name)}</p><p class="esc-mode-desc">${esc(m.desc)}</p></div>
-              </button>`).join('')}
-          </div>
-        </section>
-
-        <section style="margin-top:20px">
-          <div class="esc-section-title">${icon('trophy')}<span>当前学习计划</span></div>
-          <div class="esc-card">
-            <div class="esc-plan"><span class="esc-plan-name">每日 ${goal} 词</span><span class="esc-plan-state">进行中</span></div>
-            <div class="esc-progress" style="margin-bottom:12px"><i style="width:${pct}%;background:linear-gradient(90deg,var(--study-primary),var(--study-success))"></i></div>
-            <div class="esc-plan-foot"><span>进度 ${done}/${goal}</span><span style="display:flex;align-items:center;gap:4px">${icon('alarm-clock')}下次复习：明天 09:00</span></div>
-          </div>
-        </section>
-
-        <section style="margin-top:20px">
-          <div class="esc-grid-3">
+          <div class="esc-grid-3" style="margin-top:14px">
             <div class="esc-stat"><div class="esc-num">${esc(p.reviewDue)}</div><div class="esc-label">待复习</div></div>
             <div class="esc-stat"><div class="esc-num is-success">${esc(p.masteredCount)}</div><div class="esc-label">已掌握</div></div>
             <div class="esc-stat"><div class="esc-num is-foreground">${esc(p.correctRate)}<span style="font-size:12px">%</span></div><div class="esc-label">正确率</div></div>
           </div>
         </section>
 
-        <section style="margin-top:20px">
-          <div class="esc-quick" data-mode="flashcard">
-            <div class="esc-quick-ico">${icon('zap')}</div>
-            <div style="flex:1"><p class="esc-quick-title">快速复习</p><p class="esc-quick-desc">基于遗忘曲线，复习今日薄弱词汇</p></div>
-            ${icon('chevron-right')}
+        <!-- 单词 / 文章 标签切换 -->
+        <div class="esc-seg is-full" id="m-mmtabs" style="margin-top:16px">
+          <button data-tab="word">单词</button>
+          <button data-tab="article">文章</button>
+        </div>
+
+        <!-- 单词标签内容 -->
+        <div id="m-word" class="esc-mmtab-content">
+          <div class="esc-nbcard">
+            <div class="esc-nb-ico">${icon('book-open')}</div>
+            <div class="esc-nb-info">
+              <div class="esc-nb-name">默认生词本</div>
+              <div class="esc-nb-sub">${vocabCount} 个生词</div>
+            </div>
+            <div class="esc-nb-count">${vocabCount} 词</div>
           </div>
-        </section>
+          <div class="esc-mtitle">选择记忆模式</div>
+          <div class="esc-mode-grid">
+            ${WORD_MODES.map((m) => `
+              <button class="esc-mode" data-mode="${m.key}">
+                <div class="esc-mode-ico">${icon(m.ico)}</div>
+                <div><p class="esc-mode-name">${esc(m.name)}</p><p class="esc-mode-desc">${esc(m.desc)}</p></div>
+              </button>`).join('')}
+          </div>
+        </div>
+
+        <!-- 文章标签内容 -->
+        <div id="m-article" class="esc-mmtab-content" hidden>
+          <div class="esc-field">
+            <label class="esc-field-label">选择文章</label>
+            <div class="esc-select-wrap">
+              <select id="m-art" class="esc-select"></select>
+            </div>
+          </div>
+          <div class="esc-mtitle">选择记忆模式</div>
+          <div class="esc-mode-grid">
+            ${ARTICLE_MODES.map((m) => `
+              <button class="esc-mode" data-mode="${m.key}">
+                <div class="esc-mode-ico">${icon(m.ico)}</div>
+                <div><p class="esc-mode-name">${esc(m.name)}</p><p class="esc-mode-desc">${esc(m.desc)}</p></div>
+              </button>`).join('')}
+          </div>
+        </div>
       </div>`;
 
     rootEl = container;
-    container.querySelectorAll('[data-mode]').forEach((el) => {
+    paintArticleSelect();
+    bind(container);
+    selectTab(currentTab);
+    UI.refreshIcons(container);
+  }
+
+  function paintArticleSelect() {
+    const sel = rootEl && rootEl.querySelector('#m-art');
+    if (!sel) return;
+    const list = Store.getHistory();
+    if (!list.length) {
+      sel.innerHTML = `<option value="">暂无历史文章</option>`;
+      selectedArticleId = null;
+    } else {
+      if (!selectedArticleId || !list.find((h) => h.id === selectedArticleId)) {
+        selectedArticleId = list[0].id;
+      }
+      sel.innerHTML = list.map((h) => {
+        const first = (h.title || (h.text || '').split('\n')[0] || '未命名文章').slice(0, 24);
+        return `<option value="${esc(h.id)}">${esc(first)} · ${esc(h.date || '')}</option>`;
+      }).join('');
+      sel.value = selectedArticleId;
+    }
+  }
+
+  function bind(root) {
+    // 标签切换
+    root.querySelectorAll('#m-mmtabs button').forEach((b) => {
+      b.addEventListener('click', () => selectTab(b.getAttribute('data-tab')));
+    });
+    // 文章选择
+    const sel = root.querySelector('#m-art');
+    if (sel) sel.addEventListener('change', () => { selectedArticleId = sel.value; });
+    // 模式卡点击（单词 + 文章 共用一个委托）
+    root.querySelectorAll('.esc-mode[data-mode]').forEach((el) => {
       el.addEventListener('click', () => openExercise(el.getAttribute('data-mode')));
     });
-    UI.refreshIcons(container);
+  }
+
+  function selectTab(name) {
+    currentTab = name;
+    if (!rootEl) return;
+    rootEl.querySelectorAll('#m-mmtabs button').forEach((b) => {
+      b.classList.toggle('is-active', b.getAttribute('data-tab') === name);
+    });
+    rootEl.querySelector('#m-word').hidden = name !== 'word';
+    rootEl.querySelector('#m-article').hidden = name !== 'article';
   }
 
   // ---------------- 练习弹层 ----------------
@@ -131,42 +235,87 @@
 
   function closeOverlay() {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    overlay = null; session = null;
+    overlay = null;
+    session = null;
   }
 
   function openExercise(mode) {
-    const queue = getQueue();
-    if (!queue.length) { UI.toast('暂无可练习单词'); return; }
-    session = { mode, queue, idx: 0, correct: 0, total: 0 };
+    const isArticle = ARTICLE_MODES.some((m) => m.key === mode);
+    const ctx = { articleId: selectedArticleId };
+    let queue = [];
+
+    if (WORD_MODES.some((m) => m.key === mode)) {
+      queue = buildWordQueue();
+      if (!queue.length) { UI.toast('暂无可练习单词，先去深度解析收藏生词'); return; }
+    } else if (mode === 'cloze') {
+      const item = getArticle(ctx.articleId);
+      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
+      queue = buildArticleClozeQueue(item);
+      if (!queue.length) { UI.toast('该文章没有可用句子'); return; }
+    } else if (mode === 'vocabQuiz') {
+      const item = getArticle(ctx.articleId);
+      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
+      queue = buildArticleVocabQueue(item);
+      if (!queue.length) { UI.toast('该文章没有匹配生词'); return; }
+    } else if (mode === 'sentence') {
+      const item = getArticle(ctx.articleId);
+      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
+      queue = splitSentences(item.text);
+      if (!queue.length) { UI.toast('该文章为空'); return; }
+    } else if (mode === 'review') {
+      const item = getArticle(ctx.articleId);
+      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      openOverlay();
+      step();
+      return;
+    } else {
+      return;
+    }
+
+    session = { mode, ctx, queue, idx: 0, correct: 0, total: 0, graded: true };
+    openOverlay();
+    step();
+  }
+
+  function openOverlay() {
     overlay = document.createElement('div');
     overlay.className = 'esc-overlay';
     overlay.innerHTML = `
       <div class="esc-overlay-head">
         <button class="esc-icon-btn" data-act="close" aria-label="关闭">${icon('x')}</button>
-        <span class="esc-overlay-title">${esc(modeName(mode))}</span>
+        <span class="esc-overlay-title">${esc(modeName(session.mode))}</span>
         <span class="esc-row-right" data-role="counter"></span>
       </div>
       <div class="esc-overlay-body" data-role="body"></div>`;
     document.querySelector('.esc-app').appendChild(overlay);
     overlay.querySelector('[data-act="close"]').addEventListener('click', closeOverlay);
     UI.refreshIcons(overlay);
-    step();
   }
 
-  function modeName(m) { const x = MODES.find((o) => o.key === m); return x ? x.name : '练习'; }
+  function modeName(m) {
+    const x = WORD_MODES.concat(ARTICLE_MODES).find((o) => o.key === m);
+    return x ? x.name : '练习';
+  }
 
   function step() {
     if (!session) return;
     const body = overlay.querySelector('[data-role="body"]');
     const counter = overlay.querySelector('[data-role="counter"]');
-    counter.textContent = `${session.idx + 1} / ${session.queue.length}`;
-    const w = session.queue[session.idx];
+    if (session.mode !== 'review') {
+      counter.textContent = `${session.idx + 1} / ${session.queue.length}`;
+    } else {
+      counter.textContent = '';
+    }
+    const item = session.queue[session.idx];
 
-    if (session.mode === 'flashcard') return renderFlash(body, w);
-    if (session.mode === 'cloze') return renderCloze(body, w);
-    if (session.mode === 'dictation') return renderDictation(body, w);
-    if (session.mode === 'fullreview') return renderFullReview(body);
-    return renderChoice(body, w); // choice / quiz
+    if (session.mode === 'flashcard') return renderFlash(body, item);
+    if (session.mode === 'fill') return renderCloze(body, { example: item.example, word: item.word });
+    if (session.mode === 'spelling') return renderDictation(body, item);
+    if (session.mode === 'choice' || session.mode === 'vocabQuiz') return renderChoice(body, item);
+    if (session.mode === 'cloze') return renderCloze(body, { example: item.example, word: item.word });
+    if (session.mode === 'sentence') return renderArticleSentence(body, item);
+    if (session.mode === 'review') return renderArticleReview(body, item);
   }
 
   function next() {
@@ -176,23 +325,31 @@
   }
 
   function finish() {
-    const acc = session.total ? Math.round((session.correct / session.total) * 100) : 0;
-    // 更新进度（轻量）
-    const p = Store.getProgress();
-    const s = Store.getSettings();
-    Store.updateProgress({
-      todayCount: Math.min(s.dailyGoal || 20, p.todayCount + session.total),
-      correctRate: acc || p.correctRate,
-      reviewDue: Math.max(0, p.reviewDue - session.correct)
-    });
     const body = overlay.querySelector('[data-role="body"]');
-    body.innerHTML = `
-      <div class="esc-empty" style="padding:32px 0">
-        ${icon('check-circle', 'esc-ico')}
-        <p class="esc-empty-title" style="margin-top:16px">本轮完成！</p>
-        <p class="esc-empty-desc">答对 ${session.correct} / ${session.total}（正确率 ${acc}%）</p>
-        <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px;max-width:240px" data-act="done">完成</button>
-      </div>`;
+    if (session.graded) {
+      const acc = session.total ? Math.round((session.correct / session.total) * 100) : 0;
+      const p = Store.getProgress();
+      const s = Store.getSettings();
+      Store.updateProgress({
+        todayCount: p.todayCount + session.total,          // 不截断，真实累计练习量
+        correctRate: acc || p.correctRate,
+        reviewDue: Math.max(0, p.reviewDue - session.correct)
+      });
+      body.innerHTML = `
+        <div class="esc-empty" style="padding:32px 0">
+          ${icon('check-circle', 'esc-ico')}
+          <p class="esc-empty-title" style="margin-top:16px">本轮完成！</p>
+          <p class="esc-empty-desc">答对 ${session.correct} / ${session.total}（正确率 ${acc}%）</p>
+          <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px;max-width:240px" data-act="done">完成</button>
+        </div>`;
+    } else {
+      body.innerHTML = `
+        <div class="esc-empty" style="padding:32px 0">
+          ${icon('check-circle', 'esc-ico')}
+          <p class="esc-empty-title" style="margin-top:16px">本轮完成！</p>
+          <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px;max-width:240px" data-act="done">完成</button>
+        </div>`;
+    }
     UI.refreshIcons(body);
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
   }
@@ -205,7 +362,7 @@
           <p class="esc-flash-word">${esc(w.word)}</p>
           ${w.phonetic ? `<p class="esc-flash-phon">/${esc(w.phonetic)}/</p>` : ''}
           <div class="esc-flash-back esc-hidden">
-            <p class="esc-flash-back">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || '')}</p>
+            <p>${esc((w.pos ? w.pos + '. ' : '') + (w.meaning || ''))}</p>
             ${w.example ? `<p class="esc-flash-back esc-muted">"${esc(w.example)}"</p>` : ''}
           </div>
           <p class="esc-flash-hint">点击卡片查看释义</p>
@@ -246,9 +403,8 @@
         session.total++;
         const ok = b.getAttribute('data-correct') === '1';
         b.classList.add(ok ? 'is-correct' : 'is-wrong');
-        if (ok) session.correct++; else {
-          body.querySelector('.esc-quiz-opt[data-correct="1"]').classList.add('is-correct');
-        }
+        if (ok) session.correct++;
+        else body.querySelector('.esc-quiz-opt[data-correct="1"]').classList.add('is-correct');
         body.querySelectorAll('.esc-quiz-opt').forEach((x) => (x.disabled = true));
         fb.textContent = ok ? '回答正确！' : '正确答案已标出';
         fb.className = 'esc-quiz-feedback ' + (ok ? 'is-ok' : 'is-bad');
@@ -257,7 +413,7 @@
     });
   }
 
-  // 填空：例句挖空，填写单词
+  // 填空：例句/文章句挖空，填写单词
   function renderCloze(body, w) {
     const ex = w.example || (w.word + ' 是一个例子。');
     const filled = ex.replace(new RegExp(w.word, 'i'), '______');
@@ -309,15 +465,32 @@
     ans.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   }
 
-  // 全文回顾：展示最近一篇历史文章
-  function renderFullReview(body) {
-    const hist = Store.getHistory();
-    const item = hist[0];
+  // 逐句精读：逐句展示（不评分）
+  function renderArticleSentence(body, sentence) {
     body.innerHTML = `
-      <p class="esc-quiz-q">${esc(item ? item.title || '文章回顾' : '暂无文章')}</p>
-      <p class="esc-quiz-ex">${esc(item ? item.date || '' : '')}</p>
-      <div style="font-size:15px;line-height:1.8;color:var(--study-foreground);white-space:pre-wrap">${esc(item ? item.text : '去深度解析一篇英文文章，这里就能回顾全文。')}</div>`;
+      <p class="esc-quiz-q">逐句精读</p>
+      <div class="esc-sentence-block">${esc(sentence)}</div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button class="esc-btn esc-btn-ghost" data-act="prev" style="flex:1">上一句</button>
+        <button class="esc-btn esc-btn-primary" data-act="next" style="flex:1">${session.idx + 1 >= session.queue.length ? '完成' : '下一句'}</button>
+      </div>`;
     UI.refreshIcons(body);
+    body.querySelector('[data-act="next"]').addEventListener('click', () => {
+      if (session.idx + 1 >= session.queue.length) finish(); else next();
+    });
+    const prev = body.querySelector('[data-act="prev"]');
+    if (prev) prev.addEventListener('click', () => { if (session.idx > 0) { session.idx--; step(); } });
+  }
+
+  // 全文回顾：展示整篇文章（只读，不评分）
+  function renderArticleReview(body, item) {
+    body.innerHTML = `
+      <p class="esc-quiz-q">${esc((item.title || (item.text || '').split('\n')[0] || '文章回顾').slice(0, 40))}</p>
+      <p class="esc-quiz-ex">${esc(item.date || '')}</p>
+      <div class="esc-article-text">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div>
+      <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px" data-act="done">完成</button>`;
+    UI.refreshIcons(body);
+    body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
   }
 
   // 工具
@@ -327,6 +500,16 @@
     return shuffle(pool).slice(0, n);
   }
 
+  // 数据变化自动刷新（练习弹层打开时不刷新，避免打断）
+  Store.on('vocab', () => { if (rootEl && !rootEl.hidden && !overlay) { const t = currentTab; render(rootEl); selectTab(t); } });
+  Store.on('history', () => { if (rootEl && !rootEl.hidden && !overlay) { paintArticleSelect(); } });
+  Store.on('progress', () => { if (rootEl && !rootEl.hidden && !overlay) { const t = currentTab; render(rootEl); selectTab(t); } });
+
+  // 点击底部导航离开时关闭练习弹层（修复残留/泄漏）
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-nav-key]') && overlay) closeOverlay();
+  });
+
   Mobile.Views = Mobile.Views || {};
-  Mobile.Views.memory = { render };
+  Mobile.Views.memory = { render, closeOverlay };
 })(window);

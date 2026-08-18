@@ -18,8 +18,19 @@
   function applyTheme(dark) { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); }
   function applyFont(size) { document.documentElement.setAttribute('data-fontsize', size); }
 
+  // 返回三种色当前「有效值」（自定义值优先，否则按明暗给默认，用于色块展示）
+  function defaultColors(s) {
+    const dark = !!s.darkMode;
+    return {
+      neutral: s.themeNeutral || (dark ? '#1A1C1E' : '#FFFFFF'),
+      primary: s.themePrimary || (dark ? '#7A8AAA' : '#506080'),
+      accent: s.themeAccent || (dark ? '#D07A5A' : '#E07B5A')
+    };
+  }
+
   function render(container) {
     const s = Store.getSettings();
+    const col = defaultColors(s);
     container.innerHTML = `
       <div class="esc-page">
         <header class="esc-header">
@@ -82,6 +93,24 @@
           </div>
         </div>
 
+        <div class="esc-group-title">主题配色</div>
+        <div class="esc-list">
+          <div class="esc-row">
+            <div class="esc-row-left">${icon('square')}<span class="esc-row-label">中性色 <span style="color:var(--study-muted-foreground);font-size:12px">60%</span></span></div>
+            <label class="esc-color-swatch" id="m-c-neutral" style="background:${esc(col.neutral)}"><input type="color" data-color="neutral" value="${esc(col.neutral)}"></label>
+          </div>
+          <div class="esc-row">
+            <div class="esc-row-left">${icon('palette')}<span class="esc-row-label">主品牌色 <span style="color:var(--study-muted-foreground);font-size:12px">25%</span></span></div>
+            <label class="esc-color-swatch" id="m-c-primary" style="background:${esc(col.primary)}"><input type="color" data-color="primary" value="${esc(col.primary)}"></label>
+          </div>
+          <div class="esc-row">
+            <div class="esc-row-left">${icon('zap')}<span class="esc-row-label">强调色 <span style="color:var(--study-muted-foreground);font-size:12px">15%</span></span></div>
+            <label class="esc-color-swatch" id="m-c-accent" style="background:${esc(col.accent)}"><input type="color" data-color="accent" value="${esc(col.accent)}"></label>
+          </div>
+          <div class="esc-color-row-note">选色后即时生效；切换深色模式会按基调自动适配灰阶。</div>
+          <div class="esc-row esc-clickable" data-act="reset-colors"><div class="esc-row-left">${icon('rotate-ccw')}<span class="esc-row-label">恢复默认配色</span></div>${icon('chevron-right')}</div>
+        </div>
+
         <div class="esc-group-title">数据管理</div>
         <div class="esc-list">
           <div class="esc-row esc-clickable" data-act="export"><div class="esc-row-left">${icon('download')}<span class="esc-row-label">导出学习数据</span></div>${icon('chevron-right')}</div>
@@ -140,6 +169,31 @@
         const v = b.getAttribute('data-v');
         Store.updateSettings({ fontSize: v }); applyFont(v);
       });
+    });
+
+    // 主题配色取色器（60-25-15）
+    root.querySelectorAll('.esc-color-swatch input[type="color"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const key = input.getAttribute('data-color');
+        const val = input.value || null;
+        const patch = {};
+        if (key === 'neutral') patch.themeNeutral = val;
+        else if (key === 'primary') patch.themePrimary = val;
+        else if (key === 'accent') patch.themeAccent = val;
+        Store.updateSettings(patch);
+        const swatch = input.closest('.esc-color-swatch');
+        if (swatch) swatch.style.background = val;
+        UI.toast('配色已更新');
+      });
+    });
+    root.querySelector('[data-act="reset-colors"]').addEventListener('click', () => {
+      Store.updateSettings({ themeNeutral: null, themePrimary: null, themeAccent: null });
+      const col = defaultColors(Store.getSettings());
+      [['neutral', col.neutral], ['primary', col.primary], ['accent', col.accent]].forEach(([k, def]) => {
+        const inp = root.querySelector(`.esc-color-swatch input[data-color="${k}"]`);
+        if (inp) { inp.value = def; const sw = inp.closest('.esc-color-swatch'); if (sw) sw.style.background = def; }
+      });
+      UI.toast('已恢复默认配色');
     });
 
     // 数据管理

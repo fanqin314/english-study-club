@@ -14,6 +14,9 @@
   --study-popover-foreground: #202020;
   --study-primary: #506080;
   --study-primary-foreground: #FFFFFF;
+  --study-accent: #E07B5A;
+  --study-accent-foreground: #FFFFFF;
+  --study-accent-hover: #CE6E4E;
   --study-muted: #F4F6F8;
   --study-muted-foreground: #7A8494;
   --study-border: #E2E6EB;
@@ -49,6 +52,9 @@
   --study-popover-foreground: #E8E8E8;
   --study-primary: #7A8AAA;
   --study-primary-foreground: #1A1C1E;
+  --study-accent: #D07A5A;
+  --study-accent-foreground: #1A1C1E;
+  --study-accent-hover: #C06A4A;
   --study-muted: #2A2D30;
   --study-muted-foreground: #9A9EA8;
   --study-border: #3A3D40;
@@ -116,6 +122,8 @@ a { text-decoration: none; color: inherit; }
   max-width: 448px;
   margin: 0 auto;
 }
+/* 二级页面（无底部 tab 栏）时收紧底部间距 */
+body.esc-sub-view .esc-page { padding-bottom: 24px; }
 
 /* ---------- 4. Header ---------- */
 .esc-header {
@@ -180,7 +188,8 @@ a { text-decoration: none; color: inherit; }
   white-space: nowrap;
 }
 .esc-btn:active { opacity: .82; }
-.esc-btn-primary { background: var(--study-primary); color: var(--study-primary-foreground); }
+.esc-btn-primary { background: var(--study-accent); color: var(--study-accent-foreground); }
+.esc-btn-primary:hover { background: var(--study-accent-hover); }
 .esc-btn-ghost { background: var(--study-card); border: 1px solid var(--study-border); color: var(--study-foreground); }
 .esc-btn-ghost:hover { background: var(--study-muted); }
 .esc-btn-block { width: 100%; }
@@ -236,6 +245,8 @@ a { text-decoration: none; color: inherit; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--study-ring) 20%, transparent);
 }
 .esc-textarea { resize: none; min-height: 120px; line-height: 1.6; }
+.esc-textarea::-webkit-scrollbar { width: 0; height: 0; }
+.esc-textarea { scrollbar-width: none; }
 .esc-input-wrap { position: relative; }
 .esc-input-wrap .esc-ico-search {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
@@ -245,9 +256,11 @@ a { text-decoration: none; color: inherit; }
 
 /* ---------- 8. Bottom Navigation ---------- */
 .esc-nav {
-  position: absolute; left: 0; right: 0; bottom: 0;
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 0;
+  width: 100%; max-width: 448px;   /* 与应用容器同宽居中，固定不随内容滚动 */
   height: 56px;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--study-card);
   border-top: 1px solid var(--study-border);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -412,6 +425,63 @@ a { text-decoration: none; color: inherit; }
 .esc-quick-title { font-size: 14px; font-weight: 600; color: var(--study-foreground); }
 .esc-quick-desc { font-size: 12px; color: var(--study-muted-foreground); margin-top: 2px; }
 
+/* 记忆模式：单词/文章 标签（复用 .esc-seg 等宽） */
+.esc-seg.is-full { width: 100%; }
+.esc-seg.is-full button { flex: 1; font-size: 13px; }
+.esc-mmtab-content { margin-top: 16px; }
+.esc-mtitle {
+  font-size: 13px; font-weight: 600; color: var(--study-muted-foreground);
+  margin: 4px 2px 10px;
+}
+/* 生词本卡片 */
+.esc-nbcard {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.esc-nb-ico {
+  width: 36px; height: 36px; border-radius: var(--study-radius-md);
+  background: var(--study-muted); color: var(--study-primary);
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.esc-nb-ico .esc-ico { width: 18px; height: 18px; }
+.esc-nb-info { flex: 1; min-width: 0; }
+.esc-nb-name { font-size: 14px; font-weight: 600; color: var(--study-foreground); }
+.esc-nb-sub { font-size: 12px; color: var(--study-muted-foreground); margin-top: 2px; }
+.esc-nb-count {
+  font-size: 13px; font-weight: 600; color: var(--study-primary);
+  background: color-mix(in srgb, var(--study-primary) 10%, transparent);
+  padding: 4px 10px; border-radius: 999px;
+}
+/* 文章选择器 */
+.esc-field { margin-bottom: 16px; }
+.esc-field-label { display: block; font-size: 13px; font-weight: 600; color: var(--study-foreground); margin-bottom: 8px; }
+.esc-select-wrap { position: relative; }
+.esc-select {
+  width: 100%; height: 44px; padding: 0 14px;
+  background: var(--study-card); color: var(--study-foreground);
+  border: 1px solid var(--study-border); border-radius: var(--study-radius-md);
+  font-size: 14px; font-family: inherit; appearance: none; -webkit-appearance: none;
+}
+.esc-select:focus { outline: none; border-color: var(--study-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--study-primary) 20%, transparent); }
+.esc-select-wrap::after {
+  content: ""; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px;
+  border-right: 2px solid var(--study-muted-foreground); border-bottom: 2px solid var(--study-muted-foreground);
+  transform: translateY(-65%) rotate(45deg); pointer-events: none;
+}
+/* 文章练习展示 */
+.esc-sentence-block {
+  font-size: 18px; line-height: 1.8; color: var(--study-foreground);
+  background: var(--study-muted); border-radius: var(--study-radius-lg);
+  padding: 20px 16px; margin: 8px 0;
+}
+.esc-article-text {
+  font-size: 15px; line-height: 1.8; color: var(--study-foreground);
+  white-space: pre-wrap; max-height: 50vh; overflow-y: auto;
+  background: var(--study-muted); border-radius: var(--study-radius-lg); padding: 16px;
+}
+
 /* ---------- 14. Settings ---------- */
 .esc-group-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--study-muted-foreground); margin: 20px 4px 8px; }
 .esc-list {
@@ -534,3 +604,17 @@ a { text-decoration: none; color: inherit; }
 
 /* 隐藏（用于条件渲染） */
 .esc-hidden { display: none !important; }
+
+/* ---------- 18. 主题配色控件（60-25-15 自定义） ---------- */
+.esc-color-swatch {
+  position: relative; display: block;
+  width: 46px; height: 32px; border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--study-border);
+  cursor: pointer; overflow: hidden; flex: 0 0 auto;
+  background: var(--study-muted);
+}
+.esc-color-swatch input[type="color"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; border: none; padding: 0;
+}
+.esc-color-row-note { font-size: 11px; color: var(--study-muted-foreground); line-height: 1.5; padding: 4px 4px 0; }

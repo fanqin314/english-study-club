@@ -11,6 +11,9 @@
 
   const NAV_KEYS = ['home', 'vocab', 'history', 'memory', 'settings'];
 
+  // 二级页面：仅通过顶栏/内部入口进入，需返回键，且不显示底部 tab 栏
+  const SUB_VIEWS = ['history'];
+
   let current = null;
 
   function viewContainer(key) {
@@ -32,6 +35,12 @@
     container.hidden = false;
     setNavActive(key);
     current = key;
+
+    // 二级页面：隐藏底部 tab 栏
+    const isSub = SUB_VIEWS.includes(key);
+    const nav = doc.querySelector('.esc-nav[data-mobile-nav="global"]');
+    if (nav) nav.hidden = isSub;
+    doc.body.classList.toggle('esc-sub-view', isSub);
     // 滚动复位
     const main = doc.querySelector('.esc-main');
     if (main) main.scrollTop = 0;
@@ -57,6 +66,10 @@
     // 顶部「设置」图标快捷入口
     doc.querySelectorAll('[data-action="go-settings"]').forEach((el) => {
       el.addEventListener('click', () => go('settings'));
+    });
+    // 顶部「历史记录」图标快捷入口
+    doc.querySelectorAll('[data-action="go-history"]').forEach((el) => {
+      el.addEventListener('click', () => go('history'));
     });
     // 初始路由
     const fromHash = (location.hash || '').replace('#/', '');

@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>英研社 · 移动端</title>
   <meta name="description" content="英研社移动端：文章驱动的 AI 英语精读学习工具——深度解析、生词本、历史记录、记忆模式与设置。" />
+  <!-- 宽屏自动返回桌面端界面（与移动端共享同一份 localStorage 数据） -->
+  <script>
+    (function () {
+      function isWide() { return window.matchMedia('(min-width: 769px)').matches; }
+      if (isWide()) { window.location.replace('../index.html'); return; }
+      var t;
+      window.addEventListener('resize', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { if (isWide()) window.location.replace('../index.html'); }, 300);
+      });
+    })();
+  </script>
   <!-- 图标（lucide CDN；离线时图标不显示但布局不受影响） -->
   <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
   <!-- 自包含主题与组件样式（还原「深度解析 等 5 个设计」稿） -->

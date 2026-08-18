@@ -1,7 +1,7 @@
 /* ============================================================
    views/home.js — 深度解析（首页 / 底部导航 home）
    组件与交互：
-   · 顶部栏：Logo + 「设置」快捷入口（data-action=go-settings）
+   · 顶部栏：Logo + 「历史记录」快捷入口（data-action=go-history）
    · 输入面板：textarea（文章输入）、上传文件、开始解析
    · 快捷操作：示例文章、剪贴板导入
    · 统计条：单词数 / 句子数 / 阅读时间（解析后计算）
@@ -65,7 +65,7 @@
             ${icon('book-open', 'esc-logo')}
             <h1>英研社</h1>
           </div>
-          <button class="esc-icon-btn" data-action="go-settings" aria-label="设置">${icon('settings')}</button>
+          <button class="esc-icon-btn" data-action="go-history" aria-label="历史记录">${icon('clock')}</button>
         </header>
 
         <div class="esc-card">
@@ -103,6 +103,10 @@
     const fileInput = $('#m-file');
 
     input.addEventListener('input', () => { state.text = input.value; });
+
+    // 顶栏「历史记录」入口：按钮由本视图动态渲染，需在此绑定（router 启动时元素尚未存在）
+    const histBtn = root.querySelector('[data-action="go-history"]');
+    if (histBtn) histBtn.addEventListener('click', () => Mobile.Router.go('history'));
 
     $('#m-upload').addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {

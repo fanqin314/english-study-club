@@ -89,6 +89,7 @@
     container.innerHTML = `
       <div class="esc-page">
         <header class="esc-header">
+          <button class="esc-icon-btn" data-act="back" aria-label="返回" style="margin-right:0">${icon('chevron-left')}</button>
           <div class="esc-title-row">${icon('clock', 'esc-logo')}<h1>历史记录</h1></div>
           <button id="m-hist-filter" class="esc-pill">${icon('sliders-horizontal')}<span>筛选</span></button>
         </header>
@@ -102,6 +103,8 @@
       </div>`;
 
     rootEl = container;
+    const backBtn = container.querySelector('[data-act="back"]');
+    if (backBtn) backBtn.addEventListener('click', () => Router.go('home'));
     container.querySelector('#m-hist-filter').addEventListener('click', () => {
       state.order = state.order === 'recent' ? 'oldest' : 'recent';
       UI.toast(state.order === 'recent' ? '按最近排序' : '按最早排序');

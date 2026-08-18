@@ -69,7 +69,21 @@ mobile/
 
 ### 3.1 本地数据层（`store.js`）—— `Mobile.Store`
 
-localStorage 支撑，键前缀 `esc.`；**所有写操作触发对应事件**，视图订阅后自动刷新，保证状态一致。
+移动端只是桌面端的「另一种界面」——两者读写**完全相同的 localStorage 数据**，设置与数据天然一致。
+
+**与桌面端共享的存储键（数据打通的核心）**：
+
+| 数据 | 存储键 | 说明 |
+|------|--------|------|
+| 生词本 | `vocabData` | 桌面端多生词本结构 `{notebooks, currentNotebookId}`，移动端自动展平 |
+| 历史记录 | `analysis_history` | 桌面端结构 `{id,originalText,fullTranslation,sentences,sentenceData,savedAt}` |
+| 深色模式 | `darkMode` | `'true'/'false'` 明文，与桌面端一致 |
+| API 凭证 | `encrypted_api_key` / `encrypted_api_base` / `encrypted_model_name` | 与 `core/security.js` 相同的 `btoa(encodeURIComponent())` 混淆方案 |
+| 进度统计 | `stats_streak_days` / `stats_today_learned` / `stats_mastered_words` | 连胜/今日已学/已掌握数，与桌面端统计打通 |
+| 移动端独有偏好 | `esc.settings` | 仅移动端用：日目标/解析模式/自动发音/自动收藏/字号/资料 |
+| 移动端独有进度 | `esc.progress` | 仅移动端用：正确率/待复习（桌面端无对应字段） |
+
+> 启动时执行一次性迁移：若桌面端键为空且旧 `esc.vocab`/`esc.history` 有数据，自动导入，避免历史数据丢失。
 
 **事件总线**：`on(evt, cb)` / `off(evt, cb)` / `emit(evt, payload)`。事件名：`'vocab'` `'history'` `'settings'` `'progress'`。
 
@@ -185,35 +199,39 @@ localStorage 支撑，键前缀 `esc.`；**所有写操作触发对应事件**�
 ### 4.4 记忆模式（memory · 底部导航「记忆模式」）
 
 **数据来源**：`Store.getProgress()` + `Store.getSettings().dailyGoal`。
-**练习队列**：`getQueue()` 取生词（无生词用 `FALLBACK` 5 词），未掌握优先，取前 10。
+**练习队列**：单词练习用 `buildWordQueue()`（生词优先、未掌握在前、取前 10，无生词用 `FALLBACK`）；文章练习按模式用 `buildArticleClozeQueue` / `buildArticleVocabQueue` / `splitSentences` 从所选历史文章生成。
 
 | 组件 | 交互元素 | 处理函数 | 事件绑定 | 状态/副作用 |
 |------|----------|----------|----------|-------------|
 | 连续学习徽章 | `.esc-badge` | `render` 内渲染 | — | `streak` 天 |
 | 进度环 | SVG `stroke-dashoffset` | `render` 内计算 | — | 今日/目标百分比 |
-| 模式网格 | `.esc-mode[data-mode]` ×6 | `openExercise(mode)` | click | 启动对应练习 |
-| 学习计划卡 | — | `render` 内 | — | 进度/下次复习 |
-| 快速统计 | `#m-hist...`（页内） | `render` 内 | — | 待复习/已掌握/正确率 |
-| 快速复习 | `.esc-quick[data-mode="flashcard"]` | `openExercise('flashcard')` | click | 快速闪卡 |
+| 单词/文章 标签 | `#m-mmtabs button[data-tab]` | `selectTab(name)` | click | 切换 单词/文章 内容区（保留 `currentTab`） |
+| 生词本卡片 | `.esc-nbcard` | `render` 内 | — | 显示默认生词本与词数 |
+| 单词模式网格 | `.esc-mode[data-mode]`（word）×4 | `openExercise(mode)` | click | 闪卡/填空/听写/选词 |
+| 文章选择器 | `#m-art`（select） | change → `selectedArticleId` | change | 选定复习文章 |
+| 文章模式网格 | `.esc-mode[data-mode]`（article）×4 | `openExercise(mode)` | click | 语境填空/全文回顾/逐句精读/生词测验 |
+| 快速统计 | `.esc-grid-3`（页内） | `render` 内 | — | 待复习/已掌握/正确率 |
 
 **练习弹层（overlay）引擎**：
 
 | 函数 | 作用 |
 |------|------|
-| `openExercise(mode)` | 建 `session={mode,queue,idx,correct,total}`，建 `.esc-overlay` 挂到 `.esc-app`，绑关闭，调 `step()` |
-| `step()` | 按 `session.mode` 分派到 `renderFlash/renderCloze/renderDictation/renderFullReview/renderChoice` |
+| `openExercise(mode)` | 依模式建队列（单词队列 / 文章队列），建 `session={mode,ctx,queue,idx,correct,total,graded}`，建 `.esc-overlay` 挂到 `.esc-app`，绑关闭，调 `step()` |
+| `step()` | 按 `session.mode` 分派到对应渲染器（见下表） |
 | `next()` | `idx++`，到末尾调 `finish()`，否则 `step()` |
-| `finish()` | 计算正确率，`Store.updateProgress({todayCount,correctRate,reviewDue})`（受 `dailyGoal` 上限），显示完成页 |
-| `closeOverlay()` | 移除 overlay，清 `session` |
+| `finish()` | 计分模式：计算正确率并 `Store.updateProgress({todayCount,correctRate,reviewDue})`（**todayCount 真实累计，不再被 dailyGoal 截断**）；非计分模式（逐句/回顾）仅显示完成；点击「完成」关闭 |
+| `closeOverlay()` | 移除 overlay，清 `session`；**点击底部导航离开时亦自动关闭**（修复残留） |
 
-| 模式 | 渲染函数 | 交互 | 计分 |
-|------|----------|------|------|
-| 闪卡 | `renderFlash` | 点击卡片翻转释义；`[data-act="yes"]`/`[data-act="no"]` | yes：`total++ correct++`；no：`total++` |
-| 选择 | `renderChoice` | 4 选项 click（含原文词义与 3 个随机干扰），标对错，0.8s 后 `next` | 对：`total++ correct++` |
-| 填空 | `renderCloze` | 例句挖空，输入单词，提交（按钮或回车） | 大小写不敏感判等 |
-| 听写 | `renderDictation` | 自动播发音，可重播，输入拼写提交（按钮或回车） | 同上 |
-| 单词测验 | `renderChoice` | 同「选择」（复用） | 同上 |
-| 全文回顾 | `renderFullReview` | 展示最近一篇历史文章全文 | 不计分 |
+| 模式 | 标签 | 渲染函数 | 交互 | 计分 |
+|------|------|----------|------|------|
+| 闪卡 | 单词 | `renderFlash` | 点击卡片翻转释义；`[data-act="yes"]`/`[data-act="no"]` | yes：`total++ correct++`；no：`total++` |
+| 填空 | 单词 | `renderCloze` | 例句挖空，输入单词，提交（按钮或回车） | 大小写不敏感判等 |
+| 听写 | 单词 | `renderDictation` | 自动播发音，可重播，输入拼写提交（按钮或回车） | 同上 |
+| 选词 | 单词 | `renderChoice` | 4 选项 click（含原文词义与 3 个随机干扰），标对错，0.8s 后 `next` | 对：`total++ correct++` |
+| 语境填空 | 文章 | `renderCloze` | 文章含生词句挖空，输入该生词，提交 | 大小写不敏感判等 |
+| 生词测验 | 文章 | `renderChoice` | 文章中出现过的生词释义选词 | 对：`total++ correct++` |
+| 逐句精读 | 文章 | `renderArticleSentence` | 逐句展示，上/下一句 | 不计分 |
+| 全文回顾 | 文章 | `renderArticleReview` | 展示所选文章全文（只读） | 不计分 |
 
 ### 4.5 设置（settings · 底部导航「设置」）
 
