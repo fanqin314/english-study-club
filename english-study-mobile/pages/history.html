@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史记录</title>
+    <style id="theme-vars">
+/* ========================================
+   colors_and_type.css — 英研社 Mobile Theme
+   Brand prefix: study
+   ======================================== */
+
+/* ========== Fonts ========== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  /* =============================================
+     60% — Neutral / White Paper Base
+     ============================================= */
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
+
+  /* =============================================
+     25% — Primary Brand: Low-saturation Blue-Gray
+     ============================================= */
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
+
+  /* =============================================
+     Neutral Surfaces
+     ============================================= */
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
+
+  /* =============================================
+     Borders & Input
+     ============================================= */
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
+
+  /* =============================================
+     State Colors
+     ============================================= */
+  --study-success: #5A8A6E;
+  --study-success-foreground: #FFFFFF;
+  --study-warning: #C8A87C;
+  --study-warning-foreground: #FFFFFF;
+  --study-error: #C07A7A;
+  --study-error-foreground: #FFFFFF;
+  --study-info: #506080;
+  --study-info-foreground: #FFFFFF;
+
+  /* =============================================
+     Radius Scale
+     ============================================= */
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
+
+  /* =============================================
+     Shadows
+     ============================================= */
+  --study-shadow-sm: 0 1px 2px rgba(32, 32, 32, 0.04);
+  --study-shadow-md: 0 4px 12px rgba(32, 32, 32, 0.05);
+  --study-shadow-lg: 0 8px 24px rgba(32, 32, 32, 0.08);
+
+  /* =============================================
+     Typography
+     ============================================= */
+  --study-font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --study-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme="dark"] {
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
+
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
+
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
+
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
+
+  --study-success: #6A9A7E;
+  --study-success-foreground: #1A1C1E;
+  --study-warning: #B8A07A;
+  --study-warning-foreground: #1A1C1E;
+  --study-error: #B07A7A;
+  --study-error-foreground: #1A1C1E;
+  --study-info: #7A8AAA;
+  --study-info-foreground: #1A1C1E;
+
+  --study-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --study-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --study-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--study-background);
+    --color-foreground: var(--study-foreground);
+    --color-card: var(--study-card);
+    --color-card-foreground: var(--study-card-foreground);
+    --color-popover: var(--study-popover);
+    --color-popover-foreground: var(--study-popover-foreground);
+    --color-primary: var(--study-primary);
+    --color-primary-foreground: var(--study-primary-foreground);
+    --color-muted: var(--study-muted);
+    --color-muted-foreground: var(--study-muted-foreground);
+    --color-border: var(--study-border);
+    --color-input: var(--study-input);
+    --color-ring: var(--study-ring);
+    --radius-sm: var(--study-radius-sm);
+    --radius-md: var(--study-radius-md);
+    --radius-lg: var(--study-radius-lg);
+  }
+  @layer base {
+    body { background: var(--study-background); color: var(--study-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--study-background); }
+      .text-background { color: var(--study-background); }
+      .border-background { border-color: var(--study-background); }
+      .ring-background { --tw-ring-color: var(--study-background); }
+      .bg-foreground { background-color: var(--study-foreground); }
+      .text-foreground { color: var(--study-foreground); }
+      .border-foreground { border-color: var(--study-foreground); }
+      .ring-foreground { --tw-ring-color: var(--study-foreground); }
+      .bg-card { background-color: var(--study-card); }
+      .text-card { color: var(--study-card); }
+      .border-card { border-color: var(--study-card); }
+      .ring-card { --tw-ring-color: var(--study-card); }
+      .bg-card-foreground { background-color: var(--study-card-foreground); }
+      .text-card-foreground { color: var(--study-card-foreground); }
+      .border-card-foreground { border-color: var(--study-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--study-card-foreground); }
+      .bg-popover { background-color: var(--study-popover); }
+      .text-popover { color: var(--study-popover); }
+      .border-popover { border-color: var(--study-popover); }
+      .ring-popover { --tw-ring-color: var(--study-popover); }
+      .bg-popover-foreground { background-color: var(--study-popover-foreground); }
+      .text-popover-foreground { color: var(--study-popover-foreground); }
+      .border-popover-foreground { border-color: var(--study-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--study-popover-foreground); }
+      .bg-primary { background-color: var(--study-primary); }
+      .text-primary { color: var(--study-primary); }
+      .border-primary { border-color: var(--study-primary); }
+      .ring-primary { --tw-ring-color: var(--study-primary); }
+      .bg-primary-foreground { background-color: var(--study-primary-foreground); }
+      .text-primary-foreground { color: var(--study-primary-foreground); }
+      .border-primary-foreground { border-color: var(--study-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--study-primary-foreground); }
+      .bg-muted { background-color: var(--study-muted); }
+      .text-muted { color: var(--study-muted); }
+      .border-muted { border-color: var(--study-muted); }
+      .ring-muted { --tw-ring-color: var(--study-muted); }
+      .bg-muted-foreground { background-color: var(--study-muted-foreground); }
+      .text-muted-foreground { color: var(--study-muted-foreground); }
+      .border-muted-foreground { border-color: var(--study-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--study-muted-foreground); }
+      .bg-border { background-color: var(--study-border); }
+      .text-border { color: var(--study-border); }
+      .border-border { border-color: var(--study-border); }
+      .ring-border { --tw-ring-color: var(--study-border); }
+      .bg-input { background-color: var(--study-input); }
+      .text-input { color: var(--study-input); }
+      .border-input { border-color: var(--study-input); }
+      .ring-input { --tw-ring-color: var(--study-input); }
+      .bg-ring { background-color: var(--study-ring); }
+      .text-ring { color: var(--study-ring); }
+      .border-ring { border-color: var(--study-ring); }
+      .ring-ring { --tw-ring-color: var(--study-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      /* ===== Critical Layout CSS ===== */
+      html { overflow-y: scroll; }
+      body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      .font-serif { font-family: var(--study-font-serif); }
+      .font-sans { font-family: var(--study-font-sans); }
+      main { min-height: calc(100vh - 64px); }
+      /* ===== Card accent border ===== */
+      .history-card { border-left: 3px solid transparent; }
+      .history-card:nth-child(1) { border-left-color: var(--study-primary); }
+      .history-card:nth-child(2) { border-left-color: var(--study-success); }
+      .history-card:nth-child(3) { border-left-color: var(--study-warning); }
+      .history-card:nth-child(4) { border-left-color: var(--study-info); }
+      .history-card:nth-child(5) { border-left-color: var(--study-primary); }
+      /* ===== Empty state ===== */
+      .empty-state { display: none; }
+      body[data-empty="true"] .empty-state { display: flex; }
+      body[data-empty="true"] .history-content { display: none; }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased bg-muted">
+    <main class="max-w-md mx-auto pb-4">
+      <!-- ===== Header ===== -->
+      <header class="sticky top-0 z-10 bg-card border-b border-border px-4 py-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="clock" class="w-5 h-5 text-primary"></i>
+            <h1 class="text-lg font-serif font-semibold text-foreground tracking-tight">历史记录</h1>
+          </div>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted rounded-lg hover:bg-border transition-colors">
+            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+            <span>筛选</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ===== Summary Stats Row ===== -->
+      <section class="px-4 pt-4 pb-1">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-card rounded-lg shadow-sm px-3 py-3 text-center">
+            <p class="text-[22px] font-semibold text-foreground font-serif leading-tight">8</p>
+            <p class="text-[11px] text-muted-foreground mt-0.5">共解析</p>
+          </div>
+          <div class="bg-card rounded-lg shadow-sm px-3 py-3 text-center">
+            <p class="text-[22px] font-semibold text-foreground font-serif leading-tight">2</p>
+            <p class="text-[11px] text-muted-foreground mt-0.5">本周</p>
+          </div>
+          <div class="bg-card rounded-lg shadow-sm px-3 py-3 text-center">
+            <p class="text-[22px] font-semibold text-foreground font-serif leading-tight">1,245</p>
+            <p class="text-[11px] text-muted-foreground mt-0.5">总词数</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== History Content ===== -->
+      <div class="history-content">
+
+        <!-- ===== Section Label ===== -->
+        <div class="px-4 pt-4 pb-2">
+          <h2 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">最近解析</h2>
+        </div>
+
+        <!-- ===== History Card 1 ===== -->
+        <div class="px-4 pb-3">
+          <article class="history-card bg-card rounded-lg shadow-sm overflow-hidden">
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[15px] font-serif font-semibold text-foreground leading-snug line-clamp-2">The Future of Artificial Intelligence</h3>
+                  <div class="flex items-center gap-3 mt-1.5">
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="calendar" class="w-3 h-3"></i>
+                      2024-08-15
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="file-text" class="w-3 h-3"></i>
+                      1,248 词
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                      32 句
+                    </span>
+                  </div>
+                  <p class="text-[12px] text-muted-foreground leading-relaxed mt-2 line-clamp-2">Artificial intelligence is rapidly transforming every aspect of our daily lives, from the way we communicate to how we work and learn.</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+              </div>
+              <div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-border">
+                <button class="px-2.5 py-1 text-[11px] font-medium text-primary bg-muted rounded-md hover:bg-border transition-colors">查看解析</button>
+                <button class="px-2.5 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-border transition-colors">开始复习</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- ===== History Card 2 ===== -->
+        <div class="px-4 pb-3">
+          <article class="history-card bg-card rounded-lg shadow-sm overflow-hidden">
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[15px] font-serif font-semibold text-foreground leading-snug line-clamp-2">Climate Change and Its Impact</h3>
+                  <div class="flex items-center gap-3 mt-1.5">
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="calendar" class="w-3 h-3"></i>
+                      2024-08-12
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="file-text" class="w-3 h-3"></i>
+                      986 词
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                      24 句
+                    </span>
+                  </div>
+                  <p class="text-[12px] text-muted-foreground leading-relaxed mt-2 line-clamp-2">Climate change represents one of the most significant challenges facing humanity in the twenty-first century, with far-reaching consequences for ecosystems worldwide.</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+              </div>
+              <div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-border">
+                <button class="px-2.5 py-1 text-[11px] font-medium text-primary bg-muted rounded-md hover:bg-border transition-colors">查看解析</button>
+                <button class="px-2.5 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-border transition-colors">开始复习</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- ===== History Card 3 ===== -->
+        <div class="px-4 pb-3">
+          <article class="history-card bg-card rounded-lg shadow-sm overflow-hidden">
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[15px] font-serif font-semibold text-foreground leading-snug line-clamp-2">The Art of Storytelling</h3>
+                  <div class="flex items-center gap-3 mt-1.5">
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="calendar" class="w-3 h-3"></i>
+                      2024-08-10
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="file-text" class="w-3 h-3"></i>
+                      754 词
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                      18 句
+                    </span>
+                  </div>
+                  <p class="text-[12px] text-muted-foreground leading-relaxed mt-2 line-clamp-2">Storytelling is one of the oldest and most powerful forms of human communication, dating back to ancient civilizations and oral traditions.</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+              </div>
+              <div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-border">
+                <button class="px-2.5 py-1 text-[11px] font-medium text-primary bg-muted rounded-md hover:bg-border transition-colors">查看解析</button>
+                <button class="px-2.5 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-border transition-colors">开始复习</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- ===== History Card 4 ===== -->
+        <div class="px-4 pb-3">
+          <article class="history-card bg-card rounded-lg shadow-sm overflow-hidden">
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[15px] font-serif font-semibold text-foreground leading-snug line-clamp-2">Quantum Computing Explained</h3>
+                  <div class="flex items-center gap-3 mt-1.5">
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="calendar" class="w-3 h-3"></i>
+                      2024-08-07
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="file-text" class="w-3 h-3"></i>
+                      1,102 词
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                      28 句
+                    </span>
+                  </div>
+                  <p class="text-[12px] text-muted-foreground leading-relaxed mt-2 line-clamp-2">Quantum computing harnesses the principles of quantum mechanics to process information in ways that classical computers cannot, promising breakthroughs in cryptography and drug discovery.</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+              </div>
+              <div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-border">
+                <button class="px-2.5 py-1 text-[11px] font-medium text-primary bg-muted rounded-md hover:bg-border transition-colors">查看解析</button>
+                <button class="px-2.5 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-border transition-colors">开始复习</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- ===== History Card 5 ===== -->
+        <div class="px-4 pb-3">
+          <article class="history-card bg-card rounded-lg shadow-sm overflow-hidden">
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[15px] font-serif font-semibold text-foreground leading-snug line-clamp-2">The History of English Literature</h3>
+                  <div class="flex items-center gap-3 mt-1.5">
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="calendar" class="w-3 h-3"></i>
+                      2024-08-05
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="file-text" class="w-3 h-3"></i>
+                      1,567 词
+                    </span>
+                    <span class="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <i data-lucide="bar-chart-2" class="w-3 h-3"></i>
+                      41 句
+                    </span>
+                  </div>
+                  <p class="text-[12px] text-muted-foreground leading-relaxed mt-2 line-clamp-2">English literature spans over a thousand years of creative expression, from the epic poems of the Anglo-Saxon period to the diverse voices of contemporary writers.</p>
+                </div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground shrink-0 mt-1"></i>
+              </div>
+              <div class="flex items-center gap-2 mt-3 pt-2.5 border-t border-border">
+                <button class="px-2.5 py-1 text-[11px] font-medium text-primary bg-muted rounded-md hover:bg-border transition-colors">查看解析</button>
+                <button class="px-2.5 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-md hover:bg-border transition-colors">开始复习</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+      </div><!-- /history-content -->
+
+      <!-- ===== Empty State ===== -->
+      <div class="empty-state flex flex-col items-center justify-center px-4 py-20">
+        <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <i data-lucide="file-text" class="w-7 h-7 text-muted-foreground"></i>
+        </div>
+        <p class="text-[15px] font-medium text-muted-foreground mb-1">暂无历史记录</p>
+        <p class="text-[12px] text-muted-foreground">快去解析一篇文章吧</p>
+      </div>
+
+    </main>
+
+    <!-- ===== Bottom Navigation Bar ===== -->
+    <nav data-mobile-nav="global" class="w-full h-[56px] bg-card border-t border-border"><div class="w-full max-w-md mx-auto grid grid-cols-5 h-full"><a data-nav-key="home" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="search" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="vocab" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="book-open" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="history" data-active="true" class="min-w-0 flex items-center justify-center px-1 h-full text-primary"><i data-lucide="clock" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="memory" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="flame" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="settings" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="settings" class="w-5 h-5 shrink-0"></i></a></div></nav>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

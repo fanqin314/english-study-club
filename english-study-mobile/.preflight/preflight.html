@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preflight</title>
+    <style id="theme-vars">
+/* ========================================
+   colors_and_type.css — 英研社 Mobile Theme
+   Brand prefix: study
+   ======================================== */
+
+/* ========== Fonts ========== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  /* =============================================
+     60% — Neutral / White Paper Base
+     ============================================= */
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
+
+  /* =============================================
+     25% — Primary Brand: Low-saturation Blue-Gray
+     ============================================= */
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
+
+  /* =============================================
+     Neutral Surfaces
+     ============================================= */
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
+
+  /* =============================================
+     Borders & Input
+     ============================================= */
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
+
+  /* =============================================
+     State Colors
+     ============================================= */
+  --study-success: #5A8A6E;
+  --study-success-foreground: #FFFFFF;
+  --study-warning: #C8A87C;
+  --study-warning-foreground: #FFFFFF;
+  --study-error: #C07A7A;
+  --study-error-foreground: #FFFFFF;
+  --study-info: #506080;
+  --study-info-foreground: #FFFFFF;
+
+  /* =============================================
+     Radius Scale
+     ============================================= */
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
+
+  /* =============================================
+     Shadows
+     ============================================= */
+  --study-shadow-sm: 0 1px 2px rgba(32, 32, 32, 0.04);
+  --study-shadow-md: 0 4px 12px rgba(32, 32, 32, 0.05);
+  --study-shadow-lg: 0 8px 24px rgba(32, 32, 32, 0.08);
+
+  /* =============================================
+     Typography
+     ============================================= */
+  --study-font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --study-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme="dark"] {
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
+
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
+
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
+
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
+
+  --study-success: #6A9A7E;
+  --study-success-foreground: #1A1C1E;
+  --study-warning: #B8A07A;
+  --study-warning-foreground: #1A1C1E;
+  --study-error: #B07A7A;
+  --study-error-foreground: #1A1C1E;
+  --study-info: #7A8AAA;
+  --study-info-foreground: #1A1C1E;
+
+  --study-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --study-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --study-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--study-background);
+    --color-foreground: var(--study-foreground);
+    --color-card: var(--study-card);
+    --color-card-foreground: var(--study-card-foreground);
+    --color-popover: var(--study-popover);
+    --color-popover-foreground: var(--study-popover-foreground);
+    --color-primary: var(--study-primary);
+    --color-primary-foreground: var(--study-primary-foreground);
+    --color-muted: var(--study-muted);
+    --color-muted-foreground: var(--study-muted-foreground);
+    --color-border: var(--study-border);
+    --color-input: var(--study-input);
+    --color-ring: var(--study-ring);
+    --radius-sm: var(--study-radius-sm);
+    --radius-md: var(--study-radius-md);
+    --radius-lg: var(--study-radius-lg);
+  }
+  @layer base {
+    body { background: var(--study-background); color: var(--study-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--study-background); }
+      .text-background { color: var(--study-background); }
+      .border-background { border-color: var(--study-background); }
+      .ring-background { --tw-ring-color: var(--study-background); }
+      .bg-foreground { background-color: var(--study-foreground); }
+      .text-foreground { color: var(--study-foreground); }
+      .border-foreground { border-color: var(--study-foreground); }
+      .ring-foreground { --tw-ring-color: var(--study-foreground); }
+      .bg-card { background-color: var(--study-card); }
+      .text-card { color: var(--study-card); }
+      .border-card { border-color: var(--study-card); }
+      .ring-card { --tw-ring-color: var(--study-card); }
+      .bg-card-foreground { background-color: var(--study-card-foreground); }
+      .text-card-foreground { color: var(--study-card-foreground); }
+      .border-card-foreground { border-color: var(--study-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--study-card-foreground); }
+      .bg-popover { background-color: var(--study-popover); }
+      .text-popover { color: var(--study-popover); }
+      .border-popover { border-color: var(--study-popover); }
+      .ring-popover { --tw-ring-color: var(--study-popover); }
+      .bg-popover-foreground { background-color: var(--study-popover-foreground); }
+      .text-popover-foreground { color: var(--study-popover-foreground); }
+      .border-popover-foreground { border-color: var(--study-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--study-popover-foreground); }
+      .bg-primary { background-color: var(--study-primary); }
+      .text-primary { color: var(--study-primary); }
+      .border-primary { border-color: var(--study-primary); }
+      .ring-primary { --tw-ring-color: var(--study-primary); }
+      .bg-primary-foreground { background-color: var(--study-primary-foreground); }
+      .text-primary-foreground { color: var(--study-primary-foreground); }
+      .border-primary-foreground { border-color: var(--study-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--study-primary-foreground); }
+      .bg-muted { background-color: var(--study-muted); }
+      .text-muted { color: var(--study-muted); }
+      .border-muted { border-color: var(--study-muted); }
+      .ring-muted { --tw-ring-color: var(--study-muted); }
+      .bg-muted-foreground { background-color: var(--study-muted-foreground); }
+      .text-muted-foreground { color: var(--study-muted-foreground); }
+      .border-muted-foreground { border-color: var(--study-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--study-muted-foreground); }
+      .bg-border { background-color: var(--study-border); }
+      .text-border { color: var(--study-border); }
+      .border-border { border-color: var(--study-border); }
+      .ring-border { --tw-ring-color: var(--study-border); }
+      .bg-input { background-color: var(--study-input); }
+      .text-input { color: var(--study-input); }
+      .border-input { border-color: var(--study-input); }
+      .ring-input { --tw-ring-color: var(--study-input); }
+      .bg-ring { background-color: var(--study-ring); }
+      .text-ring { color: var(--study-ring); }
+      .border-ring { border-color: var(--study-ring); }
+      .ring-ring { --tw-ring-color: var(--study-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

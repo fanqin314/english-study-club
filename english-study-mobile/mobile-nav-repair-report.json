@@ -1,0 +1,35 @@
+{
+  "success": true,
+  "repairedPages": [
+    {
+      "htmlSrc": "pages/home.html",
+      "action": "replace-data-mobile-nav-global",
+      "activeKey": "home"
+    },
+    {
+      "htmlSrc": "pages/vocab.html",
+      "action": "replace-data-mobile-nav-global",
+      "activeKey": "vocab"
+    },
+    {
+      "htmlSrc": "pages/history.html",
+      "action": "replace-data-mobile-nav-global",
+      "activeKey": "history"
+    },
+    {
+      "htmlSrc": "pages/memory.html",
+      "action": "replace-data-mobile-nav-global",
+      "activeKey": "memory"
+    },
+    {
+      "htmlSrc": "pages/settings.html",
+      "action": "replace-data-mobile-nav-global",
+      "activeKey": "settings"
+    }
+  ],
+  "skippedPages": [],
+  "failedPages": [],
+  "repairCount": 5,
+  "previousFailedReportDetected": false,
+  "checkedAt": "2026-08-17T07:11:27.464Z"
+}

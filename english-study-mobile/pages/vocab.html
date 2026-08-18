@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生词本</title>
+    <style id="theme-vars">
+/* ========================================
+   colors_and_type.css — 英研社 Mobile Theme
+   Brand prefix: study
+   ======================================== */
+
+/* ========== Fonts ========== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  /* =============================================
+     60% — Neutral / White Paper Base
+     ============================================= */
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
+
+  /* =============================================
+     25% — Primary Brand: Low-saturation Blue-Gray
+     ============================================= */
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
+
+  /* =============================================
+     Neutral Surfaces
+     ============================================= */
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
+
+  /* =============================================
+     Borders & Input
+     ============================================= */
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
+
+  /* =============================================
+     State Colors
+     ============================================= */
+  --study-success: #5A8A6E;
+  --study-success-foreground: #FFFFFF;
+  --study-warning: #C8A87C;
+  --study-warning-foreground: #FFFFFF;
+  --study-error: #C07A7A;
+  --study-error-foreground: #FFFFFF;
+  --study-info: #506080;
+  --study-info-foreground: #FFFFFF;
+
+  /* =============================================
+     Radius Scale
+     ============================================= */
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
+
+  /* =============================================
+     Shadows
+     ============================================= */
+  --study-shadow-sm: 0 1px 2px rgba(32, 32, 32, 0.04);
+  --study-shadow-md: 0 4px 12px rgba(32, 32, 32, 0.05);
+  --study-shadow-lg: 0 8px 24px rgba(32, 32, 32, 0.08);
+
+  /* =============================================
+     Typography
+     ============================================= */
+  --study-font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --study-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme="dark"] {
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
+
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
+
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
+
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
+
+  --study-success: #6A9A7E;
+  --study-success-foreground: #1A1C1E;
+  --study-warning: #B8A07A;
+  --study-warning-foreground: #1A1C1E;
+  --study-error: #B07A7A;
+  --study-error-foreground: #1A1C1E;
+  --study-info: #7A8AAA;
+  --study-info-foreground: #1A1C1E;
+
+  --study-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --study-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --study-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--study-background);
+    --color-foreground: var(--study-foreground);
+    --color-card: var(--study-card);
+    --color-card-foreground: var(--study-card-foreground);
+    --color-popover: var(--study-popover);
+    --color-popover-foreground: var(--study-popover-foreground);
+    --color-primary: var(--study-primary);
+    --color-primary-foreground: var(--study-primary-foreground);
+    --color-muted: var(--study-muted);
+    --color-muted-foreground: var(--study-muted-foreground);
+    --color-border: var(--study-border);
+    --color-input: var(--study-input);
+    --color-ring: var(--study-ring);
+    --radius-sm: var(--study-radius-sm);
+    --radius-md: var(--study-radius-md);
+    --radius-lg: var(--study-radius-lg);
+  }
+  @layer base {
+    body { background: var(--study-background); color: var(--study-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--study-background); }
+      .text-background { color: var(--study-background); }
+      .border-background { border-color: var(--study-background); }
+      .ring-background { --tw-ring-color: var(--study-background); }
+      .bg-foreground { background-color: var(--study-foreground); }
+      .text-foreground { color: var(--study-foreground); }
+      .border-foreground { border-color: var(--study-foreground); }
+      .ring-foreground { --tw-ring-color: var(--study-foreground); }
+      .bg-card { background-color: var(--study-card); }
+      .text-card { color: var(--study-card); }
+      .border-card { border-color: var(--study-card); }
+      .ring-card { --tw-ring-color: var(--study-card); }
+      .bg-card-foreground { background-color: var(--study-card-foreground); }
+      .text-card-foreground { color: var(--study-card-foreground); }
+      .border-card-foreground { border-color: var(--study-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--study-card-foreground); }
+      .bg-popover { background-color: var(--study-popover); }
+      .text-popover { color: var(--study-popover); }
+      .border-popover { border-color: var(--study-popover); }
+      .ring-popover { --tw-ring-color: var(--study-popover); }
+      .bg-popover-foreground { background-color: var(--study-popover-foreground); }
+      .text-popover-foreground { color: var(--study-popover-foreground); }
+      .border-popover-foreground { border-color: var(--study-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--study-popover-foreground); }
+      .bg-primary { background-color: var(--study-primary); }
+      .text-primary { color: var(--study-primary); }
+      .border-primary { border-color: var(--study-primary); }
+      .ring-primary { --tw-ring-color: var(--study-primary); }
+      .bg-primary-foreground { background-color: var(--study-primary-foreground); }
+      .text-primary-foreground { color: var(--study-primary-foreground); }
+      .border-primary-foreground { border-color: var(--study-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--study-primary-foreground); }
+      .bg-muted { background-color: var(--study-muted); }
+      .text-muted { color: var(--study-muted); }
+      .border-muted { border-color: var(--study-muted); }
+      .ring-muted { --tw-ring-color: var(--study-muted); }
+      .bg-muted-foreground { background-color: var(--study-muted-foreground); }
+      .text-muted-foreground { color: var(--study-muted-foreground); }
+      .border-muted-foreground { border-color: var(--study-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--study-muted-foreground); }
+      .bg-border { background-color: var(--study-border); }
+      .text-border { color: var(--study-border); }
+      .border-border { border-color: var(--study-border); }
+      .ring-border { --tw-ring-color: var(--study-border); }
+      .bg-input { background-color: var(--study-input); }
+      .text-input { color: var(--study-input); }
+      .border-input { border-color: var(--study-input); }
+      .ring-input { --tw-ring-color: var(--study-input); }
+      .bg-ring { background-color: var(--study-ring); }
+      .text-ring { color: var(--study-ring); }
+      .border-ring { border-color: var(--study-ring); }
+      .ring-ring { --tw-ring-color: var(--study-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased bg-muted">
+    <style id="critical-layout">
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      body { font-family: var(--study-font-sans); }
+      .font-serif { font-family: var(--study-font-serif); }
+      [data-nav-key] { text-decoration: none; -webkit-tap-highlight-color: transparent; }
+      [data-nav-key] i { transition: color 0.2s ease; }
+      .word-card { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+      .word-card:active { background-color: var(--study-muted); }
+      .filter-tab { transition: color 0.15s ease, background-color 0.15s ease; }
+      .pb-safe { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+    </style>
+
+    <main class="max-w-md mx-auto px-4 pt-5 pb-safe">
+      <!-- ===== Header ===== -->
+      <header class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="book-open" class="w-6 h-6 text-primary"></i>
+          <h1 class="text-xl font-serif font-bold text-foreground tracking-tight">生词本</h1>
+        </div>
+        <span class="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+          共 12 词
+        </span>
+      </header>
+
+      <!-- ===== Stats Summary Card ===== -->
+      <div class="bg-card rounded-lg shadow-sm border border-border p-4 mb-5">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-2xl font-bold text-primary font-serif">5</span>
+            <span class="text-xs text-muted-foreground">今日学习</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 border-x border-border">
+            <span class="text-2xl font-bold text-warning font-serif">3</span>
+            <span class="text-xs text-muted-foreground">待复习</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-2xl font-bold text-success font-serif">9</span>
+            <span class="text-xs text-muted-foreground">已掌握</span>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div class="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">
+          <div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+        </div>
+        <p class="text-xs text-muted-foreground text-center mt-2">学习进度 75%</p>
+      </div>
+
+      <!-- ===== Search Bar ===== -->
+      <div class="relative mb-4">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"></i>
+        <input
+          type="text"
+          placeholder="搜索单词..."
+          class="w-full pl-9 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-all"
+        />
+      </div>
+
+      <!-- ===== Filter Tabs ===== -->
+      <div class="mb-5 overflow-x-auto no-scrollbar">
+        <div class="flex gap-2 min-w-max">
+          <button class="filter-tab shrink-0 px-4 py-1.5 rounded-full text-sm font-medium bg-primary text-primary-foreground">全部</button>
+          <button class="filter-tab shrink-0 px-4 py-1.5 rounded-full text-sm font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">待复习</button>
+          <button class="filter-tab shrink-0 px-4 py-1.5 rounded-full text-sm font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">已掌握</button>
+          <button class="filter-tab shrink-0 px-4 py-1.5 rounded-full text-sm font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">按字母</button>
+        </div>
+      </div>
+
+      <!-- ===== Word List Cards ===== -->
+      <div class="flex flex-col gap-3">
+        <!-- Card 1: serendipity -->
+        <div class="word-card bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-primary shrink-0 rounded-l-lg"></div>
+            <div class="flex-1 p-4 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg font-serif font-bold text-foreground">serendipity</h3>
+                    <span class="text-xs text-muted-foreground">/ˌser.ənˈdɪp.ə.ti/</span>
+                  </div>
+                  <p class="text-sm text-foreground/80 mt-1">n. 意外发现珍奇事物的本领；机缘巧合</p>
+                </div>
+                <button class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4 text-primary"></i>
+                </button>
+              </div>
+              <div class="mt-2.5 pl-3 border-l-2 border-primary/20">
+                <p class="text-xs text-muted-foreground italic">"Life is full of serendipity when you stay curious."</p>
+                <p class="text-xs text-muted-foreground mt-0.5">保持好奇心，生活中处处充满意外惊喜。</p>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  发音
+                </button>
+                <span class="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                <span class="text-xs text-muted-foreground">3天前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: eloquent -->
+        <div class="word-card bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-primary shrink-0 rounded-l-lg"></div>
+            <div class="flex-1 p-4 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg font-serif font-bold text-foreground">eloquent</h3>
+                    <span class="text-xs text-muted-foreground">/ˈel.ə.kwənt/</span>
+                  </div>
+                  <p class="text-sm text-foreground/80 mt-1">adj. 雄辩的；有口才的；传神的</p>
+                </div>
+                <button class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-success/10">
+                  <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                </button>
+              </div>
+              <div class="mt-2.5 pl-3 border-l-2 border-primary/20">
+                <p class="text-xs text-muted-foreground italic">"She gave an eloquent speech that moved everyone."</p>
+                <p class="text-xs text-muted-foreground mt-0.5">她发表了一场感人至深的演讲。</p>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  发音
+                </button>
+                <span class="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                <span class="text-xs text-muted-foreground">1周前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: ephemeral -->
+        <div class="word-card bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-primary shrink-0 rounded-l-lg"></div>
+            <div class="flex-1 p-4 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg font-serif font-bold text-foreground">ephemeral</h3>
+                    <span class="text-xs text-muted-foreground">/ɪˈfem.ər.əl/</span>
+                  </div>
+                  <p class="text-sm text-foreground/80 mt-1">adj. 短暂的；转瞬即逝的</p>
+                </div>
+                <button class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4 text-primary"></i>
+                </button>
+              </div>
+              <div class="mt-2.5 pl-3 border-l-2 border-primary/20">
+                <p class="text-xs text-muted-foreground italic">"Social media trends are notoriously ephemeral."</p>
+                <p class="text-xs text-muted-foreground mt-0.5">社交媒体潮流以转瞬即逝著称。</p>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  发音
+                </button>
+                <span class="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                <span class="text-xs text-muted-foreground">2周前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: pragmatic -->
+        <div class="word-card bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-primary shrink-0 rounded-l-lg"></div>
+            <div class="flex-1 p-4 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg font-serif font-bold text-foreground">pragmatic</h3>
+                    <span class="text-xs text-muted-foreground">/præɡˈmæt.ɪk/</span>
+                  </div>
+                  <p class="text-sm text-foreground/80 mt-1">adj. 务实的；实用主义的</p>
+                </div>
+                <button class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-success/10">
+                  <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                </button>
+              </div>
+              <div class="mt-2.5 pl-3 border-l-2 border-primary/20">
+                <p class="text-xs text-muted-foreground italic">"We need a pragmatic approach to solve this problem."</p>
+                <p class="text-xs text-muted-foreground mt-0.5">我们需要一种务实的方法来解决这个问题。</p>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  发音
+                </button>
+                <span class="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                <span class="text-xs text-muted-foreground">3周前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: resilient -->
+        <div class="word-card bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-primary shrink-0 rounded-l-lg"></div>
+            <div class="flex-1 p-4 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg font-serif font-bold text-foreground">resilient</h3>
+                    <span class="text-xs text-muted-foreground">/rɪˈzɪl.i.ənt/</span>
+                  </div>
+                  <p class="text-sm text-foreground/80 mt-1">adj. 有弹性的；能迅速恢复的；坚韧的</p>
+                </div>
+                <button class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4 text-primary"></i>
+                </button>
+              </div>
+              <div class="mt-2.5 pl-3 border-l-2 border-primary/20">
+                <p class="text-xs text-muted-foreground italic">"Children are often more resilient than adults think."</p>
+                <p class="text-xs text-muted-foreground mt-0.5">孩子们往往比成年人想象的更有韧性。</p>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <button class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                  <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                  发音
+                </button>
+                <span class="w-1 h-1 rounded-full bg-muted-foreground/30"></span>
+                <span class="text-xs text-muted-foreground">1月前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Empty State (hidden by default) ===== -->
+      <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <i data-lucide="book-open" class="w-7 h-7 text-muted-foreground"></i>
+        </div>
+        <h3 class="text-base font-serif font-semibold text-foreground mb-1">还没有生词</h3>
+        <p class="text-sm text-muted-foreground max-w-xs">深度解析单词后，点击收藏即可将单词添加到生词本中</p>
+      </div>
+    </main>
+
+    <!-- ===== Bottom Navigation Bar ===== -->
+    <nav data-mobile-nav="global" class="w-full h-[56px] bg-card border-t border-border"><div class="w-full max-w-md mx-auto grid grid-cols-5 h-full"><a data-nav-key="home" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="search" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="vocab" data-active="true" class="min-w-0 flex items-center justify-center px-1 h-full text-primary"><i data-lucide="book-open" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="history" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="clock" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="memory" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="flame" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="settings" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="settings" class="w-5 h-5 shrink-0"></i></a></div></nav>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

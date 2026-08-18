@@ -1,0 +1,1395 @@
+{
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.07.06.8"
+  },
+  "project": {
+    "deviceType": "mobile",
+    "resolvedLane": "existing_edit_add_comparison",
+    "intentProfile": {
+      "caseFamily": "free_exploration",
+      "sourceType": "new_project",
+      "routingReason": "P9: No Library, no restore target, open-ended mobile UI creation based on existing desktop app"
+    },
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      {
+        "path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/page-rendering-quality-gate.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/design-artifact-validation.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/delivery-evidence-contract.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "visual-experience/visual-experience-guidelines.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      }
+    ],
+    "contextReadScope": {
+      "mainAgent": {
+        "forbiddenReads": [
+          "other intent-workflows/**",
+          "Sub-Agent implementation files before dispatch"
+        ]
+      },
+      "pageSubAgent": {
+        "allowedReads": [
+          "current lane page runtime guide",
+          "current lane dispatch contract excerpt",
+          "current Page Packet",
+          "supplementaryReads[] only"
+        ],
+        "forbiddenReads": [
+          "SKILL.md full re-read",
+          "other intent-workflows/**",
+          "full runtime-orchestration-summary.json unless explicitly sliced"
+        ]
+      },
+      "readScopeLedgerWriter": "shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs"
+    },
+    "validationRunDiscipline": {
+      "maxFullValidationRuns": 2,
+      "softWarningsTriggerRepair": false,
+      "blockingRepairMode": "targeted-once",
+      "forbiddenRepairTriggers": [
+        "soft-warning-only",
+        "provenance-warning-only",
+        "style-warning-only"
+      ]
+    },
+    "lowValueCallWatchdog": {
+      "applies": true,
+      "noProgressSignals": [
+        "no_tool_call",
+        "no_artifact_diff",
+        "no_structured_decision"
+      ],
+      "noProgressNextAction": "enter_readiness_or_blocked_summary"
+    },
+    "cssPreflightEvidence": {
+      "applies": true,
+      "status": "passed",
+      "command": "node {SKILL_DIR}/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs colors_and_type.css .preflight/preflight.html --title=\"Preflight\" --lang=zh-CN --prefix=study",
+      "brandPrefix": "study",
+      "checks": {
+        "themeVars": "present",
+        "semanticTokenFallback": "present",
+        "themeInline": "present",
+        "tailwindCdn": "present",
+        "htmlClass": "present",
+        "semanticMappings": "resolved"
+      },
+      "retryCount": 0,
+      "blockingReason": null
+    },
+    "mobileNavigation": {
+      "type": "bottom-tab",
+      "heightPx": 56,
+      "position": "flow-bottom",
+      "items": [
+        {
+          "key": "home",
+          "icon": "search"
+        },
+        {
+          "key": "vocab",
+          "icon": "book-open"
+        },
+        {
+          "key": "history",
+          "icon": "clock"
+        },
+        {
+          "key": "memory",
+          "icon": "flame"
+        },
+        {
+          "key": "settings",
+          "icon": "settings"
+        }
+      ],
+      "activeKey": "home",
+      "structure": {
+        "navTag": "nav",
+        "navClass": "w-full h-[56px] bg-card border-t border-border",
+        "innerClass": "w-full max-w-md mx-auto grid grid-cols-5 h-full",
+        "itemTag": "a",
+        "itemClass": "min-w-0 flex items-center justify-center px-1 h-full",
+        "iconClass": "w-5 h-5 shrink-0",
+        "activeRule": "only color may change; no class changes that affect layout",
+        "markerAttr": "data-mobile-nav=\"global\"",
+        "canonicalHtmlByKey": {
+          "home": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+          "vocab": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+          "history": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+          "memory": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+          "settings": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>"
+        }
+      }
+    },
+    "pageCompletenessGate": {
+      "expectedPages": [
+        "home",
+        "vocab",
+        "history",
+        "memory",
+        "settings"
+      ],
+      "requiredStates": [],
+      "requiredInteractions": [],
+      "requiredNavigation": [
+        "bottom-nav"
+      ],
+      "missingAllowed": []
+    },
+    "styleContinuityAnchors": [
+      "brand-primary: study-primary #506080 blue-gray",
+      "typography: Inter + Noto Sans SC sans-serif, Playfair Display serif headings",
+      "surface: white card bg with muted gray background",
+      "radius: 14px large cards, 8px buttons, 4px tags"
+    ],
+    "sharedProjectShellContract": {
+      "mobileNavigation": {
+        "type": "bottom-tab",
+        "heightPx": 56,
+        "position": "flow-bottom",
+        "items": [
+          {
+            "key": "home",
+            "icon": "search"
+          },
+          {
+            "key": "vocab",
+            "icon": "book-open"
+          },
+          {
+            "key": "history",
+            "icon": "clock"
+          },
+          {
+            "key": "memory",
+            "icon": "flame"
+          },
+          {
+            "key": "settings",
+            "icon": "settings"
+          }
+        ],
+        "activeState": "text-primary",
+        "inactiveState": "text-muted-foreground",
+        "structure": {
+          "navTag": "nav",
+          "navClass": "w-full h-[56px] bg-card border-t border-border",
+          "innerClass": "w-full max-w-md mx-auto grid grid-cols-5 h-full",
+          "itemTag": "a",
+          "itemClass": "min-w-0 flex items-center justify-center px-1 h-full",
+          "iconClass": "w-5 h-5 shrink-0",
+          "activeRule": "only color may change; no class changes that affect layout",
+          "markerAttr": "data-mobile-nav=\"global\"",
+          "canonicalHtmlByKey": {
+            "home": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+            "vocab": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+            "history": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+            "memory": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>",
+            "settings": "<nav data-mobile-nav=\"global\" class=\"w-full h-[56px] bg-card border-t border-border\"><div class=\"w-full max-w-md mx-auto grid grid-cols-5 h-full\"><a data-nav-key=\"home\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"search\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"vocab\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"book-open\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"history\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"clock\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"memory\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground\"><i data-lucide=\"flame\" class=\"w-5 h-5 shrink-0\"></i></a><a data-nav-key=\"settings\" data-active=\"true\" class=\"min-w-0 flex items-center justify-center px-1 h-full text-primary\"><i data-lucide=\"settings\" class=\"w-5 h-5 shrink-0\"></i></a></div></nav>"
+          }
+        }
+      }
+    },
+    "dispatchPreflightManifest": [
+      {
+        "recorded_at": "2026-08-17T07:11:17.686Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "FreePagePacket",
+        "laneContract": {
+          "resolvedLane": "free_exploration",
+          "packetType": "FreePagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-page-free-exploration/dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "nodeId": "page-home",
+        "htmlSrc": "pages/home.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/home.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/home.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\" --node-id=\"page-home\" --html-src=\"pages/home.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\home.html",
+        "brandPrefix": "study",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\home.html\" --title=\"深度解析\" --lang=\"zh-CN\" --prefix=\"study\" --replace-head",
+        "headFillMode": "replace-head-after-body",
+        "viewportMode": null,
+        "completionSchemaExpected": "compact",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "english-study-mobile.design": "66293e90da4b65f190ef6d06bddaa1589b8c009a7a0cac1c7e310591c406ac4c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-page-free-exploration/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": true,
+          "appliesToThisPage": true,
+          "activeKey": "home",
+          "contractPresent": true,
+          "structurePresent": true,
+          "canonicalHtmlIncluded": true,
+          "canonicalHtmlSource": "sharedProjectShellContract.mobileNavigation.structure.canonicalHtmlByKey.home",
+          "structureHash": "c571f4f446eb608005028f49c0494236a0072d47f9082569d999ded9eb34f30c",
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-17T07:11:17.686Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "FreePagePacket",
+        "laneContract": {
+          "resolvedLane": "free_exploration",
+          "packetType": "FreePagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-page-free-exploration/dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "nodeId": "page-vocab",
+        "htmlSrc": "pages/vocab.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/vocab.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/vocab.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\" --node-id=\"page-vocab\" --html-src=\"pages/vocab.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\vocab.html",
+        "brandPrefix": "study",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\vocab.html\" --title=\"生词本\" --lang=\"zh-CN\" --prefix=\"study\" --replace-head",
+        "headFillMode": "replace-head-after-body",
+        "viewportMode": null,
+        "completionSchemaExpected": "compact",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "english-study-mobile.design": "66293e90da4b65f190ef6d06bddaa1589b8c009a7a0cac1c7e310591c406ac4c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-page-free-exploration/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": true,
+          "appliesToThisPage": true,
+          "activeKey": "vocab",
+          "contractPresent": true,
+          "structurePresent": true,
+          "canonicalHtmlIncluded": true,
+          "canonicalHtmlSource": "sharedProjectShellContract.mobileNavigation.structure.canonicalHtmlByKey.vocab",
+          "structureHash": "c571f4f446eb608005028f49c0494236a0072d47f9082569d999ded9eb34f30c",
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-17T07:11:17.686Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "FreePagePacket",
+        "laneContract": {
+          "resolvedLane": "free_exploration",
+          "packetType": "FreePagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-page-free-exploration/dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "nodeId": "page-history",
+        "htmlSrc": "pages/history.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/history.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/history.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\" --node-id=\"page-history\" --html-src=\"pages/history.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\history.html",
+        "brandPrefix": "study",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\history.html\" --title=\"历史记录\" --lang=\"zh-CN\" --prefix=\"study\" --replace-head",
+        "headFillMode": "replace-head-after-body",
+        "viewportMode": null,
+        "completionSchemaExpected": "compact",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "english-study-mobile.design": "66293e90da4b65f190ef6d06bddaa1589b8c009a7a0cac1c7e310591c406ac4c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-page-free-exploration/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": true,
+          "appliesToThisPage": true,
+          "activeKey": "history",
+          "contractPresent": true,
+          "structurePresent": true,
+          "canonicalHtmlIncluded": true,
+          "canonicalHtmlSource": "sharedProjectShellContract.mobileNavigation.structure.canonicalHtmlByKey.history",
+          "structureHash": "c571f4f446eb608005028f49c0494236a0072d47f9082569d999ded9eb34f30c",
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-17T07:11:17.686Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "FreePagePacket",
+        "laneContract": {
+          "resolvedLane": "free_exploration",
+          "packetType": "FreePagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-page-free-exploration/dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "nodeId": "page-memory",
+        "htmlSrc": "pages/memory.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/memory.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/memory.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\" --node-id=\"page-memory\" --html-src=\"pages/memory.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\memory.html",
+        "brandPrefix": "study",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\memory.html\" --title=\"记忆模式\" --lang=\"zh-CN\" --prefix=\"study\" --replace-head",
+        "headFillMode": "replace-head-after-body",
+        "viewportMode": null,
+        "completionSchemaExpected": "compact",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "english-study-mobile.design": "66293e90da4b65f190ef6d06bddaa1589b8c009a7a0cac1c7e310591c406ac4c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-page-free-exploration/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": true,
+          "appliesToThisPage": true,
+          "activeKey": "memory",
+          "contractPresent": true,
+          "structurePresent": true,
+          "canonicalHtmlIncluded": true,
+          "canonicalHtmlSource": "sharedProjectShellContract.mobileNavigation.structure.canonicalHtmlByKey.memory",
+          "structureHash": "c571f4f446eb608005028f49c0494236a0072d47f9082569d999ded9eb34f30c",
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      },
+      {
+        "recorded_at": "2026-08-17T07:11:17.686Z",
+        "generatedBy": "build-page-dispatch-manifest.mjs",
+        "packetType": "FreePagePacket",
+        "laneContract": {
+          "resolvedLane": "free_exploration",
+          "packetType": "FreePagePacket",
+          "pageRuntimeGuide": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+          "dispatchContract": "intent-workflows/intent-page-free-exploration/dispatch-contract.md"
+        },
+        "taskLinePresent": true,
+        "outputPathPresent": true,
+        "sharedTemplate": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "nodeId": "page-settings",
+        "htmlSrc": "pages/settings.html",
+        "supplementaryReads": [],
+        "allowedWritePaths": [
+          "pages/settings.html",
+          "assets/"
+        ],
+        "forbiddenWriteRoots": [
+          "*.design",
+          "runtime-orchestration-summary.json",
+          "validation-report.json",
+          "finish-readiness-report.json",
+          "restore-contract-report.json",
+          "page-generation-summary.json"
+        ],
+        "toolPolicy": {
+          "todoWriteAllowed": false,
+          "validationScriptsAllowed": false,
+          "previewAllowed": false,
+          "helperScriptsAllowed": false,
+          "designFileWriteAllowed": false,
+          "allowedWritePaths": [
+            "pages/settings.html",
+            "assets/"
+          ]
+        },
+        "skillRuntime": {
+          "skillDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+          "deterministicToolDir": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling",
+          "toolPaths": {
+            "applyHtmlHeadContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs",
+            "recordDispatchCompletion": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs",
+            "buildPageDispatchManifest": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\build-page-dispatch-manifest.mjs",
+            "validateDesignWorkspace": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs",
+            "validateFinishReadiness": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-finish-readiness.mjs",
+            "validateRestoreContract": "c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-restore-contract.mjs"
+          },
+          "requiredForPageSubAgent": [
+            "applyHtmlHeadContract",
+            "recordDispatchCompletion"
+          ],
+          "pathInjection": "absolute",
+          "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+          "commandTemplates": {
+            "recordDispatchCompletion": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\record-dispatch-completion.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\" --node-id=\"page-settings\" --html-src=\"pages/settings.html\" --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+          }
+        },
+        "cssFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css",
+        "htmlFilePath": "c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\settings.html",
+        "brandPrefix": "study",
+        "aestheticsMode": "free-explore",
+        "toolDisciplineBlockPresent": true,
+        "fillHtmlHeadCommand": "node \"c:\\Users\\29799\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\apply-html-head-contract.mjs\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\colors_and_type.css\" \"c:\\Users\\29799\\Desktop\\english-study-club\\english-study-mobile\\pages\\settings.html\" --title=\"设置\" --lang=\"zh-CN\" --prefix=\"study\" --replace-head",
+        "headFillMode": "replace-head-after-body",
+        "viewportMode": null,
+        "completionSchemaExpected": "compact",
+        "restoreFields": null,
+        "restoreContractStatus": null,
+        "restoreCompactPacket": null,
+        "deterministicCommands": null,
+        "sourceAuthorityLock": null,
+        "preDispatchFileHashes": {
+          "english-study-mobile.design": "66293e90da4b65f190ef6d06bddaa1589b8c009a7a0cac1c7e310591c406ac4c"
+        },
+        "contextPreflight": {
+          "workflowPath": "intent-workflows/intent-page-free-exploration/INTENT_WORKFLOW.md",
+          "requiredContextFiles": [
+            "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+            "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+            "delivery-quality/page-rendering-quality-gate.md",
+            "delivery-quality/design-artifact-validation.md",
+            "delivery-quality/delivery-evidence-contract.md",
+            "visual-experience/visual-experience-guidelines.md"
+          ],
+          "optionalContextFiles": [],
+          "passed": true
+        },
+        "pageSliceOnly": true,
+        "requiredFieldsPresent": true,
+        "missingFields": [],
+        "fillHtmlHeadCommandValid": true,
+        "mobileNavigation": {
+          "required": true,
+          "appliesToThisPage": true,
+          "activeKey": "settings",
+          "contractPresent": true,
+          "structurePresent": true,
+          "canonicalHtmlIncluded": true,
+          "canonicalHtmlSource": "sharedProjectShellContract.mobileNavigation.structure.canonicalHtmlByKey.settings",
+          "structureHash": "c571f4f446eb608005028f49c0494236a0072d47f9082569d999ded9eb34f30c",
+          "missingFields": []
+        },
+        "persistedToSummary": true,
+        "taskQueryAudited": false,
+        "proofSource": "summary-only",
+        "largeWorkflowFilesInTaskQuery": null
+      }
+    ],
+    "readScopeLedger": [
+      {
+        "actor": "page-sub-agent",
+        "lane": "free_exploration",
+        "path": "intent-workflows/intent-page-free-exploration/free-exploration-page-runtime.md",
+        "reason": "page runtime guide",
+        "scopeClass": "page-runtime",
+        "declaredBeforeRead": true,
+        "recordedAt": "2026-08-17T06:33:37.298Z",
+        "nodeId": "page-home",
+        "htmlSrc": "pages/home.html"
+      },
+      {
+        "actor": "page-sub-agent",
+        "lane": "free_exploration",
+        "path": "intent-workflows/intent-page-free-exploration/dispatch-contract.md",
+        "reason": "dispatch contract",
+        "scopeClass": "dispatch-contract",
+        "declaredBeforeRead": true,
+        "recordedAt": "2026-08-17T06:33:37.298Z",
+        "nodeId": "page-home",
+        "htmlSrc": "pages/home.html"
+      }
+    ],
+    "mainAgentPostDispatchMutations": [
+      {
+        "path": "english-study-mobile.design",
+        "reason": "added page-settings skeleton node",
+        "owner": "main-agent",
+        "recordedAt": "2026-08-17T07:11:22.871Z",
+        "source": "record-dispatch-completion.mjs"
+      }
+    ],
+    "validationHistory": [
+      {
+        "reportPath": "validation-report.json",
+        "reportHash": "7fcb9613033730437f816092c7064be4c553bde3fbc5ad960895996eb7405bd9",
+        "checkedAt": "2026-08-17T07:10:06.456Z",
+        "success": false,
+        "exitCode": 1,
+        "renderBlockingErrorCount": 41,
+        "repairPlanHints": [
+          "mobile-navigation-dispatch",
+          "mobile-navigation-consistency",
+          "mobile-navigation-consistency",
+          "mobile-navigation-consistency",
+          "mobile-navigation-consistency",
+          "mobile-navigation-consistency",
+          "hardcoded-color-in-body"
+        ],
+        "errorSignatures": [
+          {
+            "errorClass": "dispatch-preflight-or-ownership",
+            "normalized": "[mobile-navigation-dispatch] pages/settings.html: mobileNavigation applies but dispatchPreflightManifest does not prove canonicalNavHtml was included. Rebuild the Page Packet with Mobile Navigation Contract; do not dispatch generic page tasks.",
+            "signature": "c0a5293cbdbc2d14f9c8d0c6f8481e09d7b272726ee33b5b69b5b23355a14f8b"
+          },
+          {
+            "errorClass": "artifact-readiness",
+            "normalized": "[dispatch-changed-files] pages/home.html: controlled file changed after dispatch preflight without mainAgentPostDispatchMutations evidence: english-study-mobile.design",
+            "signature": "afa479becbafc8819c31f0ea87b726ed08da174841e20168e7efda4ff803a0e7"
+          },
+          {
+            "errorClass": "artifact-readiness",
+            "normalized": "[dispatch-changed-files] pages/vocab.html: controlled file changed after dispatch preflight without mainAgentPostDispatchMutations evidence: english-study-mobile.design",
+            "signature": "cdf5626a70547a5fdc748631cf4d81701513982719cf7a778b53c282b3303765"
+          },
+          {
+            "errorClass": "artifact-readiness",
+            "normalized": "[dispatch-changed-files] pages/history.html: controlled file changed after dispatch preflight without mainAgentPostDispatchMutations evidence: english-study-mobile.design",
+            "signature": "3a467fce8c3c5fec43e88768f966b84cbaa583cb983300fa49f307f140cf04fd"
+          },
+          {
+            "errorClass": "artifact-readiness",
+            "normalized": "[dispatch-changed-files] pages/memory.html: controlled file changed after dispatch preflight without mainAgentPostDispatchMutations evidence: english-study-mobile.design",
+            "signature": "3eda53968dde590fd71518b7d7fe4fe0414aeece4ae5187c874f73975500ebde"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: data-nav-key order (home|vocab|history|memory|settings) does not match sharedProjectShellContract.mobileNavigation.items (home|vocab|history|memory). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "eddd0302c46fb5af2a748aacd112ef00589c8b848cca61569f5f5178d4deb781"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav height 56px does not match mobileNavigation.heightPx 64px. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "83725677aa3c7d60973ed3b2e7d78d25a65109077480424f4739e7518bff2690"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav grid class grid-cols-5 does not match item count (grid-cols-4). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "12a25f65074aff9cb62bebf6e62f00787aa0afe95dbcda3f216e306397e4f471"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav root is missing contract geometry class(es): h-[64px]. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "16a855550a1b50dfcfb94e81f5772407da117d48dd643b24293178700b16a824"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav inner wrapper is missing contract geometry class(es): grid-cols-4. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "090003772854ea64115702d9eac7a0f18ddb4f08770c76b7f2d3c7c2d7ba9a04"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav item is missing contract geometry class(es): flex-col, gap-0.5. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "c6b483d9f17204ef8aa2b8f8e6d75594ea0518c01ca7ae6d10754c2ae8940dfb"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/home.html: mobile nav labelClass contract requires one label span per nav item. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "0e0846f26b3c1fd3d486dce8b0399299feedb83aed543f5a7780a553a26f6f7e"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: data-nav-key order (home|vocab|history|memory|settings) does not match sharedProjectShellContract.mobileNavigation.items (home|vocab|history|memory). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "697d7fe3347d3bf73b8b8399a2e1e2b392741048d4695161b7750427942870b1"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav height 56px does not match mobileNavigation.heightPx 64px. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "dc9609f5203bbe5146c397d12158cf95ebbd197c80b3ea7c7d22660461834f6f"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav grid class grid-cols-5 does not match item count (grid-cols-4). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "0220d30d888a4ce5f7bb09fd7b8f634eda7b667739a9fcf50efadf499f124aea"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav root is missing contract geometry class(es): h-[64px]. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "37524bb795ab93a55964213b9abd96a41a25e9ea1439a5e2870970eb5476554e"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav inner wrapper is missing contract geometry class(es): grid-cols-4. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "f8c347d56c0dc29e8399ffe51b47fa7b35dde6b820fe36dad7315bd1fef69023"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav item is missing contract geometry class(es): flex-col, gap-0.5. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "68a55d9333e39f0a1f86e7e55ccca145d7d573ff95b6f998f376f8f26f65a97c"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/vocab.html: mobile nav labelClass contract requires one label span per nav item. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "2d9d19d887cf1c055142763f661c5a02059b10d69c0fff98a80c9d60a5614d3b"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: data-nav-key order (home|vocab|history|memory|settings) does not match sharedProjectShellContract.mobileNavigation.items (home|vocab|history|memory). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "d71d1e88e706d2a2195947d0f2cf68ed31ca3e15442279682da150327278bce8"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav height 56px does not match mobileNavigation.heightPx 64px. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "1e19060cb772892af9e1feb95a97304ef1e6482ca3f641229575280bfaa0d0cf"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav grid class grid-cols-5 does not match item count (grid-cols-4). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "815510f234e7e7f2cb1218918ab2945ad57fb475a5d40b58c920059e81dd974f"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav root is missing contract geometry class(es): h-[64px]. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "0ca448577ca57ed60e46df663238967ec2e3781c496977d17575974f84933eaf"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav inner wrapper is missing contract geometry class(es): grid-cols-4. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "7d9d1a704843f010cf13c07a0f499926fadf901d398f53b1e0d53b71889abb2a"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav item is missing contract geometry class(es): flex-col, gap-0.5. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "960c4cbd5c6e968e3882c657d52a565628a3040ed68b6eeb9a4b0b3a13a187ec"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/history.html: mobile nav labelClass contract requires one label span per nav item. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "cd8103011ef05db01a88d125931e47d472ae7a059f7f11dc3b4a23a050ff2e25"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: data-nav-key order (home|vocab|history|memory|settings) does not match sharedProjectShellContract.mobileNavigation.items (home|vocab|history|memory). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "7d0cc3df9c281500a2b39659f19d47e6222b598f35c90a4e734faa68a9bbf8a1"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav height 56px does not match mobileNavigation.heightPx 64px. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "0214928df2d6ef5fdddff5ac191ccc265b76379fd8e629dc05c7045136fb54ad"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav grid class grid-cols-5 does not match item count (grid-cols-4). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "c17236609e58f74915de04f854f287d458b9838abc2cd065b8e90a7bfbc02c84"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav root is missing contract geometry class(es): h-[64px]. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "c94762fbb5274bcaf2317876759ab4af50655b027eacfa9f86bd0221b92b740c"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav inner wrapper is missing contract geometry class(es): grid-cols-4. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "4fd07d5a9f7fb6b5148dae7384e24898e68208d97e64329f029dbe98c6f1a75e"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav item is missing contract geometry class(es): flex-col, gap-0.5. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "859fe58e32f59b7904e9b690bafa1e360ec5d70804f8967844f7a2f6a0e35ccb"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/memory.html: mobile nav labelClass contract requires one label span per nav item. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "905f03847b38752de309ced55f2a1c8698f4e0f7b8d45e2f6c052e5f05105c5b"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: data-nav-key order (home|vocab|history|memory|settings) does not match sharedProjectShellContract.mobileNavigation.items (home|vocab|history|memory). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "8b7a7bed0b19452d9c5df82bae9c20773f83e146faa236a4bfce311689bce080"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav height 56px does not match mobileNavigation.heightPx 64px. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "67fd7b9fee28a5cddf45a1b1e993d0b8eebdc03cf41524f727d4cb6e33b73163"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav grid class grid-cols-5 does not match item count (grid-cols-4). Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "117b9c6baf5d2f682c463c17032adf5a2c2b8a542cc854f39ce939b3c80effe8"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav root is missing contract geometry class(es): h-[64px]. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "c4240bb5b834b77b79cf8bc601ddcd78385319b1ca5dd0d98409e95eadb83fb3"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav inner wrapper is missing contract geometry class(es): grid-cols-4. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "edd78cd01f8923cc276e4a9d41e772ad3bba6650737056c4265cfdc77781dbe4"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav item is missing contract geometry class(es): flex-col, gap-0.5. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "f1414b48747714bd43bd189669d5ef394bb5f38c347ed774c2d1ad3e006b1129"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] pages/settings.html: mobile nav labelClass contract requires one label span per nav item. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "1a59f24c396d2176dcf40d4eae2895087962b40e6f54183f5a99dfae202a85ae"
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "normalized": "[mobile-navigation-consistency] mobile pages with global nav must keep the same data-nav-key item order, positioning, height, and structural geometry. pages/home.html: home|vocab|history|memory|settings::flow::56::tag=a::item=flex.h-full.items-center.justify-center.min-w-0.px-1::icon=icon:h-5.shrink-0.w-5::nowrap=false::grid=grid-cols-5::max=true::full=true/true; pages/settings.html: home|vocab|history|memory|settings::fixed::56::tag=a::item=flex.h-full.items-center.justify-center.min-w-0.px-1::icon=icon:h-5.shrink-0.w-5::nowrap=false::grid=grid-cols-5::max=true::full=true/true. Use data-dom-id only for click wiring. Repair: rebuild the Page Packet with Mobile Navigation Contract and copy canonicalNavHtml. If this is post-validation repair, run repair-mobile-navigation-flow.mjs once; do not patch individual span/data-dom-id/class fragments.",
+            "signature": "63d7cb6def98721ad307c76fdf003c4e1e05752875c478f710784f67d08682e4"
+          }
+        ],
+        "terminalState": null
+      },
+      {
+        "reportPath": "validation-report.json",
+        "reportHash": "1baf844885fd9eb8d3e2c224139a69fd155c0a306d9d4bd3db3f9d34f3f3ae99",
+        "checkedAt": "2026-08-17T07:11:55.157Z",
+        "success": true,
+        "exitCode": 0,
+        "renderBlockingErrorCount": 0,
+        "repairPlanHints": [
+          "hardcoded-color-in-body"
+        ],
+        "errorSignatures": [],
+        "terminalState": null
+      }
+    ],
+    "validationRepairLedger": [
+      {
+        "failedReportPath": "validation-report.json",
+        "failedReportHash": "7fcb9613033730437f816092c7064be4c553bde3fbc5ad960895996eb7405bd9",
+        "repairWorkflowReadPath": "intent-workflows/intent-project-mutation/main-agent-repair-workflow.md",
+        "repairStartedAt": "2026-08-17T07:10:34.311Z",
+        "repairEntryStatus": "revalidated-success",
+        "ownerTriage": [
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-dispatch",
+            "affectedFiles": [
+              "pages/settings.html"
+            ],
+            "repairScope": "page-dispatch-packet",
+            "strategy": "rebuild_page_packet_with_mobile_navigation_contract"
+          },
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-consistency",
+            "affectedFiles": [
+              "pages/home.html"
+            ],
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once"
+          },
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-consistency",
+            "affectedFiles": [
+              "pages/vocab.html"
+            ],
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once"
+          },
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-consistency",
+            "affectedFiles": [
+              "pages/history.html"
+            ],
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once"
+          },
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-consistency",
+            "affectedFiles": [
+              "pages/memory.html"
+            ],
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once"
+          },
+          {
+            "owner": "main-agent",
+            "errorClass": "mobile-navigation-consistency",
+            "affectedFiles": [
+              "pages/settings.html"
+            ],
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once"
+          },
+          {
+            "owner": "sub-agent",
+            "errorClass": "hardcoded-color-in-body",
+            "affectedFiles": [
+              "settings.html"
+            ],
+            "repairScope": "targeted-token-replace",
+            "strategy": "targeted_token_replace_once"
+          }
+        ],
+        "repairPlanHints": [
+          {
+            "errorClass": "mobile-navigation-dispatch",
+            "owner": "main-agent",
+            "repairScope": "page-dispatch-packet",
+            "strategy": "rebuild_page_packet_with_mobile_navigation_contract",
+            "affectedFiles": [
+              "pages/settings.html"
+            ],
+            "repairReportPath": null,
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "owner": "main-agent",
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once",
+            "affectedFiles": [
+              "pages/home.html"
+            ],
+            "repairReportPath": "mobile-nav-repair-report.json",
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "owner": "main-agent",
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once",
+            "affectedFiles": [
+              "pages/vocab.html"
+            ],
+            "repairReportPath": "mobile-nav-repair-report.json",
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "owner": "main-agent",
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once",
+            "affectedFiles": [
+              "pages/history.html"
+            ],
+            "repairReportPath": "mobile-nav-repair-report.json",
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "owner": "main-agent",
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once",
+            "affectedFiles": [
+              "pages/memory.html"
+            ],
+            "repairReportPath": "mobile-nav-repair-report.json",
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "mobile-navigation-consistency",
+            "owner": "main-agent",
+            "repairScope": "all-pages-with-mobile-nav",
+            "strategy": "run_repair_mobile_navigation_once",
+            "affectedFiles": [
+              "pages/settings.html"
+            ],
+            "repairReportPath": "mobile-nav-repair-report.json",
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 3
+          },
+          {
+            "errorClass": "hardcoded-color-in-body",
+            "owner": "sub-agent",
+            "repairScope": "targeted-token-replace",
+            "strategy": "targeted_token_replace_once",
+            "affectedFiles": [
+              "settings.html"
+            ],
+            "repairReportPath": null,
+            "repairAlreadyAttempted": false,
+            "allowSourceRead": "no-full-html-read",
+            "maxValidationRuns": 2
+          }
+        ],
+        "repairActions": [],
+        "revalidationReportPath": "validation-report.json",
+        "revalidationReportHash": "1baf844885fd9eb8d3e2c224139a69fd155c0a306d9d4bd3db3f9d34f3f3ae99",
+        "revalidationSuccess": true,
+        "blockedReason": null,
+        "revalidationRecordedAt": "2026-08-17T07:12:00.381Z"
+      }
+    ],
+    "repairEntryEvidence": [
+      {
+        "failedReportPath": "validation-report.json",
+        "failedReportHash": "7fcb9613033730437f816092c7064be4c553bde3fbc5ad960895996eb7405bd9",
+        "repairWorkflowReadPath": "intent-workflows/intent-project-mutation/main-agent-repair-workflow.md",
+        "repairStartedAt": "2026-08-17T07:10:34.311Z",
+        "ledgerIndex": 0,
+        "ownerTriageCount": 7,
+        "repairActionCount": 0,
+        "revalidationReportPath": "validation-report.json",
+        "revalidationReportHash": "1baf844885fd9eb8d3e2c224139a69fd155c0a306d9d4bd3db3f9d34f3f3ae99",
+        "revalidationSuccess": true
+      }
+    ],
+    "expectedDispatches": [
+      {
+        "nodeId": "page-settings",
+        "pageId": "page-settings",
+        "targetPageId": "page-settings",
+        "htmlSrc": "pages/settings.html",
+        "packetType": "FreePagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/settings.html"
+        ],
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "settings-page-generated",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        },
+        "recordedAt": "2026-08-17T07:11:22.871Z",
+        "source": "record-dispatch-completion.mjs"
+      },
+      {
+        "nodeId": "page-home",
+        "pageId": "page-home",
+        "targetPageId": "page-home",
+        "htmlSrc": "pages/home.html",
+        "packetType": "FreePagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/home.html"
+        ],
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "home-nav-5tab",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        },
+        "recordedAt": "2026-08-17T07:11:40.753Z",
+        "source": "record-dispatch-completion.mjs"
+      },
+      {
+        "nodeId": "page-vocab",
+        "pageId": "page-vocab",
+        "targetPageId": "page-vocab",
+        "htmlSrc": "pages/vocab.html",
+        "packetType": "FreePagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/vocab.html"
+        ],
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "vocab-nav-5tab",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        },
+        "recordedAt": "2026-08-17T07:11:40.868Z",
+        "source": "record-dispatch-completion.mjs"
+      },
+      {
+        "nodeId": "page-history",
+        "pageId": "page-history",
+        "targetPageId": "page-history",
+        "htmlSrc": "pages/history.html",
+        "packetType": "FreePagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/history.html"
+        ],
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "history-nav-5tab",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        },
+        "recordedAt": "2026-08-17T07:11:40.977Z",
+        "source": "record-dispatch-completion.mjs"
+      },
+      {
+        "nodeId": "page-memory",
+        "pageId": "page-memory",
+        "targetPageId": "page-memory",
+        "htmlSrc": "pages/memory.html",
+        "packetType": "FreePagePacket",
+        "status": "completed",
+        "changedFiles": [
+          "pages/memory.html"
+        ],
+        "toolCallLedger": {
+          "source": "main-agent-runtime-trace",
+          "traceDigest": "memory-nav-5tab",
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        },
+        "recordedAt": "2026-08-17T07:11:41.090Z",
+        "source": "record-dispatch-completion.mjs"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "nodeId": "page-home",
+      "htmlSrc": "pages/home.html",
+      "title": "深度解析",
+      "pageType": "information-dense",
+      "mobileNavigationActiveKey": "home",
+      "qualityRisks": [
+        "dense",
+        "mobile-input"
+      ]
+    },
+    {
+      "nodeId": "page-vocab",
+      "htmlSrc": "pages/vocab.html",
+      "title": "生词本",
+      "pageType": "information-dense",
+      "mobileNavigationActiveKey": "vocab",
+      "qualityRisks": [
+        "dense",
+        "mobile-list"
+      ]
+    },
+    {
+      "nodeId": "page-history",
+      "htmlSrc": "pages/history.html",
+      "title": "历史记录",
+      "pageType": "information-dense",
+      "mobileNavigationActiveKey": "history",
+      "qualityRisks": [
+        "dense",
+        "mobile-list"
+      ]
+    },
+    {
+      "nodeId": "page-memory",
+      "htmlSrc": "pages/memory.html",
+      "title": "记忆模式",
+      "pageType": "task-driven",
+      "mobileNavigationActiveKey": "memory",
+      "qualityRisks": [
+        "dense",
+        "mobile-interactive"
+      ]
+    },
+    {
+      "nodeId": "page-settings",
+      "htmlSrc": "pages/settings.html",
+      "title": "设置",
+      "pageType": "information-dense",
+      "mobileNavigationActiveKey": "settings",
+      "qualityRisks": [
+        "dense",
+        "mobile-list"
+      ]
+    }
+  ]
+}

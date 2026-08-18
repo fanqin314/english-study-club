@@ -1,0 +1,124 @@
+{
+  "data": [
+    {
+      "id": "page-home",
+      "title": "深度解析",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1755878400000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1363,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-c422706e",
+          "measuredAt": 1787021442433
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/home.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-vocab",
+      "title": "生词本",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1755878400001,
+      "canvasData": {
+        "x": 169,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1331,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-ddbe6720",
+          "measuredAt": 1787021442433
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/vocab.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-history",
+      "title": "历史记录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1755878400002,
+      "canvasData": {
+        "x": 338,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1142,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-200011ee",
+          "measuredAt": 1787021442433
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/history.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-memory",
+      "title": "记忆模式",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1755878400003,
+      "canvasData": {
+        "x": 507,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1035,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-8c4e33d8",
+          "measuredAt": 1787021442433
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/memory.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "设置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1755878400004,
+      "canvasData": {
+        "x": 676,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1106,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-3f590dba",
+          "measuredAt": 1787021442433
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "英研社 · 手机版"
+  }
+}

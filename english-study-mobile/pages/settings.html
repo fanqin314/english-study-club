@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置</title>
+    <style id="theme-vars">
+/* ========================================
+   colors_and_type.css — 英研社 Mobile Theme
+   Brand prefix: study
+   ======================================== */
+
+/* ========== Fonts ========== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+:root {
+  /* =============================================
+     60% — Neutral / White Paper Base
+     ============================================= */
+  --study-background: #FFFFFF;
+  --study-foreground: #202020;
+  --study-card: #FFFFFF;
+  --study-card-foreground: #202020;
+  --study-popover: #FFFFFF;
+  --study-popover-foreground: #202020;
+
+  /* =============================================
+     25% — Primary Brand: Low-saturation Blue-Gray
+     ============================================= */
+  --study-primary: #506080;
+  --study-primary-foreground: #FFFFFF;
+
+  /* =============================================
+     Neutral Surfaces
+     ============================================= */
+  --study-muted: #F4F6F8;
+  --study-muted-foreground: #7A8494;
+
+  /* =============================================
+     Borders & Input
+     ============================================= */
+  --study-border: #E2E6EB;
+  --study-input: #E2E6EB;
+  --study-ring: #506080;
+
+  /* =============================================
+     State Colors
+     ============================================= */
+  --study-success: #5A8A6E;
+  --study-success-foreground: #FFFFFF;
+  --study-warning: #C8A87C;
+  --study-warning-foreground: #FFFFFF;
+  --study-error: #C07A7A;
+  --study-error-foreground: #FFFFFF;
+  --study-info: #506080;
+  --study-info-foreground: #FFFFFF;
+
+  /* =============================================
+     Radius Scale
+     ============================================= */
+  --study-radius-sm: 4px;
+  --study-radius-md: 8px;
+  --study-radius-lg: 14px;
+
+  /* =============================================
+     Shadows
+     ============================================= */
+  --study-shadow-sm: 0 1px 2px rgba(32, 32, 32, 0.04);
+  --study-shadow-md: 0 4px 12px rgba(32, 32, 32, 0.05);
+  --study-shadow-lg: 0 8px 24px rgba(32, 32, 32, 0.08);
+
+  /* =============================================
+     Typography
+     ============================================= */
+  --study-font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --study-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme="dark"] {
+  --study-background: #1A1C1E;
+  --study-foreground: #E8E8E8;
+  --study-card: #232528;
+  --study-card-foreground: #E8E8E8;
+  --study-popover: #2A2D30;
+  --study-popover-foreground: #E8E8E8;
+
+  --study-primary: #7A8AAA;
+  --study-primary-foreground: #1A1C1E;
+
+  --study-muted: #2A2D30;
+  --study-muted-foreground: #9A9EA8;
+
+  --study-border: #3A3D40;
+  --study-input: #3A3D40;
+  --study-ring: #7A8AAA;
+
+  --study-success: #6A9A7E;
+  --study-success-foreground: #1A1C1E;
+  --study-warning: #B8A07A;
+  --study-warning-foreground: #1A1C1E;
+  --study-error: #B07A7A;
+  --study-error-foreground: #1A1C1E;
+  --study-info: #7A8AAA;
+  --study-info-foreground: #1A1C1E;
+
+  --study-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --study-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --study-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--study-background);
+    --color-foreground: var(--study-foreground);
+    --color-card: var(--study-card);
+    --color-card-foreground: var(--study-card-foreground);
+    --color-popover: var(--study-popover);
+    --color-popover-foreground: var(--study-popover-foreground);
+    --color-primary: var(--study-primary);
+    --color-primary-foreground: var(--study-primary-foreground);
+    --color-muted: var(--study-muted);
+    --color-muted-foreground: var(--study-muted-foreground);
+    --color-border: var(--study-border);
+    --color-input: var(--study-input);
+    --color-ring: var(--study-ring);
+    --radius-sm: var(--study-radius-sm);
+    --radius-md: var(--study-radius-md);
+    --radius-lg: var(--study-radius-lg);
+  }
+  @layer base {
+    body { background: var(--study-background); color: var(--study-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--study-background); }
+      .text-background { color: var(--study-background); }
+      .border-background { border-color: var(--study-background); }
+      .ring-background { --tw-ring-color: var(--study-background); }
+      .bg-foreground { background-color: var(--study-foreground); }
+      .text-foreground { color: var(--study-foreground); }
+      .border-foreground { border-color: var(--study-foreground); }
+      .ring-foreground { --tw-ring-color: var(--study-foreground); }
+      .bg-card { background-color: var(--study-card); }
+      .text-card { color: var(--study-card); }
+      .border-card { border-color: var(--study-card); }
+      .ring-card { --tw-ring-color: var(--study-card); }
+      .bg-card-foreground { background-color: var(--study-card-foreground); }
+      .text-card-foreground { color: var(--study-card-foreground); }
+      .border-card-foreground { border-color: var(--study-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--study-card-foreground); }
+      .bg-popover { background-color: var(--study-popover); }
+      .text-popover { color: var(--study-popover); }
+      .border-popover { border-color: var(--study-popover); }
+      .ring-popover { --tw-ring-color: var(--study-popover); }
+      .bg-popover-foreground { background-color: var(--study-popover-foreground); }
+      .text-popover-foreground { color: var(--study-popover-foreground); }
+      .border-popover-foreground { border-color: var(--study-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--study-popover-foreground); }
+      .bg-primary { background-color: var(--study-primary); }
+      .text-primary { color: var(--study-primary); }
+      .border-primary { border-color: var(--study-primary); }
+      .ring-primary { --tw-ring-color: var(--study-primary); }
+      .bg-primary-foreground { background-color: var(--study-primary-foreground); }
+      .text-primary-foreground { color: var(--study-primary-foreground); }
+      .border-primary-foreground { border-color: var(--study-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--study-primary-foreground); }
+      .bg-muted { background-color: var(--study-muted); }
+      .text-muted { color: var(--study-muted); }
+      .border-muted { border-color: var(--study-muted); }
+      .ring-muted { --tw-ring-color: var(--study-muted); }
+      .bg-muted-foreground { background-color: var(--study-muted-foreground); }
+      .text-muted-foreground { color: var(--study-muted-foreground); }
+      .border-muted-foreground { border-color: var(--study-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--study-muted-foreground); }
+      .bg-border { background-color: var(--study-border); }
+      .text-border { color: var(--study-border); }
+      .border-border { border-color: var(--study-border); }
+      .ring-border { --tw-ring-color: var(--study-border); }
+      .bg-input { background-color: var(--study-input); }
+      .text-input { color: var(--study-input); }
+      .border-input { border-color: var(--study-input); }
+      .ring-input { --tw-ring-color: var(--study-input); }
+      .bg-ring { background-color: var(--study-ring); }
+      .text-ring { color: var(--study-ring); }
+      .border-ring { border-color: var(--study-ring); }
+      .ring-ring { --tw-ring-color: var(--study-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+      .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+      .toggle-switch input { opacity: 0; width: 0; height: 0; }
+      .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--study-border); border-radius: 12px; transition: 0.2s; }
+      .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #FFFFFF; border-radius: 50%; transition: 0.2s; }
+      input:checked + .toggle-slider { background-color: var(--study-primary); }
+      input:checked + .toggle-slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body class="min-h-screen bg-muted font-sans antialiased">
+    <main class="pb-4">
+      <!-- Header -->
+      <div class="max-w-md mx-auto px-4 pt-6 pb-4">
+        <div class="flex items-center gap-3">
+          <i data-lucide="settings" class="w-6 h-6 text-primary"></i>
+          <h1 class="text-2xl font-bold text-foreground" style="font-family: var(--study-font-serif)">设置</h1>
+        </div>
+      </div>
+
+      <!-- Profile / Account Section -->
+      <div class="max-w-md mx-auto px-4 pb-4">
+        <div class="bg-card rounded-lg shadow-sm p-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-muted flex items-center justify-center shrink-0">
+              <i data-lucide="user" class="w-7 h-7 text-muted-foreground"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-foreground truncate">英语学习者</div>
+              <div class="text-sm text-muted-foreground truncate">learner@example.com</div>
+            </div>
+            <button class="shrink-0 px-3 py-1.5 text-xs font-medium text-primary border border-primary rounded-md hover:bg-primary hover:text-primary-foreground transition-colors">编辑资料</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 学习偏好 Section -->
+      <div class="max-w-md mx-auto px-4 pb-4">
+        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">学习偏好</div>
+        <div class="bg-card rounded-lg shadow-sm divide-y divide-border">
+          <!-- 每日学习目标 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <span class="text-sm text-foreground">每日学习目标</span>
+            <div class="flex items-center gap-2">
+              <button class="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-border transition-colors" aria-label="减少">
+                <i data-lucide="minus" class="w-3.5 h-3.5 text-muted-foreground"></i>
+              </button>
+              <span class="text-sm font-semibold text-foreground w-16 text-center tabular-nums">20 词/天</span>
+              <button class="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-border transition-colors" aria-label="增加">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-muted-foreground"></i>
+              </button>
+            </div>
+          </div>
+          <!-- 默认解析模式 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <span class="text-sm text-foreground">默认解析模式</span>
+            <div class="flex bg-muted rounded-md p-0.5">
+              <button class="px-3 py-1 text-xs rounded font-medium bg-primary text-primary-foreground transition-colors">深度模式</button>
+              <button class="px-3 py-1 text-xs rounded font-medium text-muted-foreground transition-colors">快速模式</button>
+            </div>
+          </div>
+          <!-- 自动发音 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <span class="text-sm text-foreground">自动发音</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <!-- 生词自动收藏 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <span class="text-sm text-foreground">生词自动收藏</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 显示设置 Section -->
+      <div class="max-w-md mx-auto px-4 pb-4">
+        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">显示设置</div>
+        <div class="bg-card rounded-lg shadow-sm divide-y divide-border">
+          <!-- 深色模式 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="moon" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">深色模式</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <!-- 字体大小 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="type" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">字体大小</span>
+            </div>
+            <div class="flex bg-muted rounded-md p-0.5">
+              <button class="w-8 py-1 text-xs rounded font-medium text-muted-foreground transition-colors">小</button>
+              <button class="w-8 py-1 text-xs rounded font-medium bg-primary text-primary-foreground transition-colors">中</button>
+              <button class="w-8 py-1 text-xs rounded font-medium text-muted-foreground transition-colors">大</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据管理 Section -->
+      <div class="max-w-md mx-auto px-4 pb-4">
+        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">数据管理</div>
+        <div class="bg-card rounded-lg shadow-sm divide-y divide-border">
+          <!-- 导出学习数据 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="download" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">导出学习数据</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+          <!-- 清除缓存 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="trash-2" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">清除缓存</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted-foreground">128 MB</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+            </div>
+          </div>
+          <!-- 重置所有数据 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="alert-triangle" class="w-4 h-4" style="color: var(--study-error)"></i>
+              <span class="text-sm" style="color: var(--study-error)">重置所有数据</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 关于 Section -->
+      <div class="max-w-md mx-auto px-4 pb-4">
+        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">关于</div>
+        <div class="bg-card rounded-lg shadow-sm divide-y divide-border">
+          <!-- 版本 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="info" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">版本</span>
+            </div>
+            <span class="text-sm text-muted-foreground">v1.0.0</span>
+          </div>
+          <!-- 用户协议 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="file-text" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">用户协议</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+          <!-- 隐私政策 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="shield" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">隐私政策</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+          <!-- 关于英研社 -->
+          <div class="flex items-center justify-between px-4 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="book-open" class="w-4 h-4 text-muted-foreground"></i>
+              <span class="text-sm text-foreground">关于英研社</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom spacing for nav -->
+      <div class="h-4"></div>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav data-mobile-nav="global" class="w-full h-[56px] bg-card border-t border-border"><div class="w-full max-w-md mx-auto grid grid-cols-5 h-full"><a data-nav-key="home" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="search" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="vocab" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="book-open" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="history" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="clock" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="memory" class="min-w-0 flex items-center justify-center px-1 h-full text-muted-foreground"><i data-lucide="flame" class="w-5 h-5 shrink-0"></i></a><a data-nav-key="settings" data-active="true" class="min-w-0 flex items-center justify-center px-1 h-full text-primary"><i data-lucide="settings" class="w-5 h-5 shrink-0"></i></a></div></nav>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>
