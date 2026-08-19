@@ -9,8 +9,11 @@
    · analysis_history —— 历史记录 [{id,originalText,fullTranslation,sentences,sentenceData,savedAt}]
    · darkMode         —— 'true' | 'false'（明文）
    · encrypted_api_key / encrypted_api_base / encrypted_model_name —— base64(encodeURIComponent(x))
-   · stats_streak_days / stats_today_learned / stats_mastered_words —— 进度统计
-   · esc.settings     —— 仅移动端独有偏好（日目标/解析模式/自动发音/自动收藏/字号/资料）
+   · stats_streak_days / stats_today_learned / stats_total_learned / stats_mastered_words —— 进度统计
+     （与桌面端 StatsTracker 对齐：均为「计数器累加」，不是按单词 status 重算）
+   · stats_module_data —— 各记忆模式活动量（对齐桌面端 MODULE_META，供统计页读取）
+   · dailyWordGoal    —— 每日目标（对齐桌面端 learning_plan_ui.js 的键名）
+   · esc.settings     —— 仅移动端独有偏好（解析模式/自动发音/自动收藏/字号/资料；日目标已改用 dailyWordGoal）
    · esc.progress     —— 仅移动端独有进度（正确率/待复习，桌面端无对应字段）
 
    所有写操作触发对应事件（'vocab'/'history'/'settings'/'progress'），
@@ -30,7 +33,10 @@
     encModel: 'encrypted_model_name',
     statStreak: 'stats_streak_days',
     statToday: 'stats_today_learned',
-    statMastered: 'stats_mastered_words'
+    statTotal: 'stats_total_learned',
+    statMastered: 'stats_mastered_words',
+    statModule: 'stats_module_data',
+    dailyWordGoal: 'dailyWordGoal'
   };
   // 移动端独有偏好 / 进度（桌面端没有，独立保存）
   const ESC = 'esc.';
@@ -50,6 +56,7 @@
     model: 'Qwen/Qwen3.5-35B-A3B',
     dailyGoal: 20,
     parseMode: 'deep',        // 'deep' | 'fast'
+    parseMethod: 'perSentence', // 'perSentence' 网页端逐句调用（默认）| 'fullText' 单次全文
     autoPronounce: true,
     autoCollect: true,
     darkMode: false,
@@ -122,6 +129,10 @@
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
+  // 与桌面端 StatsTracker 完全一致的日期格式（toDateString），保证 stats_word_date 跨端可比对
+  function _dateStr() {
+    return new Date().toDateString();
+  }
 
   /* ============================================================
      生词本（对齐桌面端 vocabData：多生词本结构）
@@ -146,16 +157,19 @@
     return d;
   }
   // 桌面端生词 shape：{ word, meaning, pos, context, timestamp }
-  // 移动端视图 shape：{ id, notebookId, word, pos, zh, status, addedAt, example }
+  // 移动端视图 shape：{ id, notebookId, word, pos, zh, meaning, addedAt, createdAt, example }
+  // 注意：不再包含 status（桌面端无按单词的掌握状态）；meaning 为 zh 的别名，供各视图按桌面端字段名直接使用
   function _wordToVM(nbId, w) {
+    const ts = w.timestamp || Date.now();
     return {
       id: nbId + '::' + (w.word || '').toLowerCase(),
       notebookId: nbId,
       word: w.word || '',
       pos: w.pos || '',
       zh: w.meaning || '',
-      status: w.status === 'mastered' ? 'mastered' : 'learning',
-      addedAt: w.timestamp || Date.now(),
+      meaning: w.meaning || '',
+      addedAt: ts,
+      createdAt: ts,
       example: w.context || ''
     };
   }
@@ -203,14 +217,11 @@
       meaning: zh,
       pos: w.pos || '',
       context: example,
-      timestamp: Date.now(),
-      status: w.status || 'learning',
-      id: uid()
+      timestamp: Date.now()
     };
     nb.words.unshift(item);
     _saveVocabData(d);
     emit('vocab', getVocab());
-    _syncMastered();
     return item;
   }
   function removeWord(id) {
@@ -221,24 +232,64 @@
     nb.words = (nb.words || []).filter((x) => (x.word || '').toLowerCase() !== word);
     _saveVocabData(d);
     emit('vocab', getVocab());
-    _syncMastered();
   }
-  function toggleWordStatus(id) {
-    const { nbId, word } = _parseId(id);
+  // 生词本列表（对齐桌面端 VocabData.getAllNotebooks）：返回 [{id,name,wordCount}]
+  function getNotebooks() {
     const d = _getVocabData();
-    const nb = d.notebooks[nbId];
-    if (!nb) return;
-    const item = (nb.words || []).find((x) => (x.word || '').toLowerCase() === word);
-    if (!item) return;
-    item.status = item.status === 'mastered' ? 'learning' : 'mastered';
+    return Object.keys(d.notebooks).map((id) => ({
+      id,
+      name: d.notebooks[id].name || '未命名',
+      wordCount: (d.notebooks[id].words || []).length
+    }));
+  }
+  // 新建生词本（对齐桌面端 VocabData.createNotebook）：重名报错，成功后返回 {success,id}
+  function createNotebook(name) {
+    const d = _getVocabData();
+    const trimmed = (name || '').trim();
+    if (!trimmed) return { success: false, error: '生词本名称不能为空' };
+    const exists = Object.values(d.notebooks).some((nb) => nb.name === trimmed);
+    if (exists) return { success: false, error: '生词本名称已存在' };
+    const id = Date.now().toString();
+    d.notebooks[id] = { name: trimmed, words: [], createdDate: new Date().toISOString() };
+    if (!d.currentNotebookId) d.currentNotebookId = id;
     _saveVocabData(d);
     emit('vocab', getVocab());
-    _syncMastered();
+    return { success: true, id };
   }
-  function _syncMastered() {
-    const mastered = getVocab().filter((w) => w.status === 'mastered').length;
-    localStorage.setItem(D.statMastered, String(mastered));
+  // 加入指定生词本（对齐桌面端 VocabData.addWord(notebookId, {...})）
+  function addWordToNotebook(notebookId, w) {
+    const d = _getVocabData();
+    const nb = d.notebooks[notebookId];
+    if (!nb) return { success: false, error: '生词本不存在' };
+    const word = (w.word || '').trim();
+    if (!word) return { success: false, error: '单词为空' };
+    const zh = w.meaning != null ? w.meaning : (w.zh != null ? w.zh : '');
+    const example = w.example != null ? w.example : (w.context != null ? w.context : '');
+    const lower = word.toLowerCase();
+    const exists = (nb.words || []).find((x) => (x.word || '').toLowerCase() === lower);
+    if (exists) {
+      if (example && !exists.context) exists.context = example;
+      if (zh && !exists.meaning) exists.meaning = zh;
+      _saveVocabData(d);
+      emit('vocab', getVocab());
+      return { success: true, added: false, exists: true };
+    }
+    nb.words.unshift({ word, meaning: zh, pos: w.pos || '', context: example, timestamp: Date.now() });
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true, added: true };
   }
+  // 判断某词是否已在该生词本（供底部弹层打勾）
+  function isWordInNotebook(notebookId, word) {
+    const d = _getVocabData();
+    const nb = d.notebooks[notebookId];
+    if (!nb) return false;
+    const lower = (word || '').toLowerCase();
+    return (nb.words || []).some((x) => (x.word || '').toLowerCase() === lower);
+  }
+  // 注意：移动端不再维护「按单词的掌握状态」（桌面端也无此字段）。
+  // 「已掌握」是桌面端 StatsTracker 的全局累加计数器（stats_mastered_words），
+  // 由记忆模式完成时通过 recordWordsMastered 累加，见下方进度相关函数。
 
   /* ============================================================
      历史记录（对齐桌面端 analysis_history）
@@ -321,12 +372,16 @@
   function getSettings() {
     const dark = localStorage.getItem(D.darkMode) === 'true';
     const local = _readJSON(KEYS.settings, {}) || {};
+    // 每日目标对齐桌面端键 dailyWordGoal（移动端旧 esc.settings.dailyGoal 作为回退）
+    const gw = _readNum(D.dailyWordGoal, null);
+    const dailyGoal = gw != null ? gw : (local.dailyGoal != null ? local.dailyGoal : SETTINGS_DEFAULT.dailyGoal);
     return Object.assign({}, SETTINGS_DEFAULT, {
       darkMode: dark,
       apiKey: _secureRead(D.encKey) || DEFAULT_API_KEY,
       baseUrl: _secureRead(D.encBase) || SETTINGS_DEFAULT.baseUrl,
-      model: _secureRead(D.encModel) || SETTINGS_DEFAULT.model
-    }, local);
+      model: _secureRead(D.encModel) || SETTINGS_DEFAULT.model,
+      dailyGoal
+    }, local, { dailyGoal });
   }
   function updateSettings(partial) {
     const cur = getSettings();
@@ -336,10 +391,10 @@
     if ('apiKey' in partial) _secureWrite(D.encKey, next.apiKey);
     if ('baseUrl' in partial) _secureWrite(D.encBase, next.baseUrl);
     if ('model' in partial) _secureWrite(D.encModel, next.model);
+    if ('dailyGoal' in partial) localStorage.setItem(D.dailyWordGoal, String(next.dailyGoal));
 
-    // 仅移动端独有偏好写入 esc.settings
+    // 仅移动端独有偏好写入 esc.settings（每日目标已改用桌面端 dailyWordGoal 键）
     const local = {
-      dailyGoal: next.dailyGoal,
       parseMode: next.parseMode,
       autoPronounce: next.autoPronounce,
       autoCollect: next.autoCollect,
@@ -360,19 +415,78 @@
     return Object.assign({}, PROGRESS_DEFAULT, {
       streak: _readNum(D.statStreak, 0),
       todayCount: _readNum(D.statToday, 0),
+      totalLearned: _readNum(D.statTotal, 0),
       masteredCount: _readNum(D.statMastered, 0),
       correctRate: local.correctRate != null ? local.correctRate : PROGRESS_DEFAULT.correctRate,
       reviewDue: local.reviewDue != null ? local.reviewDue : PROGRESS_DEFAULT.reviewDue
     });
   }
+  // 进度：streak/todayCount/totalLearned/masteredCount 均为桌面端 stats_* 键，
+  // 由下方 recordWordsLearned / recordWordsMastered 等按桌面端语义「累加」，不再在此覆盖写入。
+  // 此处仅维护移动端独有进度（正确率 / 待复习）。
   function updateProgress(partial) {
     const next = Object.assign(getProgress(), partial);
-    if ('streak' in partial) localStorage.setItem(D.statStreak, String(next.streak));
-    if ('todayCount' in partial) localStorage.setItem(D.statToday, String(next.todayCount));
-    if ('masteredCount' in partial) localStorage.setItem(D.statMastered, String(next.masteredCount));
     _writeJSON(KEYS.progress, { correctRate: next.correctRate, reviewDue: next.reviewDue });
     emit('progress', next);
     return next;
+  }
+
+  /* ============================================================
+     进度记录（对齐桌面端 StatsTracker 语义：计数器累加，非重算覆盖）
+     ============================================================ */
+  // 每日重置今日学习量并维护连续天数（日期格式与桌面端一致：toDateString）
+  function _ensureWordStats() {
+    const today = _dateStr();
+    const saved = localStorage.getItem('stats_word_date');
+    if (saved !== today) {
+      localStorage.setItem('stats_word_date', today);
+      localStorage.setItem(D.statToday, '0');
+      const streak = _readNum(D.statStreak, 0);
+      const yStr = new Date(Date.now() - 86400000).toDateString();
+      if (saved === yStr) localStorage.setItem(D.statStreak, String(streak + 1));
+      else if (saved) localStorage.setItem(D.statStreak, '1');
+    }
+  }
+  // 等价于桌面端 StatsTracker.recordWordsLearned：今日学习量 + 累计学习量 同时累加
+  function recordWordsLearned(count) {
+    if (!count || count <= 0) return;
+    _ensureWordStats();
+    const today = _readNum(D.statToday, 0) + count;
+    localStorage.setItem(D.statToday, String(today));
+    const total = _readNum(D.statTotal, 0) + count;
+    localStorage.setItem(D.statTotal, String(total));
+    emit('progress', getProgress());
+  }
+  // 等价于桌面端 StatsTracker.recordWordsMastered：已掌握计数器累加
+  function recordWordsMastered(count) {
+    if (!count || count <= 0) return;
+    const mastered = _readNum(D.statMastered, 0) + count;
+    localStorage.setItem(D.statMastered, String(mastered));
+    emit('progress', getProgress());
+  }
+  // 等价于桌面端 StatsTracker.recordModuleActivity：按模块记录今日活动量（对齐 MODULE_META）
+  function recordModuleActivity(moduleKey, count) {
+    if (!moduleKey || !count || count <= 0) return;
+    const today = _dateStr();
+    let data;
+    try { data = JSON.parse(localStorage.getItem(D.statModule) || '{}'); } catch (e) { data = {}; }
+    if (!data[today]) data[today] = {};
+    data[today][moduleKey] = (data[today][moduleKey] || 0) + count;
+    localStorage.setItem(D.statModule, JSON.stringify(data));
+  }
+  // 读取各记忆模块活动量（stats_module_data）：返回 { today:{模块:次数}, all:{模块:总次数} }
+  function getModuleActivity() {
+    let data;
+    try { data = JSON.parse(localStorage.getItem(D.statModule) || '{}'); } catch (e) { data = {}; }
+    const today = _dateStr();
+    const todayMap = data[today] || {};
+    const allMap = {};
+    Object.keys(data).forEach((day) => {
+      Object.keys(data[day]).forEach((k) => {
+        allMap[k] = (allMap[k] || 0) + (data[day][k] || 0);
+      });
+    });
+    return { today: todayMap, all: allMap };
   }
 
   /* ============================================================
@@ -387,8 +501,7 @@
     const nb = _currentNotebook(d);
     old.forEach((w) => nb.words.push({
       word: w.word, meaning: w.zh || '', pos: w.pos || '',
-      context: w.example || '', timestamp: w.addedAt || Date.now(),
-      status: w.status || 'learning', id: uid()
+      context: w.example || '', timestamp: w.addedAt || Date.now()
     }));
     _saveVocabData(d);
   }
@@ -408,7 +521,7 @@
     _writeJSON(D.history, mapped);
   }
   function init() {
-    try { _migrateVocab(); _migrateHistory(); } catch (e) { console.warn('[store] migrate fail', e); }
+    try { _ensureWordStats(); _migrateVocab(); _migrateHistory(); } catch (e) { console.warn('[store] migrate fail', e); }
   }
 
   /* ============================================================
@@ -454,10 +567,12 @@
   Mobile.Store = {
     on, off, emit,
     uid, todayStr,
-    getVocab, addWord, removeWord, toggleWordStatus, getWord,
+    getVocab, addWord, removeWord, getWord,
+    getNotebooks, createNotebook, addWordToNotebook, isWordInNotebook,
     getHistory, addHistory, getHistoryItem, removeHistory, clearHistory,
     getSettings, updateSettings,
     getProgress, updateProgress,
+    recordWordsLearned, recordWordsMastered, recordModuleActivity, getModuleActivity,
     exportAll, clearCache, resetAll, init
   };
 

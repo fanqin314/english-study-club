@@ -28,6 +28,34 @@
     { key: 'vocabQuiz', name: '生词测验', desc: '测验文章生词掌握度', ico: 'brain' }
   ];
 
+  // 记忆模式标识对齐桌面端 MODULE_META（features/stats_tracker.js），
+  // 供 recordModuleActivity 写入 stats_module_data，桌面端统计页可直接读取。
+  const MODULE_MAP = {
+    flashcard: 'flashcard',
+    fill: 'fillPractice',
+    spelling: 'spelling',
+    choice: 'choicePractice',
+    cloze: 'cloze',
+    review: 'fullReview',
+    sentence: 'sentenceReview',
+    vocabQuiz: 'vocabQuiz'
+  };
+
+  // 记忆模块元数据（对齐桌面端 features/stats_tracker.js MODULE_META）：
+  // label 中文名、color 展示色、type 归属（word 单词 / article 文章），供学习统计展示。
+  const MODULE_META = {
+    flashcard:      { label: '闪卡模式',     color: '#3b82f6', type: 'word' },
+    fillPractice:   { label: '填空练习',     color: '#10b981', type: 'word' },
+    spelling:       { label: '听写练习',     color: '#8b5cf6', type: 'word' },
+    choicePractice: { label: '选词练习',     color: '#f59e0b', type: 'word' },
+    cloze:          { label: '语境填空',     color: '#10b981', type: 'article' },
+    fullReview:     { label: '全文回顾',     color: '#3b82f6', type: 'article' },
+    sentenceReview: { label: '逐句精读',     color: '#8b5cf6', type: 'article' },
+    vocabQuiz:      { label: '生词测验',     color: '#ef4444', type: 'article' }
+  };
+  // 生词本配色（移动端生词本未存 color，按顺序取色）
+  const NB_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
+
   const FALLBACK = [
     { word: 'serendipity', phonetic: 'ˌser.ənˈdɪp.ə.ti', meaning: '意外发现珍奇事物的本领', example: 'Life is full of serendipity.', exampleZh: '生活中处处充满意外惊喜。' },
     { word: 'eloquent', phonetic: 'ˈel.ə.kwənt', meaning: '雄辩的；有口才的', example: 'She gave an eloquent speech.', exampleZh: '她发表了一场感人至深的演讲。' },
@@ -53,11 +81,10 @@
     if (!id) return null;
     return Store.getHistory().find((h) => h.id === id) || null;
   }
-  // 单词练习队列：生词优先，未掌握在前，取前 10
+  // 单词练习队列：取前 10（桌面端不区分「已掌握」，故不再按 status 排序）
   function buildWordQueue() {
     const vocab = Store.getVocab();
-    let pool = vocab.length ? vocab.slice() : FALLBACK.map((w) => Object.assign({ id: 'fb-' + w.word }, w));
-    pool.sort((a, b) => (a.status === 'mastered' ? 1 : 0) - (b.status === 'mastered' ? 1 : 0));
+    const pool = vocab.length ? vocab.slice() : FALLBACK.map((w) => Object.assign({ id: 'fb-' + w.word }, w));
     return pool.slice(0, 10);
   }
   // 文章「语境填空」队列：取含生词的句子，挖空该生词
@@ -109,8 +136,14 @@
           <div class="esc-badge">${icon('flame')}<span>连续学习 <b style="color:var(--study-warning)">${esc(p.streak)}</b> 天</span></div>
         </header>
 
+        <!-- 学习统计 / 学习计划 入口（对齐桌面端记忆模式 header 按钮） -->
+        <div class="esc-mem-actions">
+          <button class="esc-btn esc-btn-ghost" data-act="stats">${icon('bar-chart-3')}<span>学习统计</span></button>
+          <button class="esc-btn esc-btn-ghost" data-act="plan">${icon('calendar')}<span>学习计划</span></button>
+        </div>
+
         <!-- 学习进度卡 -->
-        <section class="esc-card" style="margin-top:16px">
+        <section class="esc-card" style="margin-top:12px">
           <div class="esc-section-title">${icon('target')}<span>今日学习进度</span></div>
           <div style="display:flex;align-items:center;gap:16px">
             <div class="esc-ring-wrap">
@@ -210,6 +243,11 @@
     root.querySelectorAll('#m-mmtabs button').forEach((b) => {
       b.addEventListener('click', () => selectTab(b.getAttribute('data-tab')));
     });
+    // 学习统计 / 学习计划
+    const statsBtn = root.querySelector('[data-act="stats"]');
+    if (statsBtn) statsBtn.addEventListener('click', openStats);
+    const planBtn = root.querySelector('[data-act="plan"]');
+    if (planBtn) planBtn.addEventListener('click', openPlan);
     // 文章选择
     const sel = root.querySelector('#m-art');
     if (sel) sel.addEventListener('change', () => { selectedArticleId = sel.value; });
@@ -329,9 +367,11 @@
     if (session.graded) {
       const acc = session.total ? Math.round((session.correct / session.total) * 100) : 0;
       const p = Store.getProgress();
-      const s = Store.getSettings();
+      // 对齐桌面端 StatsTracker 语义：计数器累加，不覆盖
+      Store.recordWordsLearned(session.total);
+      Store.recordWordsMastered(session.correct);
+      Store.recordModuleActivity(MODULE_MAP[session.mode] || session.mode, session.total);
       Store.updateProgress({
-        todayCount: p.todayCount + session.total,          // 不截断，真实累计练习量
         correctRate: acc || p.correctRate,
         reviewDue: Math.max(0, p.reviewDue - session.correct)
       });
@@ -349,6 +389,10 @@
           <p class="esc-empty-title" style="margin-top:16px">本轮完成！</p>
           <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px;max-width:240px" data-act="done">完成</button>
         </div>`;
+    }
+    // 文章类（只读）模式：记一次模块活动，便于桌面端统计（graded 模式已在上方记过）
+    if (!session.graded) {
+      Store.recordModuleActivity(MODULE_MAP[session.mode] || session.mode, 1);
     }
     UI.refreshIcons(body);
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
@@ -493,6 +537,407 @@
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
   }
 
+  /* ================= 学习统计 / 学习计划（对齐桌面端 stats_detail / plan_detail） ================= */
+  let spOverlay = null;
+
+  function closeSp() {
+    if (spOverlay && spOverlay.parentNode) spOverlay.parentNode.removeChild(spOverlay);
+    spOverlay = null;
+  }
+
+  function _num(key) { const n = parseInt(localStorage.getItem(key), 10); return isNaN(n) ? 0 : n; }
+  function _numOr(key, fb) { const n = parseInt(localStorage.getItem(key), 10); return isNaN(n) ? fb : n; }
+
+  // 单词侧统计数据
+  function getWordStats() {
+    const p = Store.getProgress();
+    const totalWords = Store.getVocab().length;
+    const masteryRate = totalWords > 0 ? Math.min(100, Math.round((p.masteredCount / totalWords) * 100)) : 0;
+    return {
+      todayLearned: p.todayCount,
+      totalLearned: Math.max(p.totalLearned, totalWords),
+      totalWords,
+      masteredCount: p.masteredCount,
+      streakDays: p.streak,
+      masteryRate,
+      notebooks: Store.getNotebooks()
+    };
+  }
+  // 文章侧统计数据
+  function getArticleStats() {
+    const history = Store.getHistory();
+    return {
+      totalArticles: history.length,
+      todayArticles: _num('stats_today_articles'),
+      articleStreak: _num('stats_article_streak_days'),
+      recent: history.slice(0, 5).map((h) => ({ title: h.title, date: h.date, words: h.words }))
+    };
+  }
+
+  // 读取 stats_module_data 中某模块最近 7 天活动量
+  function moduleDaily(key) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem('stats_module_data') || '{}'); } catch (e) { /* ignore */ }
+    const days = ['一', '二', '三', '四', '五', '六', '日'];
+    const now = new Date();
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const day = data[d.toDateString()] || {};
+      out.push({ label: '周' + days[(d.getDay() + 6) % 7], value: day[key] || 0 });
+    }
+    return out;
+  }
+  // 最近 7 天总学习量（type: 'word' | 'article' | null 全部）
+  function trendData(type) {
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem('stats_module_data') || '{}'); } catch (e) { /* ignore */ }
+    const typeKeys = type ? Object.keys(MODULE_META).filter((k) => MODULE_META[k].type === type) : null;
+    const days = ['一', '二', '三', '四', '五', '六', '日'];
+    const now = new Date();
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const day = data[d.toDateString()] || {};
+      let total = 0;
+      for (const k of Object.keys(day)) if (!typeKeys || typeKeys.includes(k)) total += day[k];
+      out.push({ label: '周' + days[(d.getDay() + 6) % 7], value: total });
+    }
+    return out;
+  }
+
+  // 模块近 7 天活动点阵（20px 圆点，透明度随活跃度变化，对齐桌面端）
+  function dotChart(key, color) {
+    const data = moduleDaily(key);
+    const max = Math.max.apply(null, data.map((d) => d.value).concat([1]));
+    const empty = max <= 1 && data.every((d) => d.value === 0);
+    const op = (v) => {
+      if (empty) return 0.08;
+      const r = v / max;
+      return r === 0 ? 0.06 : Math.min(1, 0.12 + r * 0.83);
+    };
+    return `<div class="esc-dot-wrap">${data.map((d) => `<span class="esc-dot-col"><span class="esc-dot" style="background:${color};opacity:${op(d.value).toFixed(2)}" title="${d.label}: ${d.value}次"></span></span>`).join('')}</div>`;
+  }
+  // 近 7 天趋势折线图
+  function miniChart(type) {
+    const data = trendData(type);
+    const max = Math.max.apply(null, data.map((d) => d.value).concat([1]));
+    if (max <= 1 && data.every((d) => d.value === 0)) {
+      return `<div class="esc-trend-empty">${icon('trending-up')}<span>完成更多学习后，这里将展示学习趋势</span></div>`;
+    }
+    const n = data.length;
+    const W = 100, H = 60, padT = 10, padB = 4;
+    const ch = H - padT - padB;
+    const pts = data.map((d, i) => ({
+      x: (i / (n - 1)) * W,
+      y: padT + ch - (d.value / max) * ch,
+      v: d.value
+    }));
+    const line = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const area = line + ` ${W},${H - padB} 0,${H - padB}`;
+    const dots = pts.map((p) => (p.v > 0 ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--study-accent)"></circle>` : '')).join('');
+    return `
+      <div class="esc-chart">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:72px;display:block">
+          <polygon points="${area}" fill="var(--study-accent)" opacity=".14"></polygon>
+          <polyline points="${line}" fill="none" stroke="var(--study-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+          ${dots}
+        </svg>
+        <div class="esc-chart-labels">${data.map((d) => `<span>${d.label}</span>`).join('')}</div>
+      </div>`;
+  }
+  // 生词本分布：环形图 + 列表
+  function notebookDonut(notebooks) {
+    const total = notebooks.reduce((s, nb) => s + nb.wordCount, 0);
+    if (!total) return '';
+    const c = 2 * Math.PI * 36;
+    let seg = '';
+    let off = 0;
+    notebooks.forEach((nb, i) => {
+      const color = NB_COLORS[i % NB_COLORS.length];
+      const len = c * (nb.wordCount / total);
+      seg += `<circle cx="50" cy="50" r="36" fill="none" stroke="${color}" stroke-width="18" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"></circle>`;
+      off += len;
+    });
+    return `
+      <div class="esc-donut-wrap">
+        <svg viewBox="0 0 100 100" class="esc-donut">${seg}
+          <circle cx="50" cy="50" r="15" fill="var(--study-card)"></circle>
+          <text x="50" y="47" text-anchor="middle" font-size="16" font-weight="700" fill="var(--study-foreground)">${total}</text>
+          <text x="50" y="61" text-anchor="middle" font-size="7" fill="var(--study-muted-foreground)">总词数</text>
+        </svg>
+        <div class="esc-donut-list">${notebooks.map((nb, i) => {
+          const color = NB_COLORS[i % NB_COLORS.length];
+          const pct = Math.round((nb.wordCount / total) * 100);
+          return `<div class="esc-donut-item"><span class="esc-donut-dot" style="background:${color}"></span><span class="esc-donut-name">${esc(nb.name)}</span><span class="esc-donut-bar"><i style="width:${pct}%;background:${color}"></i></span><span class="esc-donut-count">${nb.wordCount}词 ${pct}%</span></div>`;
+        }).join('')}</div>
+      </div>`;
+  }
+  // 各模式明细（含 7 天点阵 + 累计次数）
+  function moduleList(type) {
+    const act = Store.getModuleActivity();
+    const keys = Object.keys(MODULE_META).filter((k) => MODULE_META[k].type === type && (act.all[k] || 0) > 0);
+    if (!keys.length) return '';
+    const head = moduleDaily('flashcard').map((d) => `<span class="esc-dot-col esc-dot-label">${d.label}</span>`).join('');
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('layers')}<span>${type === 'word' ? '单词练习' : '文章阅读'}各模式明细</span></div>
+        <div class="esc-mod-head"><span class="esc-mod-name"></span><div class="esc-dot-wrap">${head}</div><span class="esc-mod-count"></span></div>
+        ${keys.map((k) => `<div class="esc-mod-item"><span class="esc-mod-name">${MODULE_META[k].label}</span>${dotChart(k, MODULE_META[k].color)}<span class="esc-mod-count">${act.all[k]}</span></div>`).join('')}
+      </div>`;
+  }
+
+  function buildStatsWord() {
+    const s = getWordStats();
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('book-open')}<span>单词学习概览</span></div>
+        <div class="esc-grid-4">
+          <div class="esc-stat"><div class="esc-num">${s.todayLearned}</div><div class="esc-label">今日学习</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.totalWords}</div><div class="esc-label">总单词数</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.masteryRate}%</div><div class="esc-label">掌握率</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.streakDays}</div><div class="esc-label">连续天数</div></div>
+        </div>
+      </div>
+      ${moduleList('word')}
+      ${s.notebooks.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('layout-grid')}<span>生词本分布</span></div>${notebookDonut(s.notebooks)}</div>` : ''}
+      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>学习趋势</span></div>${miniChart('word')}</div>`;
+  }
+
+  function buildStatsArticle() {
+    const s = getArticleStats();
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('file-text')}<span>文章学习概览</span></div>
+        <div class="esc-grid-4">
+          <div class="esc-stat"><div class="esc-num">${s.todayArticles}</div><div class="esc-label">今日阅读</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.totalArticles}</div><div class="esc-label">总文章数</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.articleStreak}</div><div class="esc-label">连续天数</div></div>
+          <div class="esc-stat"><div class="esc-num">${s.recent.length}</div><div class="esc-label">最近文章</div></div>
+        </div>
+      </div>
+      ${moduleList('article')}
+      ${s.recent.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('clock')}<span>最近阅读的文章</span></div><div class="esc-article-list">${s.recent.map((a) => `<div class="esc-article-item"><span class="esc-article-item-title">${esc(a.title)}</span><span class="esc-article-item-meta">${a.words} 词 · ${esc(a.date)}</span></div>`).join('')}</div></div>` : ''}
+      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>阅读趋势</span></div>${miniChart('article')}</div>`;
+  }
+
+  // 待复习文章数（与桌面端一致：无上次复习记录或超间隔则待复习）
+  function getPendingReviewCount(interval) {
+    const now = Date.now();
+    const ms = interval * 24 * 60 * 60 * 1000;
+    return Store.getHistory().filter((h) => {
+      const last = _num('article_last_review_' + h.id);
+      return !last || (now - last) > ms;
+    }).length;
+  }
+
+  function buildPlanWord() {
+    const goal = _numOr('dailyWordGoal', Store.getSettings().dailyGoal || 10);
+    const timeGoal = _numOr('dailyTimeGoal', 15);
+    const p = Store.getProgress();
+    const pct = Math.min(100, Math.round((p.todayCount / goal) * 100));
+    const circ = 2 * Math.PI * 42;
+    const enable = localStorage.getItem('enableReminder') === 'true';
+    const time = localStorage.getItem('reminderTime') || '09:00';
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('clock')}<span>每日单词目标</span></div>
+        <div class="esc-plan-progress">
+          <div class="esc-ring-wrap">
+            <svg width="72" height="72" viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--study-muted)" stroke-width="8"></circle>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--study-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${(circ * (1 - pct / 100)).toFixed(2)}"></circle>
+            </svg>
+            <div class="esc-ring-center"><span class="esc-num">${pct}%</span></div>
+          </div>
+          <div class="esc-plan-progress-info">
+            <div>今日已学 <b>${p.todayCount} / ${goal}</b> 个单词</div>
+            <div class="esc-plan-sub">连续学习 ${p.streak} 天 · 共 ${Store.getVocab().length} 词</div>
+          </div>
+        </div>
+        <div class="esc-goal-row">
+          <label class="esc-goal-label">每日单词数</label>
+          <input type="number" class="esc-input esc-goal-input" id="sp-word-goal" value="${goal}" min="1" max="200">
+          <span class="esc-goal-unit">个</span>
+          <label class="esc-goal-label">学习时长</label>
+          <input type="number" class="esc-input esc-goal-input" id="sp-word-time" value="${timeGoal}" min="1" max="180">
+          <span class="esc-goal-unit">分钟</span>
+          <button class="esc-btn esc-btn-primary" data-act="sp-save-goal" style="margin-left:auto">保存</button>
+        </div>
+      </div>
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('bell')}<span>单词学习提醒</span></div>
+        <div class="esc-reminder">
+          <div class="esc-reminder-row">
+            <label class="esc-goal-label">启用学习提醒</label>
+            <label class="esc-toggle"><input type="checkbox" id="sp-word-remind" ${enable ? 'checked' : ''}><span class="esc-slider"></span></label>
+          </div>
+          <div class="esc-reminder-row" id="sp-word-time-row" style="${enable ? '' : 'display:none'}">
+            <label class="esc-goal-label">提醒时间</label>
+            <input type="time" class="esc-input" id="sp-word-remind-time" value="${time}" style="width:auto;flex:1">
+          </div>
+          <button class="esc-btn esc-btn-primary" data-act="sp-save-word-remind" style="align-self:flex-end">保存</button>
+        </div>
+      </div>`;
+  }
+
+  function buildPlanArticle() {
+    const aGoal = _numOr('dailyArticleGoal', 1);
+    const aTimeGoal = _numOr('dailyArticleTimeGoal', 20);
+    const todayArticles = _num('stats_today_articles');
+    const aStreak = _num('stats_article_streak_days');
+    const totalArticles = Store.getHistory().length;
+    const pct = Math.min(100, Math.round((todayArticles / aGoal) * 100));
+    const circ = 2 * Math.PI * 42;
+    const interval = _numOr('articleReviewInterval', 3);
+    const pending = getPendingReviewCount(interval);
+    const enable = localStorage.getItem('enableArticleReminder') === 'true';
+    const time = localStorage.getItem('articleReminderTime') || '20:00';
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('file-text')}<span>每日文章目标</span></div>
+        <div class="esc-plan-progress">
+          <div class="esc-ring-wrap">
+            <svg width="72" height="72" viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--study-muted)" stroke-width="8"></circle>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--study-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${(circ * (1 - pct / 100)).toFixed(2)}"></circle>
+            </svg>
+            <div class="esc-ring-center"><span class="esc-num">${pct}%</span></div>
+          </div>
+          <div class="esc-plan-progress-info">
+            <div>今日已读 <b>${todayArticles} / ${aGoal}</b> 篇文章</div>
+            <div class="esc-plan-sub">连续阅读 ${aStreak} 天 · 共 ${totalArticles} 篇</div>
+          </div>
+        </div>
+        <div class="esc-goal-row">
+          <label class="esc-goal-label">每日文章数</label>
+          <input type="number" class="esc-input esc-goal-input" id="sp-article-goal" value="${aGoal}" min="1" max="20">
+          <span class="esc-goal-unit">篇</span>
+          <label class="esc-goal-label">阅读时长</label>
+          <input type="number" class="esc-input esc-goal-input" id="sp-article-time" value="${aTimeGoal}" min="1" max="180">
+          <span class="esc-goal-unit">分钟</span>
+          <button class="esc-btn esc-btn-primary" data-act="sp-save-article-goal" style="margin-left:auto">保存</button>
+        </div>
+      </div>
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('rotate-cw')}<span>文章复习计划</span></div>
+        <div class="esc-goal-row">
+          <label class="esc-goal-label">复习间隔</label>
+          <input type="number" class="esc-input esc-goal-input" id="sp-review-interval" value="${interval}" min="1" max="30">
+          <span class="esc-goal-unit">天</span>
+          <span class="esc-goal-label" style="margin-left:auto">待复习 <b style="color:var(--study-warning)">${pending}</b> 篇</span>
+          <button class="esc-btn esc-btn-primary" data-act="sp-save-review" style="margin-left:auto">保存</button>
+        </div>
+      </div>
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('bell')}<span>文章阅读提醒</span></div>
+        <div class="esc-reminder">
+          <div class="esc-reminder-row">
+            <label class="esc-goal-label">启用阅读提醒</label>
+            <label class="esc-toggle"><input type="checkbox" id="sp-article-remind" ${enable ? 'checked' : ''}><span class="esc-slider"></span></label>
+          </div>
+          <div class="esc-reminder-row" id="sp-article-time-row" style="${enable ? '' : 'display:none'}">
+            <label class="esc-goal-label">提醒时间</label>
+            <input type="time" class="esc-input" id="sp-article-remind-time" value="${time}" style="width:auto;flex:1">
+          </div>
+          <button class="esc-btn esc-btn-primary" data-act="sp-save-article-remind" style="align-self:flex-end">保存</button>
+        </div>
+      </div>`;
+  }
+
+  // 绑定学习统计 / 学习计划弹层内的按钮事件
+  function bindSp(key) {
+    const ov = spOverlay;
+    if (!ov) return;
+
+    const bindRemind = (toggleId, timeRowId, saveAct, remindKey, timeKey, timeId, toastMsg) => {
+      const t = document.getElementById(toggleId);
+      const row = document.getElementById(timeRowId);
+      if (!t) return;
+      t.addEventListener('change', () => { row.style.display = t.checked ? '' : 'none'; });
+      const save = ov.querySelector(`[data-act="${saveAct}"]`);
+      if (save) save.addEventListener('click', () => {
+        localStorage.setItem(remindKey, t.checked ? 'true' : 'false');
+        localStorage.setItem(timeKey, (document.getElementById(timeId) || {}).value || '09:00');
+        UI.toast(toastMsg);
+      });
+    };
+
+    if (key === 'word') {
+      const saveG = ov.querySelector('[data-act="sp-save-goal"]');
+      if (saveG) saveG.addEventListener('click', () => {
+        const g = Math.max(1, parseInt((document.getElementById('sp-word-goal') || {}).value, 10) || 10);
+        const t = Math.max(1, parseInt((document.getElementById('sp-word-time') || {}).value, 10) || 15);
+        localStorage.setItem('dailyWordGoal', String(g));
+        localStorage.setItem('dailyTimeGoal', String(t));
+        Store.updateSettings({ dailyGoal: g }); // 同步移动端设置，记忆页进度卡实时一致
+        UI.toast('每日单词目标已保存');
+        if (ov._showTab) ov._showTab('word'); // 重绘以更新环形进度
+      });
+      bindRemind('sp-word-remind', 'sp-word-time-row', 'sp-save-word-remind', 'enableReminder', 'reminderTime', 'sp-word-remind-time', '单词提醒设置已保存');
+    } else if (key === 'article') {
+      const saveG = ov.querySelector('[data-act="sp-save-article-goal"]');
+      if (saveG) saveG.addEventListener('click', () => {
+        const g = Math.max(1, parseInt((document.getElementById('sp-article-goal') || {}).value, 10) || 1);
+        const t = Math.max(1, parseInt((document.getElementById('sp-article-time') || {}).value, 10) || 20);
+        localStorage.setItem('dailyArticleGoal', String(g));
+        localStorage.setItem('dailyArticleTimeGoal', String(t));
+        UI.toast('每日文章目标已保存');
+        if (ov._showTab) ov._showTab('article');
+      });
+      const saveR = ov.querySelector('[data-act="sp-save-review"]');
+      if (saveR) saveR.addEventListener('click', () => {
+        const iv = Math.max(1, parseInt((document.getElementById('sp-review-interval') || {}).value, 10) || 3);
+        localStorage.setItem('articleReviewInterval', String(iv));
+        UI.toast('复习计划已保存');
+        if (ov._showTab) ov._showTab('article');
+      });
+      bindRemind('sp-article-remind', 'sp-article-time-row', 'sp-save-article-remind', 'enableArticleReminder', 'articleReminderTime', 'sp-article-remind-time', '文章提醒设置已保存');
+    }
+  }
+
+  // 通用带标签页全屏弹层
+  function openTabsOverlay(title, tabs, buildFn) {
+    closeSp();
+    const ov = document.createElement('div');
+    ov.className = 'esc-overlay';
+    ov.innerHTML = `
+      <div class="esc-overlay-head">
+        <button class="esc-icon-btn" data-act="sp-close" aria-label="关闭">${icon('x')}</button>
+        <span class="esc-overlay-title">${esc(title)}</span>
+        <div class="esc-seg esc-sp-seg">${tabs.map((t) => `<button data-tab="${t.key}">${esc(t.label)}</button>`).join('')}</div>
+      </div>
+      <div class="esc-overlay-body" data-role="sp-body"></div>`;
+    document.querySelector('.esc-app').appendChild(ov);
+    spOverlay = ov;
+    UI.refreshIcons(ov);
+    ov.querySelector('[data-act="sp-close"]').addEventListener('click', closeSp);
+    const body = ov.querySelector('[data-role="sp-body"]');
+    const seg = ov.querySelector('.esc-sp-seg');
+    const show = (key) => {
+      seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-active', b.getAttribute('data-tab') === key));
+      body.innerHTML = buildFn(key);
+      UI.refreshIcons(body);
+      bindSp(key);
+    };
+    ov._showTab = show;
+    seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => show(b.getAttribute('data-tab'))));
+    show(tabs[0].key);
+  }
+
+  function openStats() {
+    openTabsOverlay('学习统计', [
+      { key: 'word', label: '单词统计' },
+      { key: 'article', label: '文章统计' }
+    ], (key) => (key === 'word' ? buildStatsWord() : buildStatsArticle()));
+  }
+  function openPlan() {
+    openTabsOverlay('学习计划', [
+      { key: 'word', label: '单词计划' },
+      { key: 'article', label: '文章计划' }
+    ], (key) => (key === 'word' ? buildPlanWord() : buildPlanArticle()));
+  }
+
   // 工具
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function pickRandom(arr, exclude, n) {
@@ -505,9 +950,11 @@
   Store.on('history', () => { if (rootEl && !rootEl.hidden && !overlay) { paintArticleSelect(); } });
   Store.on('progress', () => { if (rootEl && !rootEl.hidden && !overlay) { const t = currentTab; render(rootEl); selectTab(t); } });
 
-  // 点击底部导航离开时关闭练习弹层（修复残留/泄漏）
+  // 点击底部导航离开时关闭练习/统计/计划弹层（修复残留/泄漏）
   document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-nav-key]') && overlay) closeOverlay();
+    if (!e.target.closest('[data-nav-key]')) return;
+    if (overlay) closeOverlay();
+    if (spOverlay) closeSp();
   });
 
   Mobile.Views = Mobile.Views || {};

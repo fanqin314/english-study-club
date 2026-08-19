@@ -1,6 +1,12 @@
 // api_request.js - 处理所有API请求，包括词性分析、语法结构、知识点、翻译等
 // 解析请求.js - 调用 API 获取词性、语法结构、知识点、翻译
 (function() {
+    // 共享解析核心（分句/prompt/JSON提取/结构归一化统一真源）
+    const Shared = (window.EnglishStudyShared = window.EnglishStudyShared || {});
+    if (!Shared.extractJSON) {
+        throw new Error('shared/parse_core.js 未加载，请刷新页面重试');
+    }
+
     ModuleRegistry.register('APIRequest', ['Security', 'ErrorHandler', 'Performance'], function(Security, ErrorHandler, Performance) {
         /**
          * 获取 API 配置
@@ -289,55 +295,12 @@
          * @returns {Object|null} 解析后的对象，失败返回 null
          */
         function extractAndParseJSON(content, context) {
-            if (!content || typeof content !== 'string') return null;
-
-            const startIdx = content.indexOf('{');
-            const endIdx = content.lastIndexOf('}');
-            if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null;
-
-            let jsonStr = content.substring(startIdx, endIdx + 1);
-
-            // 尝试直接解析
-            try {
-                return JSON.parse(jsonStr);
-            } catch (e) {
-                // 尝试修复常见问题后重试
+            // 委托给共享核心（统一 JSON 提取逻辑）
+            const result = Shared.extractJSON(content);
+            if (!result && window.DEBUG_MODE) {
+                console.warn(`[${context}] JSON解析失败，原始内容:`, (content || '').substring(0, 500));
             }
-
-            // 修复常见 JSON 格式问题
-            try {
-                // 1. 移除尾随逗号（在 } 或 ] 之前）
-                jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-                // 2. 移除 markdown 代码块标记
-                jsonStr = jsonStr.replace(/```(?:json)?\s*/g, '');
-                // 3. 修复中文引号等特殊字符
-                jsonStr = jsonStr.replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"');
-                // 4. 修复字符串值内的裸换行（JSON 字符串内不允许裸换行，状态机扫描）
-                {
-                    let fixed = '', inString = false, escaped = false;
-                    for (let i = 0; i < jsonStr.length; i++) {
-                        const ch = jsonStr[i];
-                        if (inString) {
-                            if (escaped) { fixed += ch; escaped = false; }
-                            else if (ch === '\\') { fixed += ch; escaped = true; }
-                            else if (ch === '"') { fixed += ch; inString = false; }
-                            else if (ch === '\n' || ch === '\r') { fixed += '\\n'; }
-                            else { fixed += ch; }
-                        } else {
-                            if (ch === '"') inString = true;
-                            fixed += ch;
-                        }
-                    }
-                    jsonStr = fixed;
-                }
-                return JSON.parse(jsonStr);
-            } catch (e2) {
-                // 如果仍然失败，记录原始内容便于调试
-                if (window.DEBUG_MODE) {
-                    console.warn(`[${context}] JSON解析失败，原始内容:`, content.substring(0, 500));
-                }
-                return null;
-            }
+            return result;
         }
 
         /**
@@ -361,23 +324,12 @@
             // 使用缓存
             const cacheKey = generateCacheKey('pos', sentence);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语语言学专家。返回JSON格式：
-{
-  "pos": [
-    {"word": "单词", "pos": "n/v/adj/adv/pron/prep/conj/interj/art/num", "meaning": "中文释义"}
-  ]
-}
-只返回JSON，不要其他文字。`;
+                const { messages, maxTokens, temperature } = Shared.buildPosPrompt(sentence);
 
-                const userContent = `分析句子: "${sentence}"`;
-                
                 // 空结果时自动重试一次（模型可能临时返回空数组）
                 for (let attempt = 0; attempt < 2; attempt++) {
                     try {
-                        const content = await callAPI([
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: userContent }
-                        ], { maxTokens: 1000, temperature: 0 });
+                        const content = await callAPI(messages, { maxTokens, temperature });
 
                         const result = extractAndParseJSON(content, 'pos');
                         if (result && result.pos && result.pos.length > 0) {
@@ -430,55 +382,12 @@
             // 使用缓存
             const cacheKey = generateCacheKey('syntax', sentence);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语语言学专家。请按以下三套分类体系分析句子、提取从句，并分析句子成分。返回JSON格式：
-{
-  "structure": "按句子结构分：只能是 简单句/并列句/复合句/并列复合句",
-  "function": "按句子功能分：只能是 陈述句/疑问句/祈使句/感叹句",
-  "pattern": "按动词类型的基本句式：只能是 SV/SVO/SVP/SVOO/SVOC",
-  "clauses": [
-    {
-      "category": "从句类别：定语从句(形容词性) / 状语从句(副词性) / 主语从句 / 宾语从句 / 表语从句 / 同位语从句",
-      "subtype": "状语从句的细分逻辑关系（时间/原因/条件/让步/目的结果/方式/比较/地点），非状语从句留空字符串",
-      "trigger": "引导词，如 that/which/who/whom/whose/where/when/because/if/unless/although/so that 等，无则留空",
-      "text": "该从句在原文中对应的英文文本，尽量逐词与原文一致；若原文包含双引号，请改为单引号，避免破坏JSON"
-    }
-  ],
-  "constituents": [
-    {
-      "name": "成分名：只能是 主语/谓语/宾语/表语/定语/状语/补语",
-      "type": "该成分的具体分类（见下方分类清单），只列句子中实际存在的成分",
-      "text": "该成分在句中对应的英文文本，可空字符串",
-      "note": "一句话说明该分类的判断依据，可空字符串"
-    }
-  ],
-  "syntax": "综合三套体系的判定依据 + 完整语法结构描述（主谓宾定状补成分）"
-}
-句子成分分类清单（type 字段取其一）：
-- 状语（修饰动词/形容词/句子，9类）：时间状语/地点状语/原因状语/目的状语/结果状语/条件状语/让步状语/方式状语/程度状语
-- 定语（修饰名词，按位置2类）：前置定语/后置定语
-- 宾语（按数目3类）：单宾语/双宾语/复合宾语
-- 表语（按词性）：名词性表语/形容词性表语/介词短语或副词表语/表语从句
-- 主语（按真假2类）：逻辑主语/形式主语
-- 谓语（按动词构成2类）：简单谓语/复合谓语
-- 补语（按补充对象2类）：宾语补足语/主语补足语
-判定规则：
-- structure 按包含几套主谓结构：简单句只有一套；并列句两套或多套用 and/but/so/or 等连接；复合句一套主句+从句（定语/状语/名词性）；并列复合句并列分句中再含从句。
-- function 按语气：陈述（句号）/疑问（问号）/祈使（省略主语 you 的指令）/感叹（how/what 或感叹语气）。
-- pattern 按动词类型：SV（不及物）/SVO（单宾）/SVP（系动词+表语）/SVOO（双宾）/SVOC（宾+宾补）。
-- clauses：仅当句子含从句时列出；简单句和并列句为空数组。
-- constituents：逐类检查句子是否含该成分，实际存在的才列出，不存在的类别不要写。
-- JSON字符串值内禁止出现未转义的双引号和换行符。
-只返回JSON，不要其他文字。`;
+                const { messages, maxTokens, temperature } = Shared.buildSyntaxPrompt(sentence);
 
-                const userContent = `分析句子: "${sentence}"`;
-                
                 // JSON 解析失败时自动重试一次（模型偶尔会输出格式错误）
                 for (let attempt = 0; attempt < 2; attempt++) {
                     try {
-                        const content = await callAPI([
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: userContent }
-                        ], { maxTokens: 3072, temperature: 0 });
+                        const content = await callAPI(messages, { maxTokens, temperature });
 
                         const parsed = extractAndParseJSON(content, 'syntax');
                         if (parsed) {
@@ -535,19 +444,10 @@
             // 使用缓存
             const cacheKey = generateCacheKey('knowledge', sentence);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语语言学专家。返回JSON格式：
-{
-  "knowledge": "重点搭配、金句，使用换行符分隔不同要点"
-}
-只返回JSON，不要其他文字。`;
+                const { messages, maxTokens, temperature } = Shared.buildKnowledgePrompt(sentence);
 
-                const userContent = `分析句子: "${sentence}"`;
-                
                 try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userContent }
-                    ], { maxTokens: 600, temperature: 0 });
+                    const content = await callAPI(messages, { maxTokens, temperature });
 
                     const parsed = extractAndParseJSON(content, 'knowledge');
                     if (parsed) {
@@ -586,13 +486,10 @@
             // 使用缓存
             const cacheKey = generateCacheKey('translation', sentence);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `将以下英文句子翻译成中文，只返回翻译结果文本，不要其他内容。`;
-                
+                const { messages, maxTokens, temperature } = Shared.buildTranslationPrompt(sentence);
+
                 try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: sentence }
-                    ], { maxTokens: 300 });
+                    const content = await callAPI(messages, { maxTokens, temperature });
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
@@ -622,20 +519,10 @@
             // 使用缓存
             const cacheKey = generateCacheKey('meaning', word);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语词典助手。返回JSON格式：
-{
-  "meaning": "中文释义",
-  "pos": "词性缩写(n/v/adj/adv等)"
-}
-只返回JSON，不要其他文字。`;
+                const { messages, maxTokens, temperature } = Shared.buildWordMeaningPrompt(word);
 
-                const userContent = `提供单词"${word}"的中文释义和词性。`;
-                
                 try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userContent }
-                    ], { maxTokens: 300, temperature: 0 });
+                    const content = await callAPI(messages, { maxTokens, temperature });
 
                     const result = extractAndParseJSON(content, 'meaning');
                     if (result) return result;
@@ -669,13 +556,10 @@
             // 使用缓存
             const cacheKey = generateCacheKey('full_translation', text);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `将以下英文文章逐句翻译成中文。请严格按照原文的句号(.)、问号(?)、感叹号(!)作为句子结束标志进行分割，每句翻译之间用 [SENTENCE_END] 分隔。只返回翻译结果，不要其他内容。`;
-                
+                const messages = Shared.buildFullTranslationMessages(text);
+
                 try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: text }
-                    ], { maxTokens: 8000 });
+                    const content = await callAPI(messages, { maxTokens: 8000 });
                     return content;
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
@@ -706,20 +590,10 @@
             // 使用缓存
             const cacheKey = generateCacheKey('example', word + '_' + meaning);
             return Performance.cacheAPIRequest(cacheKey, async () => {
-                const systemPrompt = `你是英语学习助手，负责为单词生成自然、实用的例句。返回JSON格式：
-{
-  "en": "英文例句",
-  "zh": "中文翻译"
-}
-只返回JSON，不要其他文字。`;
+                const { messages, maxTokens, temperature } = Shared.buildExamplePrompt(word, meaning);
 
-                const userContent = `为单词 "${word}"（意思：${meaning}）生成一个自然的英文例句，并提供中文翻译。`;
-                
                 try {
-                    const content = await callAPI([
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userContent }
-                    ], { maxTokens: 300, temperature: 0 });
+                    const content = await callAPI(messages, { maxTokens, temperature });
 
                     const result = extractAndParseJSON(content, 'example');
                     if (result) return result;

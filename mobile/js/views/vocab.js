@@ -2,13 +2,13 @@
    views/vocab.js — 生词本（底部导航 vocab）
    组件与交互：
    · 顶部栏：标题 + 「共 N 词」徽章
-   · 统计卡：今日学习 / 待复习 / 已掌握 + 学习进度条
+   · 统计卡：今日新增 / 生词总数 / 累计掌握（全局计数器）+ 今日目标进度条
    · 搜索框：按单词实时过滤
-   · 筛选标签：全部 / 待复习 / 已掌握 / 按字母
-   · 单词卡：单词 + 音标 + 释义 + 收藏/已掌握切换 + 例句 + 发音 + 添加日期
+   · 筛选标签：全部 / 按字母
+   · 单词卡：单词 + 音标 + 释义 + 例句 + 发音 + 添加日期（无「标记掌握」——该概念桌面端无对应，已移除）
    · 空状态：无生词时提示去深度解析
    状态：filter（当前筛选）、search（搜索词）
-   事件：搜索输入、筛选切换、收藏切换、发音
+   事件：搜索输入、筛选切换、发音
    ============================================================ */
 (function (global) {
   'use strict';
@@ -28,14 +28,11 @@
     let arr = list.slice();
     const q = state.search.trim().toLowerCase();
     if (q) arr = arr.filter((w) => (w.word || '').toLowerCase().includes(q));
-    if (state.filter === 'learning') arr = arr.filter((w) => w.status !== 'mastered');
-    else if (state.filter === 'mastered') arr = arr.filter((w) => w.status === 'mastered');
-    else if (state.filter === 'alpha') arr = arr.slice().sort((a, b) => (a.word || '').localeCompare(b.word || ''));
+    if (state.filter === 'alpha') arr = arr.slice().sort((a, b) => (a.word || '').localeCompare(b.word || ''));
     return arr;
   }
 
   function wordCard(w) {
-    const mastered = w.status === 'mastered';
     return `
       <div class="esc-word" data-id="${esc(w.id)}">
         <div class="esc-word-inner">
@@ -45,9 +42,8 @@
               <div style="min-width:0">
                 <h3 class="esc-word-name">${esc(w.word)}</h3>
                 ${w.phonetic ? `<div class="esc-word-phon">/${esc(w.phonetic)}/</div>` : ''}
-                <p class="esc-word-mean">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || '')}</p>
+                <p class="esc-word-mean">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || w.zh || '')}</p>
               </div>
-              <button class="esc-word-mark ${mastered ? 'is-mastered' : ''}" data-act="mark" aria-label="标记掌握">${icon(mastered ? 'check' : 'bookmark')}</button>
             </div>
             ${w.example ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(w.example)}"</p>${w.exampleZh ? `<p class="esc-word-ex-zh">${esc(w.exampleZh)}</p>` : ''}</div>` : ''}
             <div class="esc-word-foot">
@@ -73,20 +69,22 @@
     if (!rootEl) return;
     const list = Store.getVocab();
     const total = list.length;
-    const mastered = list.filter((w) => w.status === 'mastered').length;
-    const learning = total - mastered;
+    const p = Store.getProgress();
+    const s = Store.getSettings();
     const today = list.filter((w) => isToday(w.createdAt)).length;
-    const pct = total ? Math.round((mastered / total) * 100) : 0;
+    const mastered = p.masteredCount;        // 全局累计掌握（桌面端 stats_mastered_words）
+    const goal = s.dailyGoal || 20;
+    const pct = goal ? Math.min(100, Math.round((today / goal) * 100)) : 0;
 
     rootEl.querySelector('#m-vocab-badge').textContent = `共 ${total} 词`;
     rootEl.querySelector('#m-vocab-stats').innerHTML = `
       <div class="esc-grid-3" style="grid-template-columns:repeat(3,1fr)">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-primary);font-family:var(--study-font-serif)">${today}</span><span style="font-size:12px;color:var(--study-muted-foreground)">今日学习</span></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;border-left:1px solid var(--study-border);border-right:1px solid var(--study-border)"><span style="font-size:22px;font-weight:700;color:var(--study-warning);font-family:var(--study-font-serif)">${learning}</span><span style="font-size:12px;color:var(--study-muted-foreground)">待复习</span></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-success);font-family:var(--study-font-serif)">${mastered}</span><span style="font-size:12px;color:var(--study-muted-foreground)">已掌握</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-primary);font-family:var(--study-font-serif)">${today}</span><span style="font-size:12px;color:var(--study-muted-foreground)">今日新增</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;border-left:1px solid var(--study-border);border-right:1px solid var(--study-border)"><span style="font-size:22px;font-weight:700;color:var(--study-warning);font-family:var(--study-font-serif)">${total}</span><span style="font-size:12px;color:var(--study-muted-foreground)">生词总数</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-success);font-family:var(--study-font-serif)">${mastered}</span><span style="font-size:12px;color:var(--study-muted-foreground)">累计掌握</span></div>
       </div>
       <div class="esc-progress" style="margin-top:12px"><i style="width:${pct}%"></i></div>
-      <p style="font-size:12px;color:var(--study-muted-foreground);text-align:center;margin:8px 0 0">学习进度 ${pct}%</p>`;
+      <p style="font-size:12px;color:var(--study-muted-foreground);text-align:center;margin:8px 0 0">今日目标进度 ${pct}%</p>`;
 
     const arr = filtered(list);
     const wrap = rootEl.querySelector('#m-vocab-list');
@@ -101,9 +99,7 @@
   function bindCards(wrap) {
     wrap.querySelectorAll('.esc-word').forEach((el) => {
       const id = el.getAttribute('data-id');
-      const mark = el.querySelector('[data-act="mark"]');
       const pron = el.querySelector('[data-act="pron"]');
-      if (mark) mark.addEventListener('click', (e) => { e.stopPropagation(); Store.toggleWordStatus(id); });
       if (pron) pron.addEventListener('click', (e) => { e.stopPropagation(); const w = Store.getWord(id); if (w) Speech.speak(w.word); });
     });
   }
@@ -125,8 +121,6 @@
 
         <div class="esc-tab-row">
           <button class="esc-tab is-active" data-f="all">全部</button>
-          <button class="esc-tab" data-f="learning">待复习</button>
-          <button class="esc-tab" data-f="mastered">已掌握</button>
           <button class="esc-tab" data-f="alpha">按字母</button>
         </div>
 

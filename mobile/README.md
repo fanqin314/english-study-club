@@ -79,8 +79,9 @@ mobile/
 | 历史记录 | `analysis_history` | 桌面端结构 `{id,originalText,fullTranslation,sentences,sentenceData,savedAt}` |
 | 深色模式 | `darkMode` | `'true'/'false'` 明文，与桌面端一致 |
 | API 凭证 | `encrypted_api_key` / `encrypted_api_base` / `encrypted_model_name` | 与 `core/security.js` 相同的 `btoa(encodeURIComponent())` 混淆方案 |
-| 进度统计 | `stats_streak_days` / `stats_today_learned` / `stats_mastered_words` | 连胜/今日已学/已掌握数，与桌面端统计打通 |
-| 移动端独有偏好 | `esc.settings` | 仅移动端用：日目标/解析模式/自动发音/自动收藏/字号/资料 |
+| 进度统计 | `stats_streak_days` / `stats_today_learned` / `stats_total_learned` / `stats_mastered_words` / `stats_module_data` | 连胜天数/今日已学/累计已学/已掌握数/各模块活动量，均为「计数器累加」（对齐桌面端 StatsTracker，非按单词 status 重算） |
+| 每日目标 | `dailyWordGoal` | 每日目标词数（对齐桌面端 learning_plan_ui.js 键名；旧 `esc.settings.dailyGoal` 作回退） |
+| 移动端独有偏好 | `esc.settings` | 仅移动端用：解析模式/自动发音/自动收藏/字号/资料（每日目标已改用 `dailyWordGoal`） |
 | 移动端独有进度 | `esc.progress` | 仅移动端用：正确率/待复习（桌面端无对应字段） |
 
 > 启动时执行一次性迁移：若桌面端键为空且旧 `esc.vocab`/`esc.history` 有数据，自动导入，避免历史数据丢失。
@@ -89,15 +90,18 @@ mobile/
 
 | 域 | 函数 | 行为 |
 |----|------|------|
-| 生词 | `getVocab()` | 读取生词列表（默认 `[]`） |
-| | `addWord(w)` | 同词（忽略大小写）不重复；新增含 `id/status:'learning'/createdAt`；触发 `vocab` |
+| 生词 | `getVocab()` | 读取生词列表（默认 `[]`）；VM 含 `meaning`（=桌面端 `meaning` 别名）无 `status` |
+| | `addWord(w)` | 同词（忽略大小写）不重复；新增写入桌面端 `vocabData.word` 结构；触发 `vocab` |
 | | `removeWord(id)` | 删除；触发 `vocab` |
-| | `toggleWordStatus(id)` | `learning` ↔ `mastered` 切换；触发 `vocab` |
 | | `getWord(id)` | 按 id 查词 |
 | 历史 | `getHistory()` / `addHistory(rec)` | 新增含 `id/date`（今日）；触发 `history` |
 | | `getHistoryItem(id)` / `removeHistory(id)` | 查/删；删除触发 `history` |
-| 设置 | `getSettings()` / `updateSettings(partial)` | 与默认合并；写后触发 `settings` |
-| 进度 | `getProgress()` / `updateProgress(partial)` | 与默认合并；写后触发 `progress` |
+| 设置 | `getSettings()` / `updateSettings(partial)` | 与默认合并；`dailyGoal` 读写 `dailyWordGoal` 桌面端键；写后触发 `settings` |
+| 进度读取 | `getProgress()` | 合并桌面端 `stats_*`（todayCount/totalLearned/masteredCount/streak）+ 移动端独有 `correctRate/reviewDue`；只读不覆盖计数器 |
+| 进度累加 | `recordWordsLearned(n)` | 等价于桌面端 `StatsTracker.recordWordsLearned`：今日已学 + 累计已学 同时累加 |
+| | `recordWordsMastered(n)` | 等价于 `recordWordsMastered`：已掌握全局计数器累加（桌面端无按单词掌握状态） |
+| | `recordModuleActivity(key,n)` | 等价于 `recordModuleActivity`：按桌面端 `MODULE_META` 名记录今日模块活动量到 `stats_module_data` |
+| | `updateProgress(partial)` | 仅写移动端独有进度（正确率/待复习）；触发 `progress` |
 | 维护 | `exportAll()` | 返回 `{vocab,history,settings,progress,exportedAt}` |
 | | `clearCache()` | 仅清生词+历史（保留设置/进度）；触发 `vocab`/`history` |
 | | `resetAll()` | 清全部键并触发所有事件 |
@@ -156,11 +160,20 @@ mobile/
 | 加载示例 | `#m-load-sample` | 填入并 `doParse` | click | 直接走解析流程 |
 | 剪贴板导入 | `#m-paste` | `navigator.clipboard.readText()` | click（async） | 读入 `state.text`；失败时 toast 引导手动粘贴 |
 | 统计条 | `#m-stats` | `statsHTML(res.stats)` | 解析后填充 | 单词/句子/阅读时间 |
-| 逐句解析卡 | `#m-cards` + `.esc-sentence[data-en]` | `sentenceCard()` + 点击发音 | 解析后给每张卡绑 `click` | `Speech.speak(en)` |
-| 自动收藏 | — | 遍历 `res.sentences[].words` | 解析后（受 `autoCollect` 控制） | `Store.addWord(...)` → 触发 `vocab` |
+| 逐句解析卡 | `#m-cards` + `.esc-sentence` | `sentenceCard()`：英文句子拆成可点按单词 + 4 个动作按钮（词性/语法结构/知识点/翻译）各展开对应面板 | 解析后绑单词点按与面板单开切换、词性标签发音 | `Speech.speak` / 底部弹层 / 面板切换 |
+| ├ 单词点按 | `.esc-sw[data-word]` | `sentenceEnHTML(s)` 拆词 + 绑 click | 点单词发音 + 弹「加入生词本」底部弹层（选本/新建本，已在本内打勾） | `Speech.speak(word)` → `openWordSheet` → `Store.addWordToNotebook` / `Store.createNotebook` |
+| ├ 词性面板 | `.esc-spanel[data-panel="pos"]` | `posHTML(s)` | 预渲染（含 `words`） | 标签点按发音 |
+| ├ 语法结构面板 | `.esc-spanel[data-panel="syntax"]` | `syntaxHTML(s)` | 预渲染（含 `syntax` 结构化对象） | 结构/功能/句式徽章 + 综合描述 + 从句/成分 |
+| ├ 知识点面板 | `.esc-spanel[data-panel="knowledge"]` | `knowledgeHTML(s)` | 预渲染（含 `knowledge` 文本） | 自由文本，保留换行 |
+| └ 翻译面板 | `.esc-spanel[data-panel="translation"]` | `translationHTML(s)` | 预渲染（含 `zh`） | 中文翻译 |
+| 自动收藏 | — | 遍历 `res.sentences[].words` | 解析后（受 `autoCollect` 控制） | `Store.addWord(...)` → 触发 `vocab`（加入当前生词本） |
 | 写入历史 | — | 按文本去重后 `Store.addHistory` | 解析后 | 触发 `history` |
 
-`doParse` 流程：`text` 校验 → 设 `parsing` → 调 `API.parse(text)` → 渲染统计与句子卡 → 绑发音 →（按 `autoCollect`）收藏生词 →（去重）写历史 → `refreshIcons`。
+> 逐句卡片对齐桌面端「深度解析」：`API.parse` 在深度模式下除 `en/zh/type/words/grammar` 外，额外返回每句 `syntax`（结构化语法分析：结构/功能/句式/综合描述/从句/成分）与 `knowledge`（知识点文本）；卡片由「全内联」改为桌面式 **4 个可展开面板**（单一展开，点击同一切换）。快速模式（`parseMode:'fast'`）仅返回 `en/zh/type/words`，面板显示对应空态提示。`SAMPLE_SENTENCES` 与离线 `demoParse` 均已补齐这两项字段。
+>
+> **单词点按交互**（对齐桌面端点单词加入生词本）：`sentenceEnHTML` 把英文句子按词拆分，仅字母开头的 token 渲染为可点按 `.esc-sw`（标点/空格原样保留），`data-word/pos/meaning` 来自解析结果的 `words` 映射。点击单词 → 发音（`Speech.speak`）+ 弹出底部弹层 `openWordSheet`：列出所有生词本（已含该词的本显示「✓ 已添加」并高亮），点本即 `Store.addWordToNotebook` 加入；底部「+ 新建生词本」可内联输入名称并 `Store.createNotebook` 后加入。弹层为移动端原生底部抽屉（`.esc-bsheet`），等价桌面端单词气泡。自动收藏（`autoCollect`）仍默认加入当前生词本，与手动点按互不冲突。
+
+`doParse` 流程：`text` 校验 → 设 `parsing` → 调 `API.parse(text)` → 渲染统计与句子卡 → 绑英文发音与面板切换 →（按 `autoCollect`）收藏生词 →（去重）写历史 → `refreshIcons`。
 
 ### 4.2 生词本（vocab · 底部导航「生词本」）
 
@@ -171,14 +184,15 @@ mobile/
 | 总数徽章 | `#m-vocab-badge` | `paint()` | 数据变化时刷新 | `共 N 词` |
 | 统计卡 | `#m-vocab-stats` | `paint()` | — | 今日/待复习/已掌握 + 进度条 |
 | 搜索框 | `#m-vocab-search` | `state.search = v; paint()` | `input` | 实时过滤 |
-| 筛选标签 | `.esc-tab[data-f=all\|learning\|mastered\|alpha]` | 切换 `is-active` + `state.filter` | click | `paint()` 重渲染列表 |
+| 筛选标签 | `.esc-tab[data-f=all\|alpha]` | 切换 `is-active` + `state.filter` | click | `paint()` 重渲染列表 |
 | 单词卡 | `.esc-word[data-id]` | `wordCard(w)` | 卡片内绑事件 | — |
-| ├ 标记掌握 | `[data-act="mark"]` | `Store.toggleWordStatus(id)` | click（`stopPropagation`） | 触发 `vocab` → `paint()` |
 | └ 发音 | `[data-act="pron"]` | `Store.getWord(id)` → `Speech.speak` | click（`stopPropagation`） | — |
 | 空状态 | — | `paint()` 内判断 | — | 无生词时提示去解析 |
 
-**自动刷新**：`Store.on('vocab', () => { if (rootEl && !rootEl.hidden) paint(); })` —— 首页自动收藏或标记掌握后，生词本打开时即时同步。
-`filtered(list)` 支持：关键词搜索、`learning`/`mastered` 状态筛、按字母排序。
+> 生词本**无「标记掌握」操作**：桌面端不维护按单词的掌握状态，「已掌握」是全局累加计数器（`stats_mastered_words`），由记忆模式完成时累加。移动端与之一致，故移除了原 `toggleWordStatus` 与标记掌握按钮。
+
+**自动刷新**：`Store.on('vocab', () => { if (rootEl && !rootEl.hidden) paint(); })` —— 首页自动收藏后，生词本打开时即时同步。
+`filtered(list)` 支持：关键词搜索、按字母排序。
 
 ### 4.3 历史记录（history · 底部导航「历史记录」）
 
@@ -198,8 +212,8 @@ mobile/
 
 ### 4.4 记忆模式（memory · 底部导航「记忆模式」）
 
-**数据来源**：`Store.getProgress()` + `Store.getSettings().dailyGoal`。
-**练习队列**：单词练习用 `buildWordQueue()`（生词优先、未掌握在前、取前 10，无生词用 `FALLBACK`）；文章练习按模式用 `buildArticleClozeQueue` / `buildArticleVocabQueue` / `splitSentences` 从所选历史文章生成。
+**数据来源**：`Store.getProgress()` + `Store.getSettings().dailyGoal`（读取桌面端 `dailyWordGoal`）。
+**练习队列**：单词练习用 `buildWordQueue()`（取生词前 10，无生词用 `FALLBACK`；桌面端不区分「已掌握」，故不再按 status 排序）；文章练习按模式用 `buildArticleClozeQueue` / `buildArticleVocabQueue` / `splitSentences` 从所选历史文章生成。
 
 | 组件 | 交互元素 | 处理函数 | 事件绑定 | 状态/副作用 |
 |------|----------|----------|----------|-------------|
@@ -219,7 +233,7 @@ mobile/
 | `openExercise(mode)` | 依模式建队列（单词队列 / 文章队列），建 `session={mode,ctx,queue,idx,correct,total,graded}`，建 `.esc-overlay` 挂到 `.esc-app`，绑关闭，调 `step()` |
 | `step()` | 按 `session.mode` 分派到对应渲染器（见下表） |
 | `next()` | `idx++`，到末尾调 `finish()`，否则 `step()` |
-| `finish()` | 计分模式：计算正确率并 `Store.updateProgress({todayCount,correctRate,reviewDue})`（**todayCount 真实累计，不再被 dailyGoal 截断**）；非计分模式（逐句/回顾）仅显示完成；点击「完成」关闭 |
+| `finish()` | 计分模式：计算正确率，按桌面端语义累加进度——`Store.recordWordsLearned(已完成数)`（今日已学+累计已学）、`Store.recordWordsMastered(答对)`（已掌握全局计数器）、`Store.recordModuleActivity(MODULE_MAP[mode], 已完成数)`（记录模块活动量，对齐 `MODULE_META`），最后 `Store.updateProgress({correctRate,reviewDue})`（仅写移动端独有进度）；非计分模式（逐句/回顾）额外记一次 `recordModuleActivity` 后显示完成；点击「完成」关闭 |
 | `closeOverlay()` | 移除 overlay，清 `session`；**点击底部导航离开时亦自动关闭**（修复残留） |
 
 | 模式 | 标签 | 渲染函数 | 交互 | 计分 |
