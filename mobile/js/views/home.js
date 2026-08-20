@@ -34,7 +34,7 @@
     prep: '#3B82F6', conj: '#6366F1', interj: '#A855F7', art: '#EC4899', num: '#6B7280'
   };
   function normPos(pos) { return (pos || '').replace(/\.$/, '').toLowerCase(); }
-  // 判断是否为 短语 / 固定搭配（phr / idiom / collocation），用于短语专属视觉与查漏补缺分组
+  // 判断是否为 短语 / 固定搭配（phr / idiom / collocation），用于短语专属视觉样式
   function isPhrase(pos) {
     const p = normPos(pos);
     return p === 'phr' || p === 'idiom' || p === 'collocation';
@@ -377,23 +377,23 @@
     }).join('');
   }
 
-  // 「加入生词本」底部弹层（移动端等价桌面端单词气泡：选本 / 新建本 / 已在本内打勾）
+  // 关闭单词气泡（popover）：移除文档/滚动监听后淡出移除
   function closeWordSheet() {
     if (!currentSheet) return;
     const el = currentSheet;
     currentSheet = null;
+    if (typeof el._cleanup === 'function') { try { el._cleanup(); } catch (e) {} }
     el.classList.remove('is-show');
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 320);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 200);
   }
-  // 轻点单词：查词弹层（音标/释义/例句/发音/加入生词本 一体）
-  function openWordSheet(word, pos, meaning, example, phon) {
+  // 轻点单词：指向单词的气泡（popover）——对齐网页端「点单词弹字典气泡」体验，
+  // 不再用底部上滑抽屉；去掉例句（网页版无此展示）。气泡带小三角指向单词，点击空白/滚动关闭。
+  function openWordPopover(word, sp, pos, meaning, phon) {
     closeWordSheet();
     const word0 = (word || '').trim();
     if (!word0) return;
-    const backdrop = document.createElement('div');
-    backdrop.className = 'esc-bsheet-backdrop';
-    const sheet = document.createElement('div');
-    sheet.className = 'esc-bsheet esc-word-sheet';
+    const pop = document.createElement('div');
+    pop.className = 'esc-wordpop';
     const notebooks = Store.getNotebooks();
     const nbHTML = notebooks.length
       ? notebooks.map((nb) => {
@@ -405,72 +405,107 @@
         }).join('')
       : '<div class="esc-bsheet-empty">还没有生词本，点击下方新建</div>';
 
-    sheet.innerHTML = `
-      <div class="esc-bsheet-grip"></div>
-      <div class="esc-word-head">
-        <h3 class="esc-word-hw">${esc(word0)}</h3>
-        ${phon ? `<span class="esc-word-phon">/${esc(phon)}/</span>` : ''}
-        ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
-      </div>
-      ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
-      ${example ? `<div class="esc-word-ex"><p class="esc-word-ex-en">${esc(example)}</p></div>` : ''}
-      <div class="esc-word-actions">
-        <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
-        <button class="esc-btn esc-btn-primary" data-act="add">${icon('bookmark-plus')}<span>加入生词本</span></button>
-      </div>
-      <div class="esc-nb-list" hidden>${nbHTML}</div>
-      <button class="esc-nb-new" data-act="new" hidden>+ 新建生词本</button>
-      <div class="esc-nb-form" hidden>
-        <input type="text" class="esc-nb-input" placeholder="生词本名称" maxlength="20" />
-        <div class="esc-nb-form-actions">
-          <button class="esc-btn esc-btn-ghost" data-act="new-cancel">取消</button>
-          <button class="esc-btn esc-btn-primary" data-act="new-create">创建并添加</button>
+    pop.innerHTML = `
+      <div class="esc-wordpop-arrow"></div>
+      <div class="esc-wordpop-card">
+        <div class="esc-word-head">
+          <h3 class="esc-word-hw">${esc(word0)}</h3>
+          ${phon ? `<span class="esc-word-phon">/${esc(phon)}/</span>` : ''}
+          ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
         </div>
-        <div class="esc-nb-error" hidden></div>
+        ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
+        <div class="esc-word-actions">
+          <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
+          <button class="esc-btn esc-btn-primary" data-act="add">${icon('bookmark-plus')}<span>加入生词本</span></button>
+        </div>
+        <div class="esc-nb-list" hidden>${nbHTML}</div>
+        <button class="esc-nb-new" data-act="new" hidden>+ 新建生词本</button>
+        <div class="esc-nb-form" hidden>
+          <input type="text" class="esc-nb-input" placeholder="生词本名称" maxlength="20" />
+          <div class="esc-nb-form-actions">
+            <button class="esc-btn esc-btn-ghost" data-act="new-cancel">取消</button>
+            <button class="esc-btn esc-btn-primary" data-act="new-create">创建并添加</button>
+          </div>
+          <div class="esc-nb-error" hidden></div>
+        </div>
       </div>`;
-    backdrop.appendChild(sheet);
-    document.body.appendChild(backdrop);
-    currentSheet = backdrop;
+    document.body.appendChild(pop);
+    currentSheet = pop;
 
-    requestAnimationFrame(() => requestAnimationFrame(() => backdrop.classList.add('is-show')));
-    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeWordSheet(); });
-    sheet.querySelector('[data-act="close"]') && sheet.querySelector('[data-act="close"]').addEventListener('click', closeWordSheet);
+    // 定位：默认显示在单词上方并水平居中对齐单词中心；空间不足则翻到下方。
+    const rect = sp ? sp.getBoundingClientRect() : ({ left: innerWidth / 2, right: innerWidth / 2, top: 80, bottom: 80 });
+    const pr = pop.getBoundingClientRect();
+    const margin = 8;
+    let top = rect.top - pr.height - 10;     // 默认上方
+    let placeBelow = false;
+    if (top < margin) { top = rect.bottom + 10; placeBelow = true; }
+    let centerX = (rect.left + rect.right) / 2;
+    let left = centerX - pr.width / 2;
+    const minL = margin, maxL = innerWidth - pr.width - margin;
+    left = Math.max(minL, Math.min(left, maxL));
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    pop.classList.toggle('is-below', placeBelow);
+    // 三角水平位置对齐单词中心（受气泡左右夹紧后做相对偏移）
+    const arrow = pop.querySelector('.esc-wordpop-arrow');
+    if (arrow) arrow.style.left = (centerX - left) + 'px';
 
-    const nbList = sheet.querySelector('.esc-nb-list');
-    const newBtn = sheet.querySelector('[data-act="new"]');
+    requestAnimationFrame(() => requestAnimationFrame(() => pop.classList.add('is-show')));
 
-    sheet.querySelector('[data-act="speak"]').addEventListener('click', () => Speech.speak(word0));
-    sheet.querySelector('[data-act="add"]').addEventListener('click', () => {
+    // 点击气泡外部 / 滚动即关闭；点气泡内部不关闭
+    const onDocDown = (e) => { if (pop !== e.target && !pop.contains(e.target)) closeWordSheet(); };
+    const onScroll = () => closeWordSheet();
+    setTimeout(() => {
+      document.addEventListener('touchstart', onDocDown, { passive: true });
+      document.addEventListener('mousedown', onDocDown);
+      const sc = document.querySelector('.esc-main');
+      if (sc) sc.addEventListener('scroll', onScroll, { passive: true });
+    }, 0);
+    pop._cleanup = () => {
+      document.removeEventListener('touchstart', onDocDown);
+      document.removeEventListener('mousedown', onDocDown);
+      const sc = document.querySelector('.esc-main');
+      if (sc) sc.removeEventListener('scroll', onScroll);
+    };
+
+    const nbList = pop.querySelector('.esc-nb-list');
+    const newBtn = pop.querySelector('[data-act="new"]');
+    pop.querySelector('[data-act="speak"]').addEventListener('click', (e) => { e.stopPropagation(); Speech.speak(word0); });
+    pop.querySelector('[data-act="add"]').addEventListener('click', (e) => {
+      e.stopPropagation();
       nbList.hidden = false; newBtn.hidden = false;
       UI.refreshIcons();
     });
 
-    sheet.querySelectorAll('.esc-nb-item').forEach((btn) => {
-      btn.addEventListener('click', () => {
+    pop.querySelectorAll('.esc-nb-item').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = btn.dataset.id, name = btn.dataset.name;
-        const r = Store.addWordToNotebook(id, { word: word0, pos: pos, meaning: meaning, example: example, context: example });
+        const r = Store.addWordToNotebook(id, { word: word0, pos: pos, meaning: meaning });
         if (r.success) {
           UI.toast(r.added ? `已添加到「${name}」` : `「${name}」中已有该词`);
           setTimeout(closeWordSheet, 600);
         } else UI.toast(r.error || '添加失败');
       });
     });
-
-    newBtn.addEventListener('click', () => {
-      const form = sheet.querySelector('.esc-nb-form');
+    newBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const form = pop.querySelector('.esc-nb-form');
       form.hidden = false; newBtn.hidden = true; form.querySelector('.esc-nb-input').focus();
     });
-    sheet.querySelector('[data-act="new-cancel"]').addEventListener('click', () => {
-      const form = sheet.querySelector('.esc-nb-form');
-      form.hidden = true; newBtn.hidden = false; sheet.querySelector('.esc-nb-error').hidden = true;
+    pop.querySelector('[data-act="new-cancel"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const form = pop.querySelector('.esc-nb-form');
+      form.hidden = true; newBtn.hidden = false; pop.querySelector('.esc-nb-error').hidden = true;
     });
-    sheet.querySelector('[data-act="new-create"]').addEventListener('click', () => {
-      const name = sheet.querySelector('.esc-nb-input').value.trim();
-      const errDiv = sheet.querySelector('.esc-nb-error');
+    pop.querySelector('[data-act="new-create"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const name = pop.querySelector('.esc-nb-input').value.trim();
+      const errDiv = pop.querySelector('.esc-nb-error');
       if (!name) { errDiv.textContent = '请输入生词本名称'; errDiv.hidden = false; return; }
       const c = Store.createNotebook(name);
       if (!c.success) { errDiv.textContent = c.error; errDiv.hidden = false; return; }
-      const r = Store.addWordToNotebook(c.id, { word: word0, pos: pos, meaning: meaning, example: example, context: example });
+      const r = Store.addWordToNotebook(c.id, { word: word0, pos: pos, meaning: meaning });
       UI.toast(r.success ? `已创建「${name}」并添加` : (r.error || '添加失败'));
       setTimeout(closeWordSheet, 600);
     });
@@ -549,9 +584,6 @@
 
         <div class="esc-section-title" id="m-ft-title" style="margin-top:16px" hidden>${icon('align-left')}<span>全文翻译</span></div>
         <div id="m-fulltrans"></div>
-
-        <div class="esc-section-title" id="m-gap-title" style="margin-top:16px" hidden>${icon('target')}<span>查漏补缺</span></div>
-        <div id="m-gaps"></div>
 
         <div class="esc-section-title" id="m-cards-title" style="margin-top:16px" hidden>${icon('align-left')}<span>逐句解析</span></div>
         <div id="m-cards"></div>
@@ -706,7 +738,7 @@
     try {
       const r = await API.refetch(text, 'translation');
       const zh = (r && r.zh) || (r && r.translation) || '';
-      openWordSheet(text.length > 24 ? text.slice(0, 24) + '…' : text, '', zh || '（未获取到译文）', '');
+      openWordPopover(text.length > 24 ? text.slice(0, 24) + '…' : text, null, '', zh || '（未获取到译文）', '');
     } catch (e) {
       UI.toast('翻译失败，请重试');
     }
@@ -776,7 +808,7 @@
         cancelLp();
         pulseEl(sp);
         pulseLinked(el, word, '.esc-pos-badge'); // 联动：对应词性徽章一起提示
-        openWordSheet(word, pos, meaning, example);
+        openWordPopover(word, sp, pos, meaning);
       });
     });
     // 中文翻译：点击折叠头展开/收起（grid 行高过渡动效）
@@ -961,139 +993,6 @@
 
   // 全文翻译条目点击逻辑已内联到 renderFullTranslationFromArr 的新条目上（仅绑定一次）
   // ============================================================
-  // 查漏补缺：从解析结果提取「生词」与「短语/固定搭配」聚合面板，
-  //           支持点击跳转脉冲 + 一键批量加入目标生词本。
-  // ============================================================
-  function gapPanelHTML(groups, known) {
-    const itemHTML = (g) => {
-      const k = known(g.word);
-      return `<button type="button" class="esc-gap-item${k ? ' esc-gap--known' : ''}" data-idx="${g.idx}" data-word="${esc(g.word)}">
-        <span class="esc-gap-word">${esc(g.word)}</span>
-        ${g.pos ? `<i>${esc(g.pos)}</i>` : ''}
-        ${g.meaning ? `<em>${esc(g.meaning)}</em>` : ''}
-        ${g.example ? `<span class="esc-gap-ex">${esc(g.example)}</span>` : ''}
-        ${k ? '<b>已掌握</b>' : ''}
-      </button>`;
-    };
-    const nbOptions = Store.getNotebooks().map((nb) => `<option value="${esc(nb.id)}">${esc(nb.name)}（${nb.wordCount} 词）</option>`).join('');
-    return `
-      <div class="esc-gap">
-        <div class="esc-gap-head">${icon('target')}<span>查漏补缺</span><span class="esc-gap-total">${groups.new.length + groups.phr.length}</span></div>
-        ${groups.new.length ? `<div class="esc-gap-group"><div class="esc-gap-title">生词 <span>${groups.new.length}</span></div><div class="esc-gap-list">${groups.new.map(itemHTML).join('')}</div></div>` : ''}
-        ${groups.phr.length ? `<div class="esc-gap-group"><div class="esc-gap-title">短语 / 固定搭配 <span>${groups.phr.length}</span></div><div class="esc-gap-list">${groups.phr.map(itemHTML).join('')}</div></div>` : ''}
-        <div class="esc-gap-add">
-          <select class="esc-nb-select" data-act="target">
-            <option value="">选择目标生词本…</option>
-            ${nbOptions}
-            <option value="__new">+ 新建生词本…</option>
-          </select>
-          <div class="esc-nb-form" data-form hidden>
-            <input type="text" class="esc-nb-input" data-act="name" placeholder="生词本名称" maxlength="20" />
-            <div class="esc-nb-form-actions">
-              <button type="button" class="esc-btn esc-btn-ghost" data-act="new-cancel">取消</button>
-              <button type="button" class="esc-btn esc-btn-primary" data-act="new-create">创建</button>
-            </div>
-            <div class="esc-nb-error" data-act="err" hidden></div>
-          </div>
-          <button type="button" class="esc-btn esc-btn-primary esc-gap-addbtn" data-act="addall">${icon('plus')}<span>一键批量加入</span></button>
-        </div>
-      </div>`;
-  }
-
-  function bindGap(root, el) {
-    const res = state.last;
-    const sentences = (res && res.sentences) || [];
-    const select = el.querySelector('[data-act="target"]');
-    const form = el.querySelector('[data-form]');
-    const input = el.querySelector('[data-act="name"]');
-    const errDiv = el.querySelector('[data-act="err"]');
-
-    // 单项点击：滚动到对应句子并脉冲匹配单词
-    el.querySelectorAll('.esc-gap-item').forEach((it) => {
-      it.addEventListener('click', () => {
-        const idx = parseInt(it.getAttribute('data-idx'), 10);
-        const word = it.getAttribute('data-word');
-        const cards = root.querySelectorAll('.esc-sentence');
-        const card = cards && cards[idx];
-        if (!card) return;
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        pulseEl(it);
-        if (word) pulseLinked(card, word, '.esc-sw');
-      });
-    });
-
-    // 「新建生词本」内联表单
-    if (select && form) {
-      select.addEventListener('change', () => {
-        if (select.value === '__new') { form.hidden = false; if (input) input.focus(); }
-        else { form.hidden = true; if (errDiv) errDiv.hidden = true; }
-      });
-    }
-    if (form) {
-      const cancelBtn = el.querySelector('[data-act="new-cancel"]');
-      const createBtn = el.querySelector('[data-act="new-create"]');
-      if (cancelBtn) cancelBtn.addEventListener('click', () => {
-        form.hidden = true; if (errDiv) errDiv.hidden = true; if (select) select.value = '';
-      });
-      if (createBtn) createBtn.addEventListener('click', () => {
-        const name = input ? input.value.trim() : '';
-        if (!name) { if (errDiv) { errDiv.textContent = '请输入生词本名称'; errDiv.hidden = false; } return; }
-        const c = Store.createNotebook(name);
-        if (!c.success) { if (errDiv) { errDiv.textContent = c.error; errDiv.hidden = false; } return; }
-        if (select) select.value = c.id;
-        form.hidden = true; if (errDiv) errDiv.hidden = true;
-        UI.toast(`已创建「${name}」`);
-      });
-    }
-
-    // 一键批量加入目标生词本（遍历去重、统计 added/total）
-    const addBtn = el.querySelector('[data-act="addall"]');
-    if (addBtn) addBtn.addEventListener('click', () => {
-      const targetId = select ? select.value : '';
-      if (!targetId || targetId === '__new') { UI.toast('请先选择目标生词本'); return; }
-      const seen = {};
-      let total = 0, added = 0;
-      sentences.forEach((st) => (st.words || []).forEach((w) => {
-        const word = (w.word || '').trim();
-        if (!word || seen[word.toLowerCase()]) return;
-        seen[word.toLowerCase()] = true;
-        total++;
-        const r = Store.addWordToNotebook(targetId, { word, pos: w.pos, meaning: w.zh || w.meaning, example: st.en, context: st.en });
-        if (r && r.success && r.added) added++;
-      }));
-      if (!total) { UI.toast('当前解析结果中没有可加入的词'); return; }
-      const nb = Store.getNotebooks().find((x) => x.id === targetId);
-      UI.toast(`已加入 ${added}/${total} 个词到「${nb ? nb.name : '生词本'}」`);
-      renderGap(root); // 重新渲染以刷新「已掌握」状态
-    });
-  }
-
-  function renderGap(root) {
-    const el = root.querySelector('#m-gaps');
-    if (!el) return;
-    const res = state.last;
-    const sentences = (res && res.sentences) || [];
-    const groups = { new: [], phr: [] };
-    const seen = { new: {}, phr: {} };
-    sentences.forEach((st, idx) => {
-      (st.words || []).forEach((w) => {
-        const word = (w.word || '').trim();
-        if (!word) return;
-        const key = word.toLowerCase();
-        const grp = isPhrase(w.pos) ? 'phr' : 'new';
-        if (seen[grp][key]) return;
-        seen[grp][key] = true;
-        groups[grp].push({ word, pos: w.pos, meaning: (w.zh || w.meaning || ''), idx, example: st.en || '' });
-      });
-    });
-    if (!groups.new.length && !groups.phr.length) { el.innerHTML = ''; return; }
-    const nbs = Store.getNotebooks();
-    const known = (word) => (nbs.some((nb) => (Store.isWordInNotebook && Store.isWordInNotebook(nb.id, word))));
-    el.innerHTML = gapPanelHTML(groups, known);
-    bindGap(root, el);
-    UI.refreshIcons(el);
-  }
-
   async function doParse(root) {
     const $ = (id) => root.querySelector(id);
     const input = $('#m-input');
@@ -1106,8 +1005,8 @@
 
     const parseBtn = $('#m-parse');
     parseBtn.disabled = true;
-    // 点击解析后才展示结果区标题（全文翻译 / 查漏补缺 / 逐句解析）
-    ['#m-ft-title', '#m-gap-title', '#m-cards-title'].forEach((sel) => {
+    // 点击解析后才展示结果区标题（全文翻译 / 逐句解析）
+    ['#m-ft-title', '#m-cards-title'].forEach((sel) => {
       const t = root.querySelector(sel);
       if (t) t.hidden = false;
     });
@@ -1132,7 +1031,6 @@
       UI.refreshIcons(root);
       applyHighlight(root);
       renderFullTranslation(root);
-      renderGap(root);
       return;
     }
 
@@ -1170,7 +1068,6 @@
     UI.refreshIcons(root);
     applyHighlight(root);
     renderFullTranslation(root);
-    renderGap(root);
 
     // 自动收藏生词
     const s = sMode;

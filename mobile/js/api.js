@@ -259,17 +259,13 @@
 
   function delay(ms) { return new Promise((res) => setTimeout(res, ms)); }
 
-  // 解析单句（deep/fast），返回 normalize 后的完整句子对象
+  // 解析单句（deep/fast 一致）：仅预取「词性标注 + 中文翻译」两项基础数据。
+  // 语法结构 / 知识点刻意留空，改为用户点击分句卡片的「语法」「知识点」按钮时才按需调用
+  // refetch 拉取（对齐网页端行为：不提前消耗 AI 额度，避免免费模型被 429/超时拖垮整页解析）。
   async function parseOneSentence(en, fast) {
-    if (fast) {
-      const [pos, zh] = await Promise.all([doRequestPos(en), doRequestTranslation(en)]);
-      return normalizeSentence({ en, zh, type: '', words: pos.map((w) => ({ word: w.word, pos: w.pos, zh: w.meaning })) });
-    }
-    const [pos, syntax, knowledge, zh] = await Promise.all([
-      doRequestPos(en), doRequestSyntax(en), doRequestKnowledge(en), doRequestTranslation(en)
-    ]);
+    const [pos, zh] = await Promise.all([doRequestPos(en), doRequestTranslation(en)]);
     const words = pos.map((w) => ({ word: w.word, pos: w.pos, zh: w.meaning }));
-    return normalizeSentence({ en, zh, type: syntax.structure, words, syntax, knowledge });
+    return normalizeSentence({ en, zh, type: '', words });
   }
 
   // 逐句：立即返回骨架（分句结果，详情为空），后台逐句解析完成后回调 onSentence(idx, fullSentence)
