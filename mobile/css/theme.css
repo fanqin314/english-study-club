@@ -431,6 +431,13 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   font-size: 11px; font-weight: 600;
 }
 .esc-ft-text { flex: 1 1 auto; font-size: 13px; line-height: 1.6; color: var(--study-foreground); }
+.esc-ft-progress-wrap { min-height: 22px; }
+.esc-ft-progress { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.esc-ft-progress-track { flex: 1 1 auto; height: 6px; background: var(--study-muted); border-radius: 3px; overflow: hidden; }
+.esc-ft-progress-bar { height: 100%; background: var(--study-accent); border-radius: 3px; transition: width .3s ease; }
+.esc-ft-progress-text { font-size: 11px; color: var(--study-muted-foreground); flex: 0 0 auto; }
+.esc-ft-item.ft-new { animation: esc-fadein .4s ease; }
+@keyframes esc-fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .esc-ft-item.is-tapped .esc-ft-text { color: var(--study-accent); }
 .esc-ft-item.is-tapped { animation: esc-pop .26s ease; }
 
@@ -890,3 +897,192 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   opacity: 0; cursor: pointer; border: none; padding: 0;
 }
 .esc-color-row-note { font-size: 11px; color: var(--study-muted-foreground); line-height: 1.5; padding: 4px 4px 0; }
+
+/* ============================================================
+   Book-Note 批注手账（移动端深度解析 - 批注阅读手账）
+   设计方向：极简沉浸批注手账 — 纸张质感、书页正文、
+   荧光色标记生词、虚线线型标记短语/搭配。
+   常量约束：no glassmorphism / no large gradients / no glow
+   ============================================================ */
+
+/* ---------- Book-Note Design Tokens ---------- */
+:root {
+  --bn-paper: #F6F1E6;
+  --bn-ink: #3B3526;
+  --bn-muted: #8A8270;
+  --bn-line: #E4DCC9;
+  --bn-word: #F5E18C;        /* 荧光标记（生词） */
+  --bn-word-ink: #3A3320;
+  --bn-phrase: #4E9E8F;      /* 短语 / 搭配 */
+  --bn-accent: #B98A3E;
+  --bn-soft: #8A8270;
+  --bn-panel-bg: #FBF7EE;
+}
+
+[data-theme="dark"] {
+  --bn-paper: #1C1A14;
+  --bn-ink: #E6DFCB;
+  --bn-muted: #9A927D;
+  --bn-line: #38332A;
+  --bn-word: #6E5B1E;
+  --bn-word-ink: #F2EAD9;
+  --bn-phrase: #57A99A;
+  --bn-accent: #D6A95C;
+  --bn-panel-bg: #242119;
+}
+
+/* ---------- 1. 输入区折叠（bn-collapsed 折叠态 + bn-input-bar） ---------- */
+#m-inputcard.bn-collapsed .esc-section-title,
+#m-inputcard.bn-collapsed .esc-textarea,
+#m-inputcard.bn-collapsed .esc-btn-row { display: none; }
+
+.bn-input-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bn-paper);
+  border: 1px solid var(--bn-line);
+  border-radius: var(--study-radius-md);
+  padding: 10px 12px;
+  color: var(--bn-ink);
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.bn-input-bar:active { background: var(--bn-panel-bg); }
+.bn-input-bar-ico { width: 16px; height: 16px; color: var(--bn-muted); flex: 0 0 auto; }
+.bn-input-bar-text { flex: 1 1 auto; font-size: 13px; font-weight: 600; color: var(--bn-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bn-input-bar-action { color: var(--bn-muted); width: 14px; height: 14px; flex: 0 0 auto; }
+
+/* ---------- 2. 句子卡片 ---------- */
+.bn-sentence {
+  background: var(--study-card);
+  border: 1px solid var(--bn-line);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+  animation: esc-card-in .35s ease both;
+}
+.bn-shead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.bn-seq { font-family: var(--study-font-serif); color: var(--bn-muted); font-weight: 600; letter-spacing: .02em; }
+.bn-type { font-size: 12px; color: var(--bn-muted); }
+.bn-spacer { flex: 1 1 auto; }
+.bn-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--bn-line);
+  color: var(--bn-muted);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.bn-chip.is-on { background: var(--bn-accent); color: var(--bn-ink); border-color: var(--bn-accent); }
+
+/* ---------- 3. 书页正文 ---------- */
+.bn-body {
+  font-family: var(--study-font-serif);
+  font-size: calc(15px * var(--study-font-scale));
+  line-height: 1.9;
+  color: var(--bn-ink);
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+}
+
+/* ---------- 4. 句内批注高亮 ---------- */
+/* 生词：荧光笔标记 */
+.esc-sw.bn-word {
+  background: color-mix(in srgb, var(--bn-word) 55%, transparent);
+  color: var(--bn-word-ink);
+  border-bottom: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0 1px;
+  cursor: pointer;
+  transition: background-color .15s ease, transform .12s ease;
+}
+.esc-sw.bn-word:active { background: color-mix(in srgb, var(--bn-word) 75%, transparent); }
+.esc-sw.bn-word.is-tapped {
+  background: color-mix(in srgb, var(--bn-word) 80%, transparent);
+  animation: esc-pop .26s ease;
+}
+/* 短语 / 搭配：虚线线型 */
+.esc-sw.bn-phrase {
+  border-bottom: 2px dotted var(--bn-phrase);
+  background: color-mix(in srgb, var(--bn-phrase) 14%, transparent);
+  color: var(--bn-ink);
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: background-color .15s ease;
+}
+.esc-sw.bn-phrase.is-tapped { animation: esc-pop .26s ease; }
+
+/* ---------- 5. 生词堆（word pile） ---------- */
+.bn-wordpile { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
+.bn-wchip {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  border: 1px solid var(--bn-line);
+  background: var(--bn-panel-bg);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--bn-ink);
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background-color .15s ease, transform .12s ease;
+}
+.bn-wchip i { font-style: normal; color: var(--bn-muted); font-size: 11px; margin-left: 2px; }
+.bn-wchip.is-phrase { border: 2px dotted var(--bn-phrase); color: var(--bn-phrase); }
+.bn-wchip:active { transform: scale(.95); }
+.bn-wchip.is-tapped { animation: esc-pop .28s ease; }
+
+/* ---------- 6. 折叠展开面板（替换 .esc-spanel 视觉） ---------- */
+.bn-panel {
+  margin-top: 10px; padding: 12px;
+  border: 1px solid var(--bn-line);
+  border-radius: var(--study-radius-sm);
+  background: var(--bn-panel-bg);
+  font-size: 13px; line-height: 1.7; color: var(--bn-ink);
+}
+.bn-panel:not([hidden]) { animation: esc-panel-in .2s ease; }
+
+/* ---------- 7. 单词气泡（popover） ---------- */
+.bn-popover {
+  position: fixed; z-index: 1200;
+  min-width: 200px; max-width: 280px;
+  background: var(--bn-panel-bg);
+  border: 1px solid var(--bn-line);
+  border-radius: var(--study-radius-md);
+  box-shadow: var(--study-shadow-lg);
+  color: var(--bn-ink);
+  padding: 12px;
+  animation: bn-fade-in .18s ease;
+}
+@keyframes bn-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.bn-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.bn-pop-word { font-family: var(--study-font-serif); font-size: 18px; font-weight: 700; color: var(--bn-ink); margin: 0; }
+.bn-pop-word i { font-style: normal; font-size: 12px; font-weight: 600; color: var(--bn-accent); margin-left: 6px; }
+.bn-pop-actions { display: flex; gap: 4px; }
+.bn-pop-btn {
+  width: 30px; height: 30px; border-radius: 999px;
+  border: 1px solid var(--bn-line);
+  background: transparent;
+  color: var(--bn-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background-color .15s ease, transform .12s ease;
+}
+.bn-pop-btn:active { transform: scale(.9); }
+.bn-pop-btn .esc-ico { width: 14px; height: 14px; }
+.bn-pop-meaning { font-size: 14px; color: var(--bn-ink); line-height: 1.5; margin: 2px 0; }
+.bn-pop-ctx { font-size: 12px; color: var(--bn-muted); line-height: 1.5; margin-top: 4px; }
+
+/* ---------- 8. 全文翻译融合（.esc-ft 覆写） ---------- */
+.esc-ft {
+  background: var(--bn-paper);
+  border: 1px solid var(--bn-line);
+  border-radius: var(--study-radius-md);
+}
+.esc-ft-head .esc-ico { color: var(--bn-accent); }
+.esc-ft-item { border-bottom: 1px dashed var(--bn-line); }
+.esc-ft-item:active { background: var(--bn-panel-bg); }
+.esc-ft-seq { background: var(--bn-accent); color: var(--bn-ink); }
+.esc-ft-progress-track { background: var(--bn-line); }
+.esc-ft-progress-bar { background: var(--bn-accent); }

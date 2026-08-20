@@ -142,30 +142,49 @@
   async function chatOnce(messages, options = {}) {
     const s = Store.getSettings();
     const url = `${s.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60000);
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.apiKey.trim()}` },
-        body: JSON.stringify({
-          model: s.model || DEFAULT_MODEL,
-          messages,
-          temperature: Object.prototype.hasOwnProperty.call(options, 'temperature') ? options.temperature : 0.3,
-          max_tokens: options.maxTokens || 2500,
-          chat_template_kwargs: { enable_thinking: false }
-        }),
-        signal: controller.signal
-      });
+    const header = { 'Content-Type': 'application/json', Authorization: `Bearer ${s.apiKey.trim()}` };
+    const body = JSON.stringify({
+      model: s.model || DEFAULT_MODEL,
+      messages,
+      temperature: Object.prototype.hasOwnProperty.call(options, 'temperature') ? options.temperature : 0.3,
+      max_tokens: options.maxTokens || 2500,
+      chat_template_kwargs: { enable_thinking: false }
+    });
+    const baseTimeout = options.timeout || 60000;
+    // 限流/超时/5xx/空内容：在传输层集中做退避重试（尊重 Retry-After），
+    // 四个子请求统一受益，显著降低“偶发整句为空/没解析”的概率。
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), baseTimeout);
+      let resp;
+      try {
+        resp = await fetch(url, { method: 'POST', headers: header, body, signal: controller.signal });
+      } catch (e) {
+        clearTimeout(timer);
+        // 网络错误 / 超时(AbortError)：可重试
+        if (attempt < 2) { await delay(1000 + attempt * 1000); continue; }
+        throw e;
+      }
       clearTimeout(timer);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-      if (!content) throw new Error('empty content');
-      return content;
-    } finally {
-      clearTimeout(timer);
+      if (resp.ok) {
+        try {
+          const data = await resp.json();
+          const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (content) return content;
+        } catch (e) { /* 解析失败按空内容重试 */ }
+        if (attempt < 2) { await delay(1000 + attempt * 1000); continue; }
+        throw new Error('empty content');
+      }
+      // 非 2xx：仅对限流/5xx 做退避重试
+      const retryable = resp.status === 429 || (resp.status >= 500 && resp.status < 600);
+      if (retryable && attempt < 2) {
+        const retryAfter = parseInt(resp.headers.get('Retry-After') || '0', 10);
+        await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 + attempt * 1000);
+        continue;
+      }
+      throw new Error('HTTP ' + resp.status);
     }
+    throw new Error('请求失败，已多次重试');
   }
 
   // ——— 逐句调用（默认，与网页端一致） ———
@@ -211,14 +230,14 @@
   function doRequestKnowledge(sentence) {
     return cachedRequest(generateCacheKey('knowledge', sentence), async () => {
       const { messages, maxTokens, temperature } = Shared.buildKnowledgePrompt(sentence);
-      try {
-        const content = await chatOnce(messages, { maxTokens, temperature });
-        const r = extractJSON(content);
-        if (r && r.knowledge) {
-          let k = String(r.knowledge).replace(/[；;]\s*/g, '<br>');
-          return k;
-        }
-      } catch (e) { /* ignore */ }
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const content = await chatOnce(messages, { maxTokens, temperature });
+          const r = extractJSON(content);
+          if (r && r.knowledge) return String(r.knowledge).replace(/[；;]\s*/g, '<br>');
+        } catch (e) { /* 限流/超时/失败，进入重试 */ }
+        if (attempt === 0) await delay(600); // 失败后退避再试一次
+      }
       return '';
     });
   }
@@ -226,10 +245,15 @@
   function doRequestTranslation(sentence) {
     return cachedRequest(generateCacheKey('translation', sentence), async () => {
       const { messages, maxTokens, temperature } = Shared.buildTranslationPrompt(sentence);
-      try {
-        const content = await chatOnce(messages, { maxTokens, temperature });
-        return String(content || '').replace(/^["'\s]+|["'\s]+$/g, '');
-      } catch (e) { return ''; }
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const content = await chatOnce(messages, { maxTokens, temperature });
+          const v = String(content || '').replace(/^["'\s]+|["'\s]+$/g, '');
+          if (v) return v;
+        } catch (e) { /* 限流/超时/失败，进入重试 */ }
+        if (attempt === 0) await delay(600); // 失败后退避再试一次
+      }
+      return '';
     });
   }
 
@@ -249,18 +273,42 @@
   }
 
   // 逐句：立即返回骨架（分句结果，详情为空），后台逐句解析完成后回调 onSentence(idx, fullSentence)
-  // 并发控制：每批同时跑 batchSize 句（每句内部又并行发其子请求，深/快模式一致），
-  // 批间不再等待/延迟，句子上限即文本句子数，提升整篇补全速度。
+  // 并发控制：每批同时跑 batchSize 句（每句内部又并行发其子请求，算法同网页端），
+  // 批间留 300ms 限流缓冲，避免免费模型被 429/超时。句子上限即文本句子数。
   async function parseStream(text, fast, onSentence) {
     const sentences = Shared.splitSentences(text);
     const n = sentences.length;
-    const batchSize = 6;
+    const results = new Array(n);
+    const batchSize = 3; // 对齐网页端 sentence_card_render
     for (let i = 0; i < n; i += batchSize) {
       const batch = sentences.slice(i, i + batchSize);
-      const tasks = batch.map((en, off) => parseOneSentence(en, fast).then((full) => onSentence(i + off, full)).catch(() => {}));
+      const tasks = batch.map((en, off) => parseOneSentence(en, fast).then((full) => { results[i + off] = full; onSentence(i + off, full); }).catch(() => {}));
       await Promise.all(tasks);
+      // 批间 300ms 限流缓冲（与网页端一致），显著降低免费模型被 429/超时的概率
+      if (i + batchSize < n) await delay(300);
     }
+    await backfillMissing(sentences, results, fast, onSentence); // 末轮补全缺翻译/缺词性的句子
     return n;
+  }
+
+  // 末轮补全：首轮跑完已隔一段时间、限流多已缓解，对仍缺翻译/缺词性的句子单独再请求一轮，
+  // 补齐后回调 onSentence 刷新对应句子与全文翻译，避免序号“跳空”。
+  async function backfillMissing(sentences, results, fast, onSentence) {
+    const need = [];
+    for (let i = 0; i < results.length; i++) {
+      const f = results[i];
+      if (!f || !f.zh || (Array.isArray(f.words) && f.words.length === 0)) need.push(i);
+    }
+    for (const i of need) {
+      const full = await parseOneSentence(sentences[i], fast);
+      const prev = results[i] || {};
+      const prevWords = Array.isArray(prev.words) ? prev.words.length : 0;
+      const newWords = Array.isArray(full.words) ? full.words.length : 0;
+      // 只保留“更好/更全”的结果，避免用空结果覆盖已有数据
+      if (full.zh && !prev.zh) { results[i] = full; onSentence(i, full); }
+      else if (newWords > prevWords) { results[i] = full; onSentence(i, full); }
+      await delay(250); // 逐个补，避免再次顶爆限流
+    }
   }
 
   // 逐句：分句采用共享本地规则，每句以「深度/快速」粒度做不同调用组合
@@ -321,11 +369,33 @@
     }
   }
 
+  // 单句单项补拉：供分句卡片某项为空时，点击该按钮重新请求，返回可直接合并进句子对象的字段
+  async function refetch(en, act) {
+    switch (act) {
+      case 'pos': {
+        const pos = await doRequestPos(en);
+        return { words: pos.map((w) => ({ word: w.word, pos: w.pos, zh: w.meaning })) };
+      }
+      case 'syntax': {
+        return { syntax: await doRequestSyntax(en) };
+      }
+      case 'knowledge': {
+        return { knowledge: await doRequestKnowledge(en) };
+      }
+      case 'translation': {
+        return { zh: await doRequestTranslation(en) };
+      }
+      default:
+        return {};
+    }
+  }
+
   Mobile.API = {
     parse, hasKey, computeStats, DEFAULT_MODEL, SAMPLE_SENTENCES,
     requestPerSentence, requestFullText,
     split: Shared.splitSentences,            // 分句骨架（本地，毫秒级）
     scaffold: Shared.fallbackParse,          // 本地启发式骨架（含空详情，供「边加载边显示」首屏渲染）
-    parseStream                             // 流式逐句：回调 onSentence(idx, fullSentence)
+    parseStream,                             // 流式逐句：回调 onSentence(idx, fullSentence)
+    refetch                                  // 单项补拉：refetch(en, act) -> Partial<句子对象>
   };
 })(window);

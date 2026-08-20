@@ -12,6 +12,9 @@
   const Mobile = global.Mobile;
   const UI = Mobile.UI, Store = Mobile.Store, Speech = Mobile.Speech, Router = Mobile.Router;
   const esc = UI.esc, icon = UI.icon;
+  // 共享统计/计划纯计算核心（core/shared/study_stats.js）
+  const Shared = global.EnglishStudyShared || {};
+  const SStats = Shared.Stats || null;
 
   // 单词标签的 4 个练习模式
   const WORD_MODES = [
@@ -41,20 +44,13 @@
     vocabQuiz: 'vocabQuiz'
   };
 
-  // 记忆模块元数据（对齐桌面端 features/stats_tracker.js MODULE_META）：
-  // label 中文名、color 展示色、type 归属（word 单词 / article 文章），供学习统计展示。
-  const MODULE_META = {
-    flashcard:      { label: '闪卡模式',     color: '#3b82f6', type: 'word' },
-    fillPractice:   { label: '填空练习',     color: '#10b981', type: 'word' },
-    spelling:       { label: '听写练习',     color: '#8b5cf6', type: 'word' },
-    choicePractice: { label: '选词练习',     color: '#f59e0b', type: 'word' },
-    cloze:          { label: '语境填空',     color: '#10b981', type: 'article' },
-    fullReview:     { label: '全文回顾',     color: '#3b82f6', type: 'article' },
-    sentenceReview: { label: '逐句精读',     color: '#8b5cf6', type: 'article' },
-    vocabQuiz:      { label: '生词测验',     color: '#ef4444', type: 'article' }
+  // 记忆模块元数据 + 生词本配色：统一来自共享层（core/shared/study_stats.js），
+  // 与桌面端 features/stats_tracker.js MODULE_META 唯一一致，避免两端漂移。
+  const MODULE_META = (SStats && SStats.MODULE_META) || {
+    flashcard: { label: '闪卡模式', color: '#3b82f6', type: 'word' },
+    fillPractice: { label: '填空练习', color: '#10b981', type: 'word' }
   };
-  // 生词本配色（移动端生词本未存 color，按顺序取色）
-  const NB_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
+  const NB_COLORS = (Shared.NB_COLORS) || ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
 
   const FALLBACK = [
     { word: 'serendipity', phonetic: 'ˌser.ənˈdɪp.ə.ti', meaning: '意外发现珍奇事物的本领', example: 'Life is full of serendipity.', exampleZh: '生活中处处充满意外惊喜。' },
@@ -548,62 +544,39 @@
   function _num(key) { const n = parseInt(localStorage.getItem(key), 10); return isNaN(n) ? 0 : n; }
   function _numOr(key, fb) { const n = parseInt(localStorage.getItem(key), 10); return isNaN(n) ? fb : n; }
 
-  // 单词侧统计数据
+  // 单词侧统计数据（数据计算统一走共享层，生词本列表归一化后注入）
   function getWordStats() {
-    const p = Store.getProgress();
-    const totalWords = Store.getVocab().length;
-    const masteryRate = totalWords > 0 ? Math.min(100, Math.round((p.masteredCount / totalWords) * 100)) : 0;
+    const notebooks = Store.getNotebooks().map((nb) => ({ id: nb.id, name: nb.name, count: nb.wordCount }));
+    const ws = SStats.wordStats(notebooks);
     return {
-      todayLearned: p.todayCount,
-      totalLearned: Math.max(p.totalLearned, totalWords),
-      totalWords,
-      masteredCount: p.masteredCount,
-      streakDays: p.streak,
-      masteryRate,
-      notebooks: Store.getNotebooks()
+      todayLearned: ws.todayLearned || 0,
+      totalLearned: ws.totalLearned || 0,
+      totalWords: ws.totalWords || 0,
+      masteredCount: ws.masteredCount || 0,
+      streakDays: ws.streak || 0,
+      masteryRate: ws.masteryRate || 0,
+      notebooks: ws.notebooks || []
     };
   }
-  // 文章侧统计数据
+  // 文章侧统计数据（历史记录列表归一化后注入共享层）
   function getArticleStats() {
-    const history = Store.getHistory();
+    const history = Store.getHistory().map((h) => ({ id: h.id, title: h.title, originalText: h.originalText || h.text, savedAt: h.savedAt }));
+    const rs = SStats.articleStats(history);
     return {
-      totalArticles: history.length,
-      todayArticles: _num('stats_today_articles'),
-      articleStreak: _num('stats_article_streak_days'),
-      recent: history.slice(0, 5).map((h) => ({ title: h.title, date: h.date, words: h.words }))
+      totalArticles: rs.totalArticles || 0,
+      todayArticles: rs.todayArticles || 0,
+      articleStreak: rs.articleStreak || 0,
+      recent: rs.recent || []
     };
   }
 
-  // 读取 stats_module_data 中某模块最近 7 天活动量
+  // 读取 stats_module_data 中某模块最近 7 天活动量（委托共享层 moduleDaily，点阵渲染用）
   function moduleDaily(key) {
-    let data = {};
-    try { data = JSON.parse(localStorage.getItem('stats_module_data') || '{}'); } catch (e) { /* ignore */ }
-    const days = ['一', '二', '三', '四', '五', '六', '日'];
-    const now = new Date();
-    const out = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      const day = data[d.toDateString()] || {};
-      out.push({ label: '周' + days[(d.getDay() + 6) % 7], value: day[key] || 0 });
-    }
-    return out;
+    return SStats.moduleDaily(key).map((d) => ({ label: d.label, value: d.value }));
   }
-  // 最近 7 天总学习量（type: 'word' | 'article' | null 全部）
+  // 最近 7 天总学习量（type: 'word' | 'article' | null 全部，委托共享层 trend）
   function trendData(type) {
-    let data = {};
-    try { data = JSON.parse(localStorage.getItem('stats_module_data') || '{}'); } catch (e) { /* ignore */ }
-    const typeKeys = type ? Object.keys(MODULE_META).filter((k) => MODULE_META[k].type === type) : null;
-    const days = ['一', '二', '三', '四', '五', '六', '日'];
-    const now = new Date();
-    const out = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      const day = data[d.toDateString()] || {};
-      let total = 0;
-      for (const k of Object.keys(day)) if (!typeKeys || typeKeys.includes(k)) total += day[k];
-      out.push({ label: '周' + days[(d.getDay() + 6) % 7], value: total });
-    }
-    return out;
+    return SStats.trend(type).map((d) => ({ label: d.label, value: d.value }));
   }
 
   // 模块近 7 天活动点阵（20px 圆点，透明度随活跃度变化，对齐桌面端）
@@ -646,16 +619,16 @@
         <div class="esc-chart-labels">${data.map((d) => `<span>${d.label}</span>`).join('')}</div>
       </div>`;
   }
-  // 生词本分布：环形图 + 列表
+  // 生词本分布：环形图 + 列表（notebooks 来自共享层 wordStats，字段为 count）
   function notebookDonut(notebooks) {
-    const total = notebooks.reduce((s, nb) => s + nb.wordCount, 0);
+    const total = notebooks.reduce((s, nb) => s + (nb.count || 0), 0);
     if (!total) return '';
     const c = 2 * Math.PI * 36;
     let seg = '';
     let off = 0;
     notebooks.forEach((nb, i) => {
       const color = NB_COLORS[i % NB_COLORS.length];
-      const len = c * (nb.wordCount / total);
+      const len = c * ((nb.count || 0) / total);
       seg += `<circle cx="50" cy="50" r="36" fill="none" stroke="${color}" stroke-width="18" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"></circle>`;
       off += len;
     });
@@ -668,22 +641,22 @@
         </svg>
         <div class="esc-donut-list">${notebooks.map((nb, i) => {
           const color = NB_COLORS[i % NB_COLORS.length];
-          const pct = Math.round((nb.wordCount / total) * 100);
-          return `<div class="esc-donut-item"><span class="esc-donut-dot" style="background:${color}"></span><span class="esc-donut-name">${esc(nb.name)}</span><span class="esc-donut-bar"><i style="width:${pct}%;background:${color}"></i></span><span class="esc-donut-count">${nb.wordCount}词 ${pct}%</span></div>`;
+          const pct = Math.round(((nb.count || 0) / total) * 100);
+          return `<div class="esc-donut-item"><span class="esc-donut-dot" style="background:${color}"></span><span class="esc-donut-name">${esc(nb.name)}</span><span class="esc-donut-bar"><i style="width:${pct}%;background:${color}"></i></span><span class="esc-donut-count">${nb.count}词 ${pct}%</span></div>`;
         }).join('')}</div>
       </div>`;
   }
-  // 各模式明细（含 7 天点阵 + 累计次数）
+  // 各模式明细（模块活动累计量取共享层 moduleStats，与桌面端一致）
   function moduleList(type) {
-    const act = Store.getModuleActivity();
-    const keys = Object.keys(MODULE_META).filter((k) => MODULE_META[k].type === type && (act.all[k] || 0) > 0);
+    const ms = SStats.moduleStats();
+    const keys = Object.keys(MODULE_META).filter((k) => MODULE_META[k].type === type && (ms.all[k] || 0) > 0);
     if (!keys.length) return '';
     const head = moduleDaily('flashcard').map((d) => `<span class="esc-dot-col esc-dot-label">${d.label}</span>`).join('');
     return `
       <div class="esc-stats-card">
         <div class="esc-stats-title">${icon('layers')}<span>${type === 'word' ? '单词练习' : '文章阅读'}各模式明细</span></div>
         <div class="esc-mod-head"><span class="esc-mod-name"></span><div class="esc-dot-wrap">${head}</div><span class="esc-mod-count"></span></div>
-        ${keys.map((k) => `<div class="esc-mod-item"><span class="esc-mod-name">${MODULE_META[k].label}</span>${dotChart(k, MODULE_META[k].color)}<span class="esc-mod-count">${act.all[k]}</span></div>`).join('')}
+        ${keys.map((k) => `<div class="esc-mod-item"><span class="esc-mod-name">${MODULE_META[k].label}</span>${dotChart(k, MODULE_META[k].color)}<span class="esc-mod-count">${ms.all[k]}</span></div>`).join('')}
       </div>`;
   }
 
@@ -717,28 +690,24 @@
         </div>
       </div>
       ${moduleList('article')}
-      ${s.recent.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('clock')}<span>最近阅读的文章</span></div><div class="esc-article-list">${s.recent.map((a) => `<div class="esc-article-item"><span class="esc-article-item-title">${esc(a.title)}</span><span class="esc-article-item-meta">${a.words} 词 · ${esc(a.date)}</span></div>`).join('')}</div></div>` : ''}
+      ${s.recent.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('clock')}<span>最近阅读的文章</span></div><div class="esc-article-list">${s.recent.map((a) => `<div class="esc-article-item"><span class="esc-article-item-title">${esc(a.title)}</span><span class="esc-article-item-meta">${a.wordCount} 词 · ${esc((a.savedAt || '').slice(0, 10))}</span></div>`).join('')}</div></div>` : ''}
       <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>阅读趋势</span></div>${miniChart('article')}</div>`;
   }
 
-  // 待复习文章数（与桌面端一致：无上次复习记录或超间隔则待复习）
+  // 待复习文章数（委托共享层 pendingReview，与桌面端一致）
   function getPendingReviewCount(interval) {
-    const now = Date.now();
-    const ms = interval * 24 * 60 * 60 * 1000;
-    return Store.getHistory().filter((h) => {
-      const last = _num('article_last_review_' + h.id);
-      return !last || (now - last) > ms;
-    }).length;
+    const history = Store.getHistory().map((h) => ({ id: h.id }));
+    return SStats.pendingReview(history);
   }
 
   function buildPlanWord() {
-    const goal = _numOr('dailyWordGoal', Store.getSettings().dailyGoal || 10);
-    const timeGoal = _numOr('dailyTimeGoal', 15);
-    const p = Store.getProgress();
-    const pct = Math.min(100, Math.round((p.todayCount / goal) * 100));
+    const wp = SStats.wordPlan(Store.getNotebooks().map((nb) => ({ id: nb.id, name: nb.name, count: nb.wordCount })));
+    const goal = wp.dailyWordGoal;
+    const timeGoal = wp.dailyTimeGoal;
+    const pct = wp.wordProgressPct;
     const circ = 2 * Math.PI * 42;
-    const enable = localStorage.getItem('enableReminder') === 'true';
-    const time = localStorage.getItem('reminderTime') || '09:00';
+    const enable = wp.enableReminder;
+    const time = wp.reminderTime;
     return `
       <div class="esc-stats-card">
         <div class="esc-stats-title">${icon('clock')}<span>每日单词目标</span></div>
@@ -751,8 +720,8 @@
             <div class="esc-ring-center"><span class="esc-num">${pct}%</span></div>
           </div>
           <div class="esc-plan-progress-info">
-            <div>今日已学 <b>${p.todayCount} / ${goal}</b> 个单词</div>
-            <div class="esc-plan-sub">连续学习 ${p.streak} 天 · 共 ${Store.getVocab().length} 词</div>
+            <div>今日已学 <b>${wp.todayLearned} / ${goal}</b> 个单词</div>
+            <div class="esc-plan-sub">连续学习 ${wp.streak} 天 · 共 ${wp.totalWords} 词</div>
           </div>
         </div>
         <div class="esc-goal-row">
@@ -782,17 +751,18 @@
   }
 
   function buildPlanArticle() {
-    const aGoal = _numOr('dailyArticleGoal', 1);
-    const aTimeGoal = _numOr('dailyArticleTimeGoal', 20);
-    const todayArticles = _num('stats_today_articles');
-    const aStreak = _num('stats_article_streak_days');
-    const totalArticles = Store.getHistory().length;
-    const pct = Math.min(100, Math.round((todayArticles / aGoal) * 100));
+    const ap = SStats.articlePlan(Store.getHistory().map((h) => ({ id: h.id })));
+    const aGoal = ap.dailyArticleGoal;
+    const aTimeGoal = ap.dailyArticleTimeGoal;
+    const todayArticles = ap.todayArticles;
+    const aStreak = ap.articleStreak;
+    const totalArticles = ap.totalArticles;
+    const pct = ap.articleProgressPct;
     const circ = 2 * Math.PI * 42;
-    const interval = _numOr('articleReviewInterval', 3);
+    const interval = ap.reviewInterval;
     const pending = getPendingReviewCount(interval);
-    const enable = localStorage.getItem('enableArticleReminder') === 'true';
-    const time = localStorage.getItem('articleReminderTime') || '20:00';
+    const enable = ap.enableReminder;
+    const time = ap.reminderTime;
     return `
       <div class="esc-stats-card">
         <div class="esc-stats-title">${icon('file-text')}<span>每日文章目标</span></div>

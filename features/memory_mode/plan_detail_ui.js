@@ -4,45 +4,47 @@
 
     ModuleRegistry.register('PlanDetailUI', ['GlobalManager'], function(GlobalManager) {
 
+        // 数据计算统一走共享层（core/shared/study_stats.js），仅做字段命名适配
+        function getSharedStats() {
+            const EnglishStudyShared = window.EnglishStudyShared || {};
+            return EnglishStudyShared.Stats || null;
+        }
+
         function getWordPlanData() {
-            const savedWordGoal = parseInt(localStorage.getItem('dailyWordGoal') || '10');
-            const savedTimeGoal = parseInt(localStorage.getItem('dailyTimeGoal') || '15');
-            const todayLearned = parseInt(localStorage.getItem('stats_today_learned') || '0');
-            const streakDays = parseInt(localStorage.getItem('stats_streak_days') || '0');
+            const SStats = getSharedStats();
             const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
-            let totalWords = 0;
-            for (const nb of Object.values(allNotebooks)) {
-                if (nb.words) totalWords += nb.words.length;
+            const notebookArr = [];
+            for (const [id, nb] of Object.entries(allNotebooks)) {
+                if (nb && nb.words) {
+                    notebookArr.push({ id, name: nb.name || id, color: nb.color || '#3b82f6', count: nb.words.length });
+                }
             }
+            const wp = SStats ? SStats.wordPlan(notebookArr) : {};
             return {
-                dailyWordGoal: savedWordGoal,
-                dailyTimeGoal: savedTimeGoal,
-                todayLearned,
-                streakDays,
-                totalWords,
-                wordProgressPct: savedWordGoal > 0 ? Math.min(100, Math.round((todayLearned / savedWordGoal) * 100)) : 0
+                dailyWordGoal: wp.dailyWordGoal != null ? wp.dailyWordGoal : 10,
+                dailyTimeGoal: wp.dailyTimeGoal != null ? wp.dailyTimeGoal : 15,
+                todayLearned: wp.todayLearned || 0,
+                streakDays: wp.streak || 0,
+                totalWords: wp.totalWords || 0,
+                wordProgressPct: wp.wordProgressPct || 0
             };
         }
 
         function getArticlePlanData() {
-            const dailyArticleGoal = parseInt(localStorage.getItem('dailyArticleGoal') || '1');
-            const dailyArticleTimeGoal = parseInt(localStorage.getItem('dailyArticleTimeGoal') || '20');
-            const todayArticles = parseInt(localStorage.getItem('stats_today_articles') || '0');
-            const articleStreakDays = parseInt(localStorage.getItem('stats_article_streak_days') || '0');
-            const reviewInterval = parseInt(localStorage.getItem('articleReviewInterval') || '3');
+            const SStats = getSharedStats();
             const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
-            const todayStr = new Date().toDateString();
-            const todayArticleIds = JSON.parse(localStorage.getItem('stats_today_article_ids') || '[]');
+            const historyArr = historyList.map(h => ({ id: h.id, title: h.title, originalText: h.originalText, savedAt: h.savedAt }));
+            const ap = SStats ? SStats.articlePlan(historyArr) : {};
             return {
-                dailyArticleGoal,
-                dailyArticleTimeGoal,
-                todayArticles,
-                articleStreakDays,
-                reviewInterval,
-                totalArticles: historyList.length,
-                articleProgressPct: dailyArticleGoal > 0 ? Math.min(100, Math.round((todayArticles / dailyArticleGoal) * 100)) : 0,
-                todayArticleIds,
-                todayDateStr: todayStr
+                dailyArticleGoal: ap.dailyArticleGoal != null ? ap.dailyArticleGoal : 1,
+                dailyArticleTimeGoal: ap.dailyArticleTimeGoal != null ? ap.dailyArticleTimeGoal : 20,
+                todayArticles: ap.todayArticles || 0,
+                articleStreakDays: ap.articleStreak || 0,
+                reviewInterval: ap.reviewInterval != null ? ap.reviewInterval : 3,
+                totalArticles: ap.totalArticles || 0,
+                articleProgressPct: ap.articleProgressPct || 0,
+                todayArticleIds: JSON.parse(localStorage.getItem('stats_today_article_ids') || '[]'),
+                todayDateStr: new Date().toDateString()
             };
         }
 
@@ -282,18 +284,10 @@
         }
 
         function getPendingReviewCount(planData) {
+            const SStats = getSharedStats();
             const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
-            const interval = parseInt(localStorage.getItem('articleReviewInterval') || '3');
-            const now = Date.now();
-            const intervalMs = interval * 24 * 60 * 60 * 1000;
-            let count = 0;
-            historyList.forEach(h => {
-                const lastReview = parseInt(localStorage.getItem('article_last_review_' + h.id) || '0');
-                if (!lastReview || (now - lastReview) > intervalMs) {
-                    count++;
-                }
-            });
-            return count;
+            const historyArr = historyList.map(h => ({ id: h.id, title: h.title, originalText: h.originalText, savedAt: h.savedAt }));
+            return SStats ? SStats.pendingReview(historyArr) : 0;
         }
 
         function bindPlanEvents() {

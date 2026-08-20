@@ -157,7 +157,6 @@ mobile/
 | 上传文件 | `#m-upload` + 隐藏 `#m-file` | FileReader 读文本 | click→`fileInput.click()`；`change`→读入 `state.text` + toast | `state.text` 更新 |
 | 开始解析 | `#m-parse` | `doParse(root)` | click | 置 `parsing`，禁用按钮，显示 loading |
 | 示例文章 | `#m-sample` | 填入 `SAMPLE_TEXT` | click | `state.text = SAMPLE_TEXT` |
-| 加载示例 | `#m-load-sample` | 填入并 `doParse` | click | 直接走解析流程 |
 | 剪贴板导入 | `#m-paste` | `navigator.clipboard.readText()` | click（async） | 读入 `state.text`；失败时 toast 引导手动粘贴 |
 | 统计条 | `#m-stats` | `statsHTML(res.stats)` | 解析后填充 | 单词/句子/阅读时间 |
 | 逐句解析卡 | `#m-cards` + `.esc-sentence` | `sentenceCard()`：英文句子拆成可点按单词 + 4 个动作按钮（词性/语法结构/知识点/翻译）各展开对应面板 | 解析后绑单词点按与面板单开切换、词性标签发音 | `Speech.speak` / 底部弹层 / 面板切换 |

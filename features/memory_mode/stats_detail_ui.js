@@ -6,73 +6,71 @@
     ModuleRegistry.register('StatsDetailUI', ['GlobalManager'], function(GlobalManager) {
 
         function getWordStats() {
+            // 数据计算统一走共享层（core/shared/study_stats.js），仅做字段命名适配
+            const EnglishStudyShared = window.EnglishStudyShared || {};
+            const SStats = EnglishStudyShared.Stats;
             const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
 
-            let totalWords = 0;
-            const notebookStats = [];
-
+            const notebookArr = [];
             for (const [id, nb] of Object.entries(allNotebooks)) {
-                if (nb.words) {
-                    totalWords += nb.words.length;
-                    notebookStats.push({
-                        id: id,
-                        name: nb.name || id,
-                        count: nb.words.length,
-                        color: nb.color || '#3b82f6'
-                    });
-                }
+                notebookArr.push({
+                    id,
+                    name: nb.name || id,
+                    color: nb.color || '#3b82f6',
+                    count: (nb.words || []).length
+                });
             }
 
-            const masteredWords = parseInt(localStorage.getItem('stats_mastered_words') || '0');
-            const totalLearned = parseInt(localStorage.getItem('stats_total_learned') || totalWords.toString());
-            const todayLearned = parseInt(localStorage.getItem('stats_today_learned') || '0');
-            const streakDays = parseInt(localStorage.getItem('stats_streak_days') || '0');
-            const masteryRate = totalWords > 0 ? Math.min(100, Math.round((masteredWords / totalWords) * 100)) : 0;
+            const ws = SStats.wordStats(notebookArr);
 
             return {
-                totalWords,
-                masteredWords,
-                totalLearned: Math.max(totalLearned, totalWords),
-                todayLearned,
-                streakDays,
-                masteryRate,
-                notebookStats
+                totalWords: ws.totalWords,
+                masteredWords: ws.masteredCount,
+                totalLearned: ws.totalLearned,
+                todayLearned: ws.todayLearned,
+                streakDays: ws.streak,
+                masteryRate: ws.masteryRate,
+                notebookStats: ws.notebooks
             };
         }
 
         function getArticleStats() {
+            // 聚合项统一走共享层（study_stats.js），仅此页 needs vocabCount 补充统计生词数
+            const EnglishStudyShared = window.EnglishStudyShared || {};
+            const SStats = EnglishStudyShared.Stats;
             const historyList = window.HistoryManager ? window.HistoryManager.getHistory() : [];
-            const totalArticles = historyList.length;
+            const historyArr = historyList.map(h => ({
+                id: h.id,
+                title: h.title,
+                originalText: h.originalText || '',
+                savedAt: h.savedAt
+            }));
 
-            const totalArticleLearned = parseInt(localStorage.getItem('stats_total_articles_learned') || totalArticles.toString());
-            const todayArticles = parseInt(localStorage.getItem('stats_today_articles') || '0');
-            const articleStreakDays = parseInt(localStorage.getItem('stats_article_streak_days') || '0');
+            const as = SStats.articleStats(historyArr);
 
-            const recentArticles = historyList.slice(0, 5).map(h => {
-                const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
-                const vocabMap = {};
-                for (const nb of Object.values(allNotebooks)) {
-                    if (nb.words) {
-                        nb.words.forEach(w => {
-                            vocabMap[w.word.toLowerCase().trim()] = true;
-                        });
-                    }
+            // 补充「文章内生词数」（桌面端独有展示字段）
+            const allNotebooks = window.VocabData ? window.VocabData.getAllNotebooks() : {};
+            const vocabMap = {};
+            for (const nb of Object.values(allNotebooks)) {
+                if (nb.words) {
+                    nb.words.forEach(w => { vocabMap[(w.word || '').toLowerCase().trim()] = true; });
                 }
-                const words = (h.originalText || '').split(/[^a-zA-Z'-]+/).filter(w => w.length > 0);
-                const vocabInArticle = words.filter(w => vocabMap[w.toLowerCase()]).length;
+            }
+            const recentArticles = as.recent.map(r => {
+                const words = (r.originalText || '').split(/[^a-zA-Z'-]+/).filter(w => w.length > 0);
                 return {
-                    id: h.id,
-                    title: (h.originalText || '').split('\n')[0].substring(0, 40) || '(无标题)',
-                    savedAt: h.savedAt,
+                    id: r.id,
+                    title: r.title,
+                    savedAt: r.savedAt,
                     wordCount: words.length,
-                    vocabCount: vocabInArticle
+                    vocabCount: words.filter(w => vocabMap[w.toLowerCase()]).length
                 };
             });
 
             return {
-                totalArticles: Math.max(totalArticleLearned, totalArticles),
-                todayArticles,
-                articleStreakDays,
+                totalArticles: as.totalArticles,
+                todayArticles: as.todayArticles,
+                articleStreakDays: as.articleStreak,
                 recentArticles
             };
         }
