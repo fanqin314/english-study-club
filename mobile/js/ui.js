@@ -45,5 +45,66 @@
     return global.confirm(msg);
   }
 
-  Mobile.UI = { esc, icon, refreshIcons, toast, confirmDialog };
+  // 触摸水波纹：在宿主元素内生成一个扩散圆点（自动清理）
+  function ripple(host, ev) {
+    if (!host || host.classList.contains('esc-ripple-host')) {
+      // 确保宿主具备定位上下文
+      host.classList.add('esc-ripple-host');
+    }
+    const rect = host.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = (ev && ev.clientX != null ? ev.clientX : rect.left + rect.width / 2) - rect.left - size / 2;
+    const y = (ev && ev.clientY != null ? ev.clientY : rect.top + rect.height / 2) - rect.top - size / 2;
+    const dot = document.createElement('span');
+    dot.className = 'esc-ripple';
+    dot.style.width = dot.style.height = size + 'px';
+    dot.style.left = x + 'px';
+    dot.style.top = y + 'px';
+    host.appendChild(dot);
+    dot.addEventListener('animationend', () => dot.remove());
+    // 兜底清理
+    setTimeout(() => { if (dot.parentNode) dot.remove(); }, 600);
+  }
+
+  // 统一底部弹层：从屏幕底部平滑滑入，背景同步模糊淡入
+  // 返回 close()；opts.onClose 在关闭动画结束后触发
+  function bottomSheet(html, opts) {
+    opts = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'esc-bsheet-backdrop';
+    wrap.innerHTML = `<div class="esc-bsheet" role="dialog" aria-modal="true">${html}</div>`;
+    document.body.appendChild(wrap);
+    const sheet = wrap.querySelector('.esc-bsheet');
+    const close = function () {
+      wrap.classList.remove('is-show');
+      const done = () => { if (wrap.parentNode) wrap.remove(); if (typeof opts.onClose === 'function') opts.onClose(); };
+      sheet.addEventListener('transitionend', done, { once: true });
+      setTimeout(done, 320); // 兜底
+    };
+    wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+    // 触发进场动画
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('is-show')));
+    if (typeof opts.onOpen === 'function') opts.onOpen(sheet, close);
+    return close;
+  }
+
+  // 全屏转场弹层（封装 .esc-overlay）：返回 close()
+  function overlay(html, opts) {
+    opts = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'esc-overlay';
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    const close = function () {
+      wrap.style.transition = 'opacity .2s ease';
+      wrap.style.opacity = '0';
+      const done = () => { if (wrap.parentNode) wrap.remove(); if (typeof opts.onClose === 'function') opts.onClose(); };
+      wrap.addEventListener('transitionend', done, { once: true });
+      setTimeout(done, 260);
+    };
+    if (typeof opts.onOpen === 'function') opts.onOpen(wrap, close);
+    return close;
+  }
+
+  Mobile.UI = { esc, icon, refreshIcons, toast, confirmDialog, ripple, bottomSheet, overlay };
 })(window);

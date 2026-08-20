@@ -317,6 +317,12 @@
     // 关于链接
     root.querySelectorAll('[data-act="about"]').forEach((el) => el.addEventListener('click', () => UI.toast('用户协议 / 隐私政策（演示）')));
     root.querySelector('[data-act="about-app"]').addEventListener('click', () => UI.toast('英研社 · 文章驱动的 AI 英语精读工具'));
+
+    // 触摸反馈：设置项与按钮统一水波纹
+    root.querySelectorAll('.esc-setting, .esc-btn, .esc-pill, .esc-color-swatch').forEach((el) => {
+      el.classList.add('esc-tap');
+      el.addEventListener('touchstart', (ev) => UI.ripple(el, ev), { passive: true });
+    });
   }
 
   function exportData() {

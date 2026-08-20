@@ -242,6 +242,18 @@
       wordCount: (d.notebooks[id].words || []).length
     }));
   }
+  // 当前生词本 id（返回字符串 id；缺省取第一个）
+  function getCurrentNotebookId() {
+    const d = _getVocabData();
+    if (d.currentNotebookId && d.notebooks[d.currentNotebookId]) return d.currentNotebookId;
+    const first = Object.keys(d.notebooks)[0];
+    return first || null;
+  }
+  // 当前生词本的完整单词数组（含 word/pos/meaning/createdAt 等，供移动端列表与掌握度计算）
+  function getNotebookWords(id) {
+    const d = _getVocabData();
+    return (d.notebooks[id] && d.notebooks[id].words || []).slice();
+  }
   // 新建生词本（对齐桌面端 VocabData.createNotebook）：重名报错，成功后返回 {success,id}
   function createNotebook(name) {
     const d = _getVocabData();
@@ -286,6 +298,58 @@
     if (!nb) return false;
     const lower = (word || '').toLowerCase();
     return (nb.words || []).some((x) => (x.word || '').toLowerCase() === lower);
+  }
+  // 设置当前生词本（对齐桌面端 VocabData.setCurrentNotebook）
+  function setCurrentNotebook(id) {
+    const d = _getVocabData();
+    if (d.notebooks[id]) { d.currentNotebookId = id; _saveVocabData(d); emit('vocab', getVocab()); }
+  }
+  // 重命名生词本（重名报错）
+  function renameNotebook(id, name) {
+    const d = _getVocabData();
+    const trimmed = (name || '').trim();
+    if (!trimmed) return { success: false, error: '名称不能为空' };
+    if (!d.notebooks[id]) return { success: false, error: '生词本不存在' };
+    const dup = Object.keys(d.notebooks).some((k) => k !== id && d.notebooks[k].name === trimmed);
+    if (dup) return { success: false, error: '已存在同名生词本' };
+    d.notebooks[id].name = trimmed;
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true };
+  }
+  // 合并生词本：fromId 的单词去重并入 toId，随后删除 fromId（至少保留一本）
+  function mergeNotebooks(fromId, toId) {
+    const d = _getVocabData();
+    if (!d.notebooks[fromId] || !d.notebooks[toId]) return { success: false, error: '生词本不存在' };
+    if (fromId === toId) return { success: false, error: '不能合并到自身' };
+    const exist = new Set((d.notebooks[toId].words || []).map((x) => (x.word || '').toLowerCase()));
+    (d.notebooks[fromId].words || []).forEach((w) => {
+      if (!exist.has((w.word || '').toLowerCase())) { d.notebooks[toId].words.push(w); exist.add((w.word || '').toLowerCase()); }
+    });
+    delete d.notebooks[fromId];
+    if (d.currentNotebookId === fromId) d.currentNotebookId = toId;
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true, count: d.notebooks[toId].words.length };
+  }
+  // 删除生词本（至少保留一本）
+  function deleteNotebook(id) {
+    const d = _getVocabData();
+    if (!d.notebooks[id]) return { success: false, error: '生词本不存在' };
+    if (Object.keys(d.notebooks).length <= 1) return { success: false, error: '至少保留一个生词本' };
+    delete d.notebooks[id];
+    if (d.currentNotebookId === id) d.currentNotebookId = Object.keys(d.notebooks)[0];
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true };
+  }
+  // 移动端独有偏好：全文回顾阅读风格（仅本地，不写入共享键）
+  function getReadingStyle() {
+    return localStorage.getItem(ESC + 'readingStyle') || 'book';
+  }
+  function setReadingStyle(style) {
+    localStorage.setItem(ESC + 'readingStyle', style);
+    emit('readingStyle', style);
   }
   // 注意：移动端不再维护「按单词的掌握状态」（桌面端也无此字段）。
   // 「已掌握」是桌面端 StatsTracker 的全局累加计数器（stats_mastered_words），
@@ -568,7 +632,9 @@
     on, off, emit,
     uid, todayStr,
     getVocab, addWord, removeWord, getWord,
-    getNotebooks, createNotebook, addWordToNotebook, isWordInNotebook,
+    getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, isWordInNotebook,
+    setCurrentNotebook, renameNotebook, mergeNotebooks, deleteNotebook,
+    getReadingStyle, setReadingStyle,
     getHistory, addHistory, getHistoryItem, removeHistory, clearHistory,
     getSettings, updateSettings,
     getProgress, updateProgress,

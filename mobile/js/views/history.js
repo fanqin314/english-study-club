@@ -75,6 +75,8 @@
       const id = el.getAttribute('data-id');
       const view = el.querySelector('[data-act="view"]');
       const review = el.querySelector('[data-act="review"]');
+      el.classList.add('esc-tap');
+      el.addEventListener('touchstart', (ev) => UI.ripple(el, ev), { passive: true });
       if (view) view.addEventListener('click', (e) => {
         e.stopPropagation();
         const h = Store.getHistoryItem(id);

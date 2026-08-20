@@ -268,9 +268,14 @@
   let session = null;
 
   function closeOverlay() {
-    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    overlay = null;
-    session = null;
+    if (!overlay) return;
+    const el = overlay;
+    overlay = null; session = null;
+    el.style.transition = 'opacity .2s ease';
+    el.style.opacity = '0';
+    const done = () => { if (el.parentNode) el.parentNode.removeChild(el); };
+    el.addEventListener('transitionend', done, { once: true });
+    setTimeout(done, 260);
   }
 
   function openExercise(mode) {
@@ -522,23 +527,54 @@
     if (prev) prev.addEventListener('click', () => { if (session.idx > 0) { session.idx--; step(); } });
   }
 
-  // 全文回顾：展示整篇文章（只读，不评分）
+  // 全文回顾：展示整篇文章（只读，不评分）+ 7 种阅读风格切换
+  const READING_STYLES = [
+    { key: 'book', name: '书本' },
+    { key: 'magazine', name: '杂志' },
+    { key: 'newspaper', name: '报纸' },
+    { key: 'cute', name: '可爱' },
+    { key: 'pixel', name: '像素' },
+    { key: 'minimal', name: '极简' },
+    { key: 'classic', name: '典籍' }
+  ];
   function renderArticleReview(body, item) {
+    const current = Store.getReadingStyle();
+    const styleBar = READING_STYLES.map((s) =>
+      `<button class="esc-reading-style${s.key === current ? ' is-active' : ''}" data-style="${esc(s.key)}">${esc(s.name)}</button>`
+    ).join('');
     body.innerHTML = `
       <p class="esc-quiz-q">${esc((item.title || (item.text || '').split('\n')[0] || '文章回顾').slice(0, 40))}</p>
       <p class="esc-quiz-ex">${esc(item.date || '')}</p>
-      <div class="esc-article-text">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div>
+      <div class="esc-reading-style-bar">${styleBar}</div>
+      <div class="esc-review-text"><div class="esc-rs-${esc(current)}">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div></div>
       <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px" data-act="done">完成</button>`;
     UI.refreshIcons(body);
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
+    body.querySelectorAll('.esc-reading-style').forEach((b) => {
+      b.addEventListener('click', () => {
+        const style = b.getAttribute('data-style');
+        Store.setReadingStyle(style);
+        // 仅更新风格条高亮与文本容器 class，避免重建整段导致滚动跳动
+        body.querySelectorAll('.esc-reading-style').forEach((x) => x.classList.toggle('is-active', x === b));
+        const reviewText = body.querySelector('.esc-review-text');
+        reviewText.className = 'esc-review-text';
+        reviewText.innerHTML = `<div class="esc-rs-${esc(style)}">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div>`;
+      });
+    });
   }
 
   /* ================= 学习统计 / 学习计划（对齐桌面端 stats_detail / plan_detail） ================= */
   let spOverlay = null;
 
   function closeSp() {
-    if (spOverlay && spOverlay.parentNode) spOverlay.parentNode.removeChild(spOverlay);
+    if (!spOverlay) return;
+    const el = spOverlay;
     spOverlay = null;
+    el.style.transition = 'opacity .2s ease';
+    el.style.opacity = '0';
+    const done = () => { if (el.parentNode) el.parentNode.removeChild(el); };
+    el.addEventListener('transitionend', done, { once: true });
+    setTimeout(done, 260);
   }
 
   function _num(key) { const n = parseInt(localStorage.getItem(key), 10); return isNaN(n) ? 0 : n; }
