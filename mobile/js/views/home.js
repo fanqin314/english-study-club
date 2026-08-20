@@ -540,7 +540,7 @@
 
         <div class="esc-pill-row">
           <button id="m-sample" class="esc-pill">${icon('bookmark')}<span>示例文章</span></button>
-          <button id="m-paste" class="esc-pill">${icon('clipboard-paste')}<span>剪贴板导入</span></button>
+          <button id="m-paste" class="esc-pill">${icon('clipboard-paste')}<span>粘贴导入</span></button>
           <button id="m-highlight" class="esc-pill" data-hl="off">${icon('highlighter')}<span>词性高亮</span></button>
           <button id="m-save" class="esc-pill">${icon('save')}<span>保存分析</span></button>
         </div>
