@@ -524,7 +524,12 @@
         </header>
 
         <div class="esc-card">
-          <div class="esc-section-title">${icon('file-text')}<span>输入英文文章</span></div>
+          <div class="esc-section-title">
+            ${icon('file-text')}<span>输入英文文章</span>
+            <span style="flex:1"></span>
+            <button id="m-upload" class="esc-icon-btn esc-title-icon" title="上传文件">${icon('upload')}</button>
+            <button id="m-camera" class="esc-icon-btn esc-title-icon" title="拍照识别">${icon('camera')}</button>
+          </div>
           <textarea id="m-input" class="esc-textarea" placeholder="粘贴英文文章，AI 自动解析词性、语法与翻译...">${esc(state.text)}</textarea>
           <div class="esc-btn-row">
             <button id="m-parse" class="esc-btn esc-btn-primary">${icon('sparkles')}<span>开始解析</span></button>
@@ -536,26 +541,20 @@
         <div class="esc-pill-row">
           <button id="m-sample" class="esc-pill">${icon('bookmark')}<span>示例文章</span></button>
           <button id="m-paste" class="esc-pill">${icon('clipboard-paste')}<span>剪贴板导入</span></button>
-          <button id="m-upload" class="esc-btn esc-btn-ghost esc-icobtn" title="上传文件">${icon('upload')}</button>
-          <button id="m-camera" class="esc-btn esc-btn-ghost esc-icobtn" title="拍照识别">${icon('camera')}</button>
           <button id="m-highlight" class="esc-pill" data-hl="off">${icon('highlighter')}<span>词性高亮</span></button>
           <button id="m-save" class="esc-pill">${icon('save')}<span>保存分析</span></button>
         </div>
 
         <div id="m-stats"></div>
 
-        <div class="esc-section-title" style="margin-top:16px">${icon('align-left')}<span>全文翻译</span></div>
+        <div class="esc-section-title" id="m-ft-title" style="margin-top:16px" hidden>${icon('align-left')}<span>全文翻译</span></div>
         <div id="m-fulltrans"></div>
 
-        <div class="esc-section-title" style="margin-top:16px">${icon('target')}<span>查漏补缺</span></div>
+        <div class="esc-section-title" id="m-gap-title" style="margin-top:16px" hidden>${icon('target')}<span>查漏补缺</span></div>
         <div id="m-gaps"></div>
 
-        <div class="esc-section-title" style="margin-top:16px">${icon('align-left')}<span>逐句解析</span></div>
+        <div class="esc-section-title" id="m-cards-title" style="margin-top:16px" hidden>${icon('align-left')}<span>逐句解析</span></div>
         <div id="m-cards"></div>
-
-        <div style="text-align:center;padding:8px 0 4px">
-          <a id="m-load-sample" style="display:inline-flex;align-items:center;gap:6px;color:var(--study-primary);font-size:14px;cursor:pointer">${icon('file-down')}<span>加载示例文章</span></a>
-        </div>
       </div>`;
 
     bind(container);
@@ -593,7 +592,6 @@
     });
 
     $('#m-sample').addEventListener('click', () => { input.value = SAMPLE_TEXT; state.text = SAMPLE_TEXT; UI.toast('已填入示例文章'); });
-    $('#m-load-sample').addEventListener('click', () => { input.value = SAMPLE_TEXT; state.text = SAMPLE_TEXT; doParse(root); });
 
     $('#m-paste').addEventListener('click', async () => {
       try {
@@ -1108,6 +1106,11 @@
 
     const parseBtn = $('#m-parse');
     parseBtn.disabled = true;
+    // 点击解析后才展示结果区标题（全文翻译 / 查漏补缺 / 逐句解析）
+    ['#m-ft-title', '#m-gap-title', '#m-cards-title'].forEach((sel) => {
+      const t = root.querySelector(sel);
+      if (t) t.hidden = false;
+    });
     $('#m-cards').innerHTML = `<div class="esc-loading"><div class="esc-spinner"></div><div>AI 正在解析...</div></div>`;
 
     const sMode = Store.getSettings();

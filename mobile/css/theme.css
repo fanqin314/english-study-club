@@ -120,8 +120,8 @@ a { text-decoration: none; color: inherit; }
 .esc-app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   max-width: 448px;          /* ≈ max-w-md */
   margin: 0 auto;
   background: var(--study-background);
@@ -130,6 +130,7 @@ a { text-decoration: none; color: inherit; }
 }
 .esc-main {
   flex: 1 1 auto;
+  min-height: 0;             /* 关键：允许 flex 子项收缩到比内容短，否则 overflow-y:auto 不生效（内容被撑开且被 .esc-app 裁切，导致无法滚动） */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;   /* 阻止滚动链到 body，避免 iOS 橡皮筋干扰下拉刷新 */
@@ -169,6 +170,11 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 }
 .esc-icon-btn:hover { background: var(--study-muted); }
 .esc-icon-btn:active { background: var(--study-border); }
+/* 标题行右侧的纯图标按钮（上传/拍照）：无边框、无 header 的负外边距 */
+.esc-title-icon { width: 30px; height: 30px; margin-right: 0; color: var(--study-muted-foreground); }
+.esc-section-title .esc-title-icon .esc-ico { width: 16px; height: 16px; color: var(--study-muted-foreground); }
+.esc-title-icon:hover { background: var(--study-muted); color: var(--study-foreground); }
+.esc-title-icon:hover .esc-ico { color: var(--study-foreground); }
 
 /* ---------- 5. Card ---------- */
 .esc-card {
@@ -665,10 +671,13 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-nb-error[hidden] { display: none; }
 
 /* ---------- 11. Word Card（生词本） ---------- */
+/* 生词本列表：一行两个单词块 */
+#m-vocab-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+#m-vocab-list .esc-empty { grid-column: 1 / -1; }
 .esc-word {
   background: var(--study-card); border: 1px solid var(--study-border);
   border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
-  overflow: hidden; margin-bottom: 12px;
+  overflow: hidden; margin-bottom: 0;
   transition: background-color .15s ease, box-shadow .15s ease;
 }
 .esc-word:active { background: var(--study-muted); }

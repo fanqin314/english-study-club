@@ -48,7 +48,6 @@
             ${w.example ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(w.example)}"</p>${w.exampleZh ? `<p class="esc-word-ex-zh">${esc(w.exampleZh)}</p>` : ''}</div>` : ''}
             <div class="esc-word-foot">
               <button class="esc-word-pron" data-act="pron">${icon('volume-2')}<span>发音</span></button>
-              <span class="esc-dot"></span>
               <span class="esc-word-date">${esc(relTime(w.createdAt))}</span>
             </div>
           </div>
