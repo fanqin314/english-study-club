@@ -58,7 +58,7 @@
     parseMode: 'deep',        // 'deep' | 'fast'
     parseMethod: 'perSentence', // 'perSentence' 网页端逐句调用（默认）| 'fullText' 单次全文
     autoPronounce: true,
-    autoCollect: true,
+    autoCollect: false,
     darkMode: false,
     fontSize: 'medium',       // 'small' | 'medium' | 'large'
     themeNeutral: null,
@@ -137,9 +137,20 @@
   /* ============================================================
      生词本（对齐桌面端 vocabData：多生词本结构）
      ============================================================ */
+  // 生词本标签色盘（与桌面端环形选色器同款，8 色，跨端一致）
+  const NOTEBOOK_COLORS = ['#506080', '#E07B5A', '#C8A87C', '#5A8A6E', '#10B981', '#3B82F6', '#8B5A2B', '#A855F7', '#EC4899', '#F59E0B'];
+  function _randColor() {
+    return NOTEBOOK_COLORS[Math.floor(Math.random() * NOTEBOOK_COLORS.length)];
+  }
   function _getVocabData() {
     const d = _readJSON(D.vocab, null);
     if (!d || !d.notebooks) return { notebooks: {}, currentNotebookId: null };
+    // 惰性迁移：早期生词本无 color 字段，读取时补默认色并落盘一次
+    let touched = false;
+    Object.keys(d.notebooks).forEach((id) => {
+      if (!d.notebooks[id].color) { d.notebooks[id].color = _randColor(); touched = true; }
+    });
+    if (touched) _writeJSON(D.vocab, d);
     return d;
   }
   function _saveVocabData(d) { _writeJSON(D.vocab, d); }
@@ -151,7 +162,7 @@
   function _ensureDefault(d) {
     if (Object.keys(d.notebooks).length === 0) {
       const id = Date.now().toString();
-      d.notebooks[id] = { name: '默认生词本', words: [], createdDate: new Date().toISOString() };
+      d.notebooks[id] = { name: '默认生词本', words: [], createdDate: new Date().toISOString(), color: _randColor() };
       d.currentNotebookId = id;
     }
     return d;
@@ -233,13 +244,14 @@
     _saveVocabData(d);
     emit('vocab', getVocab());
   }
-  // 生词本列表（对齐桌面端 VocabData.getAllNotebooks）：返回 [{id,name,wordCount}]
+  // 生词本列表（对齐桌面端 VocabData.getAllNotebooks）：返回 [{id,name,wordCount,color}]
   function getNotebooks() {
     const d = _getVocabData();
     return Object.keys(d.notebooks).map((id) => ({
       id,
       name: d.notebooks[id].name || '未命名',
-      wordCount: (d.notebooks[id].words || []).length
+      wordCount: (d.notebooks[id].words || []).length,
+      color: d.notebooks[id].color || '#506080'
     }));
   }
   // 当前生词本 id（返回字符串 id；缺省取第一个）
@@ -262,7 +274,7 @@
     const exists = Object.values(d.notebooks).some((nb) => nb.name === trimmed);
     if (exists) return { success: false, error: '生词本名称已存在' };
     const id = Date.now().toString();
-    d.notebooks[id] = { name: trimmed, words: [], createdDate: new Date().toISOString() };
+    d.notebooks[id] = { name: trimmed, words: [], createdDate: new Date().toISOString(), color: _randColor() };
     if (!d.currentNotebookId) d.currentNotebookId = id;
     _saveVocabData(d);
     emit('vocab', getVocab());
@@ -313,6 +325,16 @@
     const dup = Object.keys(d.notebooks).some((k) => k !== id && d.notebooks[k].name === trimmed);
     if (dup) return { success: false, error: '已存在同名生词本' };
     d.notebooks[id].name = trimmed;
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true };
+  }
+  // 修改生词本标签色（仅接受色盘内颜色，保证跨端一致）
+  function updateNotebookColor(id, color) {
+    const d = _getVocabData();
+    if (!d.notebooks[id]) return { success: false, error: '生词本不存在' };
+    if (!NOTEBOOK_COLORS.includes(color)) return { success: false, error: '颜色不在色盘内' };
+    d.notebooks[id].color = color;
     _saveVocabData(d);
     emit('vocab', getVocab());
     return { success: true };
@@ -439,12 +461,15 @@
     // 每日目标对齐桌面端键 dailyWordGoal（移动端旧 esc.settings.dailyGoal 作为回退）
     const gw = _readNum(D.dailyWordGoal, null);
     const dailyGoal = gw != null ? gw : (local.dailyGoal != null ? local.dailyGoal : SETTINGS_DEFAULT.dailyGoal);
+    // 自愈：已保存的非法值（含非 ASCII 字符等）自动回退默认，避免破坏请求
+    const rawKey = _secureRead(D.encKey);
+    const rawBase = _secureRead(D.encBase);
+    const rawModel = _secureRead(D.encModel);
     return Object.assign({}, SETTINGS_DEFAULT, {
       darkMode: dark,
-      apiKey: _secureRead(D.encKey) || DEFAULT_API_KEY,
-      baseUrl: _secureRead(D.encBase) || SETTINGS_DEFAULT.baseUrl,
-      model: _secureRead(D.encModel) || SETTINGS_DEFAULT.model,
-      dailyGoal
+      apiKey: (rawKey && /^[\x20-\x7E]+$/.test(rawKey)) ? rawKey : DEFAULT_API_KEY,
+      baseUrl: (rawBase && /^https?:\/\//.test(rawBase)) ? rawBase : SETTINGS_DEFAULT.baseUrl,
+      model: (rawModel && /^[A-Za-z0-9/._+-]+$/.test(rawModel)) ? rawModel : SETTINGS_DEFAULT.model,
     }, local, { dailyGoal });
   }
   function updateSettings(partial) {
@@ -633,7 +658,8 @@
     uid, todayStr,
     getVocab, addWord, removeWord, getWord,
     getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, isWordInNotebook,
-    setCurrentNotebook, renameNotebook, mergeNotebooks, deleteNotebook,
+    setCurrentNotebook, renameNotebook, updateNotebookColor, mergeNotebooks, deleteNotebook,
+    NOTEBOOK_COLORS,
     getReadingStyle, setReadingStyle,
     getHistory, addHistory, getHistoryItem, removeHistory, clearHistory,
     getSettings, updateSettings,

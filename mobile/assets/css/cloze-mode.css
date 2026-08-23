@@ -1,0 +1,1367 @@
+/* ================================================================
+   Warm Editorial Study — 语境填空模式
+   独立 .cloze-* 样式体系，无 .fill-* 依赖
+   设计系统：深茶绿 #0d7377 / 暖米白 #f7f5f0 / 铜锈红 #c85a48
+   ================================================================ */
+
+/* ---- 设计系统变量 ---- */
+:root {
+    --cloze-primary: #0d7377;
+    --cloze-primary-light: #e0edec;
+    --cloze-primary-dark: #095a5e;
+    --cloze-bg: #f7f5f0;
+    --cloze-card-bg: #fafaf7;
+    --cloze-text: #3a3a3a;
+    --cloze-text-soft: #7a7a7a;
+    --cloze-text-muted: #b0a99a;
+    --cloze-border: #d8d2c4;
+    --cloze-border-light: #e8e4d8;
+    --cloze-accent: #c85a48;
+    --cloze-accent-light: #f8e4e0;
+    --cloze-success: #5a8f6a;
+    --cloze-success-light: #e4f0e8;
+    --cloze-shadow: 0 2px 8px rgba(60, 50, 30, 0.08);
+    --cloze-shadow-sm: 0 1px 4px rgba(60, 50, 30, 0.06);
+    --cloze-radius: 4px;
+    --cloze-transition: 0.25s ease;
+}
+
+/* ---- 暗色模式 ---- */
+[data-theme="dark"] {
+    --cloze-primary: #2aa0a5;
+    --cloze-primary-light: #1a3a3c;
+    --cloze-primary-dark: #3abbc0;
+    --cloze-bg: #2a2824;
+    --cloze-card-bg: #35322e;
+    --cloze-text: #e0ddd5;
+    --cloze-text-soft: #b0aca2;
+    --cloze-text-muted: #7a766c;
+    --cloze-border: #4a4842;
+    --cloze-border-light: #3a3834;
+    --cloze-accent: #d97a68;
+    --cloze-accent-light: #3e2a26;
+    --cloze-success: #6aaf7a;
+    --cloze-success-light: #1e3a24;
+    --cloze-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --cloze-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ================================================================
+   主卡片
+   ================================================================ */
+.cloze-card {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    translate: -50% 0 !important;
+    z-index: 1000;
+    width: min(98vw, 1600px) !important;
+    padding: 0 !important;
+    gap: 0;
+    border-radius: var(--cloze-radius);
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+    background: var(--cloze-card-bg);
+    border: 1px solid var(--cloze-border);
+    box-shadow: var(--cloze-shadow);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================================================================
+   顶部栏：细线进度条 + 页码指示器
+   ================================================================ */
+.cloze-top-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px 4px;
+    height: auto;
+    min-height: 22px;
+}
+
+.cloze-progress-track {
+    flex: 1;
+    height: 2px;
+    background: var(--cloze-border-light);
+    border-radius: 1px;
+    overflow: hidden;
+    min-width: 40px;
+    margin-right: 12px;
+}
+
+.cloze-progress-fill {
+    height: 100%;
+    background: var(--cloze-primary);
+    border-radius: 1px;
+    transition: width 0.4s ease;
+}
+
+.cloze-page-indicator {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--cloze-text-soft);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* ================================================================
+   布局：内容主体（左） + 工具栏（右侧垂直侧边栏）
+   ================================================================ */
+.cloze-body,
+.cloze-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* ---- 内容区 ---- */
+.cloze-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    line-height: 2.2;
+    font-size: 20px;
+    font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
+    color: var(--cloze-text);
+    background: var(--cloze-bg);
+    border: none;
+    border-radius: 0;
+    padding: 16px 20px;
+    margin: 0 4px 4px 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* 句子切换动画 */
+.cloze-content.sentence-enter {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.cloze-content.sentence-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ---- 右侧垂直工具栏 ---- */
+.cloze-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 6px;
+    width: 40px;
+    border-left: 1px solid var(--cloze-border-light);
+    background: var(--cloze-card-bg);
+    justify-content: flex-start;
+    margin: 4px 4px 4px 0;
+}
+
+.cloze-toolbar-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cloze-text-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color var(--cloze-transition);
+    position: relative;
+    border-radius: 0;
+}
+
+.cloze-toolbar-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.cloze-toolbar-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: var(--cloze-primary);
+    transition: width 0.2s ease, left 0.2s ease;
+}
+
+.cloze-toolbar-btn:hover {
+    color: var(--cloze-primary);
+}
+
+.cloze-toolbar-btn:hover::after {
+    width: 60%;
+    left: 20%;
+}
+
+.cloze-toolbar-btn:active {
+    color: var(--cloze-primary-dark);
+}
+
+.cloze-toolbar-btn.active {
+    color: var(--cloze-primary);
+}
+
+.cloze-toolbar-btn.active::after {
+    width: 60%;
+    left: 20%;
+    background: var(--cloze-primary);
+}
+
+.cloze-toolbar-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.cloze-toolbar-btn:disabled::after {
+    display: none;
+}
+
+/* 工具栏分隔线 */
+.cloze-toolbar-divider {
+    width: 16px;
+    height: 1px;
+    background: var(--cloze-border-light);
+    margin: 2px 0;
+    flex-shrink: 0;
+}
+
+/* ================================================================
+   句子文本
+   ================================================================ */
+.cloze-text {
+    color: var(--cloze-text);
+    font-weight: 400;
+    line-height: inherit;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* ================================================================
+   填空输入（字母格子系统）
+   ================================================================ */
+.cloze-input-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+.cloze-input-wrapper {
+    display: inline;
+    position: relative;
+}
+
+/* ---- 字母格 System ---- */
+.cloze-letter-grid {
+    display: inline-flex;
+    gap: 1px;
+    cursor: pointer;
+    position: relative;
+    vertical-align: middle;
+    padding: 1px 2px;
+    border-radius: 0;
+    transition: background 0.2s ease;
+    height: auto;
+    margin: 0;
+    min-height: unset;
+    border: none;
+    flex-wrap: nowrap;
+    background: transparent;
+    box-shadow: none;
+}
+
+.cloze-letter-grid.active-slot {
+    background: var(--cloze-primary-light);
+    box-shadow: 0 0 0 1.5px var(--cloze-primary);
+}
+
+.cloze-letter-grid .letter-box {
+    width: 26px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1.5px solid var(--cloze-border);
+    border-radius: 0;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--cloze-text-soft);
+    text-transform: lowercase;
+    transition: all 0.15s ease;
+    font-family: "Courier New", "Noto Serif", "Times New Roman", serif;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---- 字母格内独立输入框 ---- */
+.cloze-letter-grid .letter-box .letter-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: inherit;
+    color: inherit;
+    text-transform: lowercase;
+    line-height: normal;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cloze-letter-grid .letter-box .letter-input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.cloze-letter-grid .letter-box .letter-input::selection {
+    background: var(--cloze-primary-light);
+    color: var(--cloze-primary-dark);
+}
+
+.cloze-letter-grid .letter-box:hover {
+    border-color: var(--cloze-primary);
+    background: var(--cloze-primary-light);
+}
+
+.cloze-letter-grid .letter-box.filled {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary-dark);
+}
+
+/* ---- 光标位置指示器（闪烁下划线） ---- */
+.cloze-letter-grid .letter-box.cursor-pos {
+    position: relative;
+}
+
+.cloze-letter-grid .letter-box.cursor-pos::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 2px;
+    right: 2px;
+    height: 2px;
+    background: var(--cloze-primary);
+    animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* 字母格焦点状态下移除浏览器默认轮廓 */
+.cloze-letter-grid:focus {
+    outline: none;
+}
+
+.cloze-letter-grid .letter-box.correct {
+    background: var(--cloze-success-light);
+    border-color: var(--cloze-success);
+    color: var(--cloze-success);
+    animation: clozeCorrectPop 0.3s ease;
+}
+
+.cloze-letter-grid .letter-box.wrong {
+    background: var(--cloze-accent-light);
+    border-color: var(--cloze-accent);
+    color: var(--cloze-accent);
+}
+
+.cloze-letter-grid .letter-box.revealed {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary);
+}
+
+.cloze-letter-grid .letter-box.space-box {
+    background: transparent;
+    border: none;
+    width: 4px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.cloze-letter-grid .cloze-hidden-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cloze-input-wrapper.correct .cloze-letter-grid .letter-box {
+    background: var(--cloze-success-light);
+    border-color: var(--cloze-success);
+}
+
+.cloze-input-wrapper.incorrect .cloze-letter-grid {
+    animation: clozeShake 0.4s ease;
+}
+
+@keyframes clozeCorrectPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+@keyframes clozeShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* ---- 正确答案提示 ---- */
+.cloze-correct-answer {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: var(--cloze-success);
+    background: var(--cloze-success-light);
+    border-radius: 0;
+    font-weight: 400;
+    font-family: "Courier New", monospace;
+    animation: clozeFadeIn 0.3s ease;
+}
+
+/* ================================================================
+   句间分割线 — 细横线
+   ================================================================ */
+.cloze-sentence-divider {
+    height: 1px;
+    margin: 10px 0;
+    background: var(--cloze-border-light);
+    border: none;
+}
+
+.cloze-sent-speak-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 6px;
+    border: none;
+    background: transparent;
+    color: var(--cloze-text-muted);
+    cursor: pointer;
+    opacity: 0.5;
+    vertical-align: middle;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.cloze-sent-speak-btn:hover {
+    opacity: 1;
+    color: var(--cloze-primary);
+}
+
+.cloze-sent-speak-btn:active {
+    opacity: 0.7;
+}
+
+.cloze-sent-speak-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ================================================================
+   朗读时字母格绿色呼吸灯阴影
+   ================================================================ */
+@keyframes clozeBreathingGlow {
+    0%, 100% {
+        box-shadow: 0 0 6px rgba(13, 115, 119, 0.2), 0 0 12px rgba(13, 115, 119, 0.08);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(13, 115, 119, 0.45), 0 0 32px rgba(13, 115, 119, 0.2);
+    }
+}
+
+.cloze-letter-grid.speaking {
+    animation: clozeBreathingGlow 1.8s ease-in-out infinite;
+    border-color: var(--cloze-primary) !important;
+}
+
+.cloze-letter-grid.speaking .letter-box {
+    border-color: var(--cloze-primary) !important;
+}
+
+/* ================================================================
+   句首翻译按钮 + 悬浮气泡
+   ================================================================ */
+.cloze-sent-trans-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin-right: 4px;
+    border: none;
+    background: transparent;
+    color: var(--cloze-text-muted);
+    cursor: pointer;
+    opacity: 0.5;
+    vertical-align: middle;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+    position: relative;
+    top: -1px;
+}
+
+.cloze-sent-trans-btn:hover {
+    opacity: 1;
+    color: var(--cloze-primary);
+}
+
+.cloze-sent-trans-btn:active {
+    opacity: 0.7;
+}
+
+.cloze-sent-trans-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ---- 翻译气泡 ---- */
+.cloze-trans-bubble {
+    position: fixed;
+    z-index: 2000;
+    max-width: 360px;
+    padding: 10px 14px;
+    background: var(--cloze-card-bg);
+    border: 1px solid var(--cloze-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(60, 50, 30, 0.15);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--cloze-text);
+    font-family: "Noto Serif SC", Georgia, serif;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.cloze-trans-bubble.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 气泡小三角（默认朝下，气泡在上方） */
+.cloze-trans-bubble::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    background: var(--cloze-card-bg);
+    border-right: 1px solid var(--cloze-border);
+    border-bottom: 1px solid var(--cloze-border);
+    transform: rotate(45deg);
+}
+
+/* 气泡在下方时，小三角朝上 */
+.cloze-trans-bubble.below::before {
+    top: -6px;
+    bottom: auto;
+    border-right: 1px solid var(--cloze-border);
+    border-top: 1px solid var(--cloze-border);
+    border-bottom: none;
+    transform: rotate(-45deg);
+}
+
+[data-theme="dark"] .cloze-trans-bubble {
+    background: var(--cloze-card-bg);
+    border-color: var(--cloze-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .cloze-trans-bubble::before {
+    background: var(--cloze-card-bg);
+    border-right-color: var(--cloze-border);
+    border-bottom-color: var(--cloze-border);
+}
+
+[data-theme="dark"] .cloze-trans-bubble.below::before {
+    border-right-color: var(--cloze-border);
+    border-top-color: var(--cloze-border);
+    border-bottom-color: transparent;
+}
+
+@keyframes clozeFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes clozeFadeSlideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================================
+   底部导航栏（角落翻页风格）
+   ================================================================ */
+.cloze-bottom-nav {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 6px 12px 8px;
+    border-top: 1px solid var(--cloze-border-light);
+    background: var(--cloze-card-bg);
+}
+
+.cloze-nav-btn {
+    width: auto;
+    height: auto;
+    padding: 4px 12px;
+    border: none;
+    background: transparent;
+    color: var(--cloze-text-soft);
+    font-size: 13px;
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: color var(--cloze-transition);
+    position: relative;
+    border-radius: 0;
+}
+
+.cloze-nav-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.cloze-nav-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: var(--cloze-primary);
+    transition: width 0.2s ease, left 0.2s ease;
+}
+
+.cloze-nav-btn:hover:not(:disabled) {
+    color: var(--cloze-primary);
+}
+
+.cloze-nav-btn:hover:not(:disabled)::after {
+    width: 70%;
+    left: 15%;
+}
+
+.cloze-nav-btn:active:not(:disabled) {
+    color: var(--cloze-primary-dark);
+}
+
+.cloze-nav-btn:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+}
+
+.cloze-nav-btn:disabled::after {
+    display: none;
+}
+
+.cloze-prev-btn {
+    margin-right: 16px;
+}
+
+.cloze-next-btn {
+    margin-left: 16px;
+}
+
+/* 页码文本 */
+.cloze-page-label {
+    font-size: 11px;
+    color: var(--cloze-text-muted);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    margin: 0 4px;
+}
+
+/* ================================================================
+   反馈区域
+   ================================================================ */
+.cloze-feedback {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    min-height: 16px;
+}
+
+.cloze-streak {
+    min-height: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--cloze-text-soft);
+}
+
+.cloze-result {
+    min-height: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--cloze-text-soft);
+}
+
+/* 得分徽章弹跳动画 */
+#clozeScoreBadge.score-pop {
+    animation: clozeScoreBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes clozeScoreBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* 卡片反馈动画 */
+.cloze-card.cloze-card-correct {
+    animation: clozeCardCorrect 0.6s ease;
+    border-color: var(--cloze-success) !important;
+}
+
+.cloze-card.cloze-card-wrong {
+    animation: clozeCardWrong 0.45s ease;
+    border-color: var(--cloze-accent) !important;
+}
+
+@keyframes clozeCardCorrect {
+    0% { box-shadow: var(--cloze-shadow); }
+    50% { box-shadow: 0 0 0 2px var(--cloze-success-light), var(--cloze-shadow); }
+    100% { box-shadow: var(--cloze-shadow); }
+}
+
+@keyframes clozeCardWrong {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* ================================================================
+   总结页面
+   ================================================================ */
+.cloze-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 20px;
+    flex: 1;
+    animation: clozeFadeSlideIn 0.4s ease;
+}
+
+.cloze-summary-icon {
+    position: relative;
+    margin-bottom: 4px;
+}
+
+.cloze-summary-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--cloze-text);
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.5px;
+}
+
+.cloze-summary-title.perfect {
+    color: var(--cloze-primary);
+}
+
+.cloze-summary-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    max-width: 480px;
+}
+
+.cloze-summary-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    padding: 8px 12px;
+    background: var(--cloze-bg);
+    border: 1px solid var(--cloze-border-light);
+    border-radius: var(--cloze-radius);
+    animation: clozeFadeSlideIn 0.4s ease backwards;
+}
+
+.cloze-summary-val {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.cloze-summary-val.correct { color: var(--cloze-success); }
+.cloze-summary-val.wrong { color: var(--cloze-accent); }
+.cloze-summary-val.rate { color: var(--cloze-primary); }
+.cloze-summary-val.streak { color: #d4a843; }
+.cloze-summary-val.skip { color: var(--cloze-text-muted); }
+.cloze-summary-val.score { color: var(--cloze-primary-dark); }
+
+.cloze-summary-lbl {
+    font-size: 11px;
+    color: var(--cloze-text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+
+.cloze-perfect-badge {
+    padding: 6px 16px;
+    background: var(--cloze-primary-light);
+    color: var(--cloze-primary);
+    border: 1px solid var(--cloze-primary);
+    border-radius: var(--cloze-radius);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    animation: clozeFadeSlideIn 0.4s ease 0.3s backwards;
+}
+
+/* ================================================================
+   结果状态文本
+   ================================================================ */
+.cloze-correct { color: var(--cloze-success); }
+.cloze-wrong { color: var(--cloze-accent); }
+.cloze-skip { color: var(--cloze-text-muted); }
+
+.cloze-result.cloze-result-correct {
+    color: var(--cloze-success);
+}
+.cloze-result.cloze-result-wrong {
+    color: var(--cloze-accent);
+}
+.cloze-result.cloze-result-skip {
+    color: var(--cloze-text-muted);
+}
+
+/* ================================================================
+   顶部头部
+   ================================================================ */
+.cloze-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--cloze-bg);
+    border-bottom: 1px solid var(--cloze-border-light);
+    flex-shrink: 0;
+}
+
+.cloze-header .back-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cloze-text-soft);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--cloze-transition);
+}
+
+.cloze-header .back-btn:hover {
+    color: var(--cloze-primary);
+}
+
+.cloze-header .back-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.cloze-header h3 {
+    flex: 1;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 28px;
+    color: var(--cloze-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    letter-spacing: 0.3px;
+}
+
+.cloze-score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cloze-primary);
+    background: var(--cloze-primary-light);
+    border: 1px solid var(--cloze-primary);
+    border-radius: var(--cloze-radius);
+    font-variant-numeric: tabular-nums;
+    box-sizing: border-box;
+    cursor: default;
+}
+
+/* ================================================================
+   键盘焦点
+   ================================================================ */
+.cloze-nav-btn:focus-visible,
+.cloze-toolbar-btn:focus-visible {
+    outline: 1px solid var(--cloze-primary);
+    outline-offset: 2px;
+}
+
+.cloze-letter-grid:focus-within {
+    background: var(--cloze-primary-light);
+    box-shadow: 0 0 0 1.5px var(--cloze-primary);
+}
+
+/* ================================================================
+   暗色模式适配（暖暗色系）
+   ================================================================ */
+
+[data-theme="dark"] .cloze-content {
+    background: var(--cloze-card-bg);
+}
+
+[data-theme="dark"] .cloze-letter-grid.active-slot {
+    background: var(--cloze-primary-light);
+    box-shadow: 0 0 0 1.5px var(--cloze-primary);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box {
+    background: transparent;
+    border-color: var(--cloze-border);
+    color: var(--cloze-text);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box:hover {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box.filled {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary-dark);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box.cursor-pos::after {
+    background: var(--cloze-primary-dark);
+}
+
+[data-theme="dark"] .cloze-letter-grid:focus {
+    outline: none;
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box.correct {
+    background: var(--cloze-success-light);
+    border-color: var(--cloze-success);
+    color: var(--cloze-success);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box.wrong {
+    background: var(--cloze-accent-light);
+    border-color: var(--cloze-accent);
+    color: var(--cloze-accent);
+}
+
+[data-theme="dark"] .cloze-letter-grid .letter-box.revealed {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary);
+}
+
+[data-theme="dark"] .cloze-sent-speak-btn:hover {
+    color: var(--cloze-primary);
+}
+
+[data-theme="dark"] .cloze-toolbar {
+    border-left-color: var(--cloze-border);
+    background: var(--cloze-card-bg);
+}
+
+[data-theme="dark"] .cloze-toolbar-divider {
+    background: var(--cloze-border);
+}
+
+[data-theme="dark"] .cloze-bottom-nav {
+    border-top-color: var(--cloze-border);
+    background: var(--cloze-card-bg);
+}
+
+[data-theme="dark"] .cloze-progress-track {
+    background: var(--cloze-border);
+}
+
+[data-theme="dark"] .cloze-page-indicator {
+    color: var(--cloze-text-muted);
+}
+
+[data-theme="dark"] .cloze-header {
+    background: var(--cloze-card-bg);
+    border-bottom-color: var(--cloze-border);
+}
+
+[data-theme="dark"] .cloze-header h3 {
+    color: var(--cloze-text);
+}
+
+[data-theme="dark"] .cloze-score-badge {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary);
+}
+
+[data-theme="dark"] .cloze-summary-stat {
+    background: var(--cloze-card-bg);
+    border-color: var(--cloze-border);
+}
+
+[data-theme="dark"] .cloze-summary-title {
+    color: var(--cloze-text);
+}
+
+[data-theme="dark"] .cloze-perfect-badge {
+    background: var(--cloze-primary-light);
+    border-color: var(--cloze-primary);
+    color: var(--cloze-primary);
+}
+
+/* ================================================================
+   响应式适配
+   ================================================================ */
+
+/* ---- 平板 (768px) ---- */
+@media (max-width: 768px) {
+    .cloze-card {
+        top: 0 !important;
+        width: min(96vw, 100%) !important;
+    }
+
+    .cloze-content {
+        padding: 12px 14px;
+        font-size: 17px;
+    }
+
+    .cloze-letter-grid .letter-box {
+        width: 22px;
+        height: 28px;
+        font-size: 18px;
+    }
+
+    .cloze-toolbar {
+        width: 36px;
+        padding: 6px 4px;
+    }
+
+    .cloze-toolbar-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .cloze-toolbar-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .cloze-top-bar {
+        padding: 5px 10px 3px;
+    }
+
+    .cloze-bottom-nav {
+        padding: 5px 10px 6px;
+    }
+
+    .cloze-nav-btn {
+        font-size: 12px;
+        padding: 3px 10px;
+    }
+
+    .cloze-header {
+        padding: 5px 10px;
+    }
+
+    .cloze-header h3 {
+        font-size: 13px;
+    }
+
+    .cloze-summary {
+        padding: 20px 16px;
+    }
+
+    .cloze-summary-title {
+        font-size: 18px;
+    }
+
+    .cloze-summary-stat {
+        min-width: 50px;
+        padding: 6px 10px;
+    }
+
+    .cloze-summary-val {
+        font-size: 20px;
+    }
+}
+
+/* ---- 移动端 (640px) ---- */
+@media (max-width: 640px) {
+    .cloze-card {
+        top: 0 !important;
+        bottom: 0 !important;
+        width: min(99vw, 100%) !important;
+    }
+
+    .cloze-content {
+        padding: 10px 12px;
+        font-size: 15px;
+        line-height: 2.0;
+        margin: 0 2px 2px 2px;
+    }
+
+    .cloze-letter-grid .letter-box {
+        width: 20px;
+        height: 26px;
+        font-size: 17px;
+    }
+
+    .cloze-letter-grid .letter-box.space-box {
+        width: 3px;
+        height: 26px;
+    }
+
+    .cloze-correct-answer {
+        font-size: 10px;
+    }
+
+    .cloze-toolbar {
+        width: 32px;
+        padding: 4px 3px;
+        gap: 4px;
+    }
+
+    .cloze-toolbar-btn {
+        width: 24px;
+        height: 24px;
+    }
+
+    .cloze-toolbar-btn svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .cloze-top-bar {
+        padding: 4px 8px 2px;
+        min-height: 18px;
+    }
+
+    .cloze-progress-track {
+        margin-right: 8px;
+    }
+
+    .cloze-page-indicator {
+        font-size: 10px;
+    }
+
+    .cloze-bottom-nav {
+        padding: 4px 8px 6px;
+    }
+
+    .cloze-nav-btn {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .cloze-nav-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .cloze-prev-btn {
+        margin-right: 10px;
+    }
+
+    .cloze-next-btn {
+        margin-left: 10px;
+    }
+
+    .cloze-page-label {
+        font-size: 10px;
+    }
+
+    .cloze-header {
+        padding: 4px 8px;
+    }
+
+    .cloze-header h3 {
+        font-size: 12px;
+    }
+
+    .cloze-score-badge {
+        font-size: 11px;
+        padding: 1px 6px;
+    }
+
+    .cloze-summary {
+        padding: 16px 12px;
+    }
+
+    .cloze-summary-title {
+        font-size: 16px;
+    }
+
+    .cloze-summary-stat {
+        min-width: 44px;
+        padding: 5px 8px;
+    }
+
+    .cloze-summary-val {
+        font-size: 18px;
+    }
+}
+
+/* ---- 小屏手机 (480px) ---- */
+@media (max-width: 480px) {
+    .cloze-card {
+        top: 0 !important;
+        bottom: 0 !important;
+    }
+
+    .cloze-content {
+        font-size: 14px;
+        padding: 8px 10px;
+        line-height: 1.9;
+    }
+
+    .cloze-letter-grid .letter-box {
+        width: 18px;
+        height: 24px;
+        font-size: 15px;
+    }
+
+    .cloze-toolbar {
+        width: 28px;
+        padding: 3px 2px;
+        gap: 3px;
+    }
+
+    .cloze-toolbar-btn {
+        width: 22px;
+        height: 22px;
+    }
+
+    .cloze-toolbar-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .cloze-bottom-nav {
+        padding: 3px 6px 5px;
+    }
+
+    .cloze-nav-btn {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+
+    .cloze-header {
+        padding: 3px 6px;
+    }
+
+    .cloze-header h3 {
+        font-size: 11px;
+    }
+
+    .cloze-score-badge {
+        font-size: 10px;
+        padding: 1px 5px;
+    }
+
+    .cloze-summary {
+        padding: 12px 8px;
+    }
+
+    .cloze-summary-title {
+        font-size: 15px;
+    }
+
+    .cloze-summary-stat {
+        min-width: 40px;
+        padding: 4px 6px;
+    }
+
+    .cloze-summary-val {
+        font-size: 16px;
+    }
+}
+
+/* ================================================================
+   特定元素字体覆盖
+   ================================================================ */
+div#clozeContent {
+    font-family: "Comic Sans MS", cursive !important;
+}
+
+div#clozeContent > span.cloze-text:nth-child(14) {
+    font-family: "Trebuchet MS", Helvetica, sans-serif !important;
+}

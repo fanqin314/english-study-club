@@ -221,6 +221,7 @@
       const base = baseEl.value.trim();
       const model = modelEl.value.trim();
       const key = keyEl.value.trim();
+      if (key && /[^\x20-\x7E]/.test(key)) { UI.toast('API Key 含无效字符（请仅使用英文字母/数字/连字符）'); return; }
       if (base) patch.baseUrl = base;
       if (model) patch.model = model;
       if (key) patch.apiKey = key; // 留空则保留当前 Key
@@ -230,6 +231,7 @@
     root.querySelector('[data-act="api-test"]').addEventListener('click', async () => {
       const cfg = Store.getSettings();
       if (!API.hasKey()) { UI.toast('请先填写 API Key 或使用内置默认 Key'); return; }
+      if (cfg.apiKey && /[^\x20-\x7E]/.test(cfg.apiKey)) { UI.toast('已保存的 API Key 含无效字符，请清空后重新填写'); return; }
       UI.toast('正在测试连接...');
       try {
         const url = `${(cfg.baseUrl || '').replace(/\/+$/, '')}/chat/completions`;

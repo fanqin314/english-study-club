@@ -1,0 +1,1273 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿/* memory-mode.css - 记忆模式样式 */
+
+.memory-mode-section {
+    margin-bottom: 20px;
+}
+
+.memory-mode-button-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.06));
+}
+
+.memory-mode-outer-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    transition: all 1000ms;
+    background: linear-gradient(to right, #6366f1, #ec4899, #facc15);
+    border-radius: 9999px;
+    filter: blur(12px);
+    z-index: 0;
+}
+
+.memory-mode-button-wrapper:hover .memory-mode-outer-glow {
+    opacity: 0.85;
+    transition-duration: 200ms;
+    filter: blur(14px);
+}
+
+.memory-mode-button {
+    position: relative;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 40px;
+    border: 0;
+    overflow: hidden;
+    border-radius: 50px;
+    transition: all 0.2s ease-in;
+    font-weight: 500;
+    cursor: pointer;
+    color: #1e293b;
+    z-index: 1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    isolation: isolate;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    padding: 0;
+    font-family: inherit;
+    transform-origin: center left;
+}
+
+.memory-mode-button:hover,
+.memory-mode-button.active {
+    width: 120px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25), 0 0 0 1px #ffffff inset;
+    color: #0f172a;
+}
+
+.memory-mode-button:active {
+    transform: scale(0.97);
+}
+
+.memory-mode-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+    flex-shrink: 0;
+    left: 16px;
+    position: absolute;
+}
+
+.memory-mode-icon svg {
+    width: 24px;
+    height: 24px;
+    color: #6366f1;
+    transition: color 0.2s ease-in;
+}
+
+.memory-mode-button:hover .memory-mode-icon svg,
+.memory-mode-button.active .memory-mode-icon svg {
+    color: #1e293b;
+}
+
+.memory-mode-title {
+    transform: translateX(100%);
+    transition: transform 0.2s ease-in;
+    transform-origin: center right;
+    display: block;
+    text-align: center;
+    text-indent: 28px;
+    width: 100%;
+    opacity: 0;
+    white-space: nowrap;
+}
+
+.memory-mode-button:hover .memory-mode-title,
+.memory-mode-button.active .memory-mode-title {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.memory-mode-hover-effect {
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.memory-mode-hover-effect div {
+    background: linear-gradient(
+        90deg,
+        #de004b 0%,
+        #bf46ff 49%,
+        #00d4ff 100%
+    );
+    border-radius: 9999px;
+    width: 12rem;
+    height: 8rem;
+    transition: 0.4s;
+    filter: blur(28px);
+    animation: rotate-glow 4s linear infinite;
+    opacity: 0.4;
+}
+
+.memory-mode-button:hover .memory-mode-hover-effect div {
+    width: 10rem;
+    height: 6rem;
+    opacity: 0.7;
+}
+
+@keyframes rotate-glow {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+[data-theme="dark"] .memory-mode-button {
+    background: rgba(30, 41, 59, 0.75);
+    color: #f1f5f9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(51, 65, 85, 0.5) inset;
+    border: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+[data-theme="dark"] .memory-mode-button:hover,
+[data-theme="dark"] .memory-mode-button.active {
+    background: rgba(30, 41, 59, 0.9);
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(51, 65, 85, 0.8) inset;
+}
+
+[data-theme="dark"] .memory-mode-icon svg {
+    color: #818cf8;
+}
+
+[data-theme="dark"] .memory-mode-button:hover .memory-mode-icon svg,
+[data-theme="dark"] .memory-mode-button.active .memory-mode-icon svg {
+    color: #f1f5f9;
+}
+
+/* ================================================================
+   记忆模式主卡片
+   ================================================================ */
+
+.vocab-card.memory-mode-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--card-bg);
+    border-radius: 0;
+    border: none;
+    padding: 0 20px 0px;
+    width: 100%;
+    min-height: calc(100vh - 20px);
+    margin-bottom: 0;
+    margin-top: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    transition: border-color 0.25s ease;
+}
+
+.vocab-card.memory-mode-card::before {
+    content: '';
+    position: absolute;
+    inset: -80px;
+    border-radius: inherit;
+    background: conic-gradient(
+        from 0deg at 50% 50%,
+        transparent 10deg,
+        rgba(255, 107, 107, 0.12) 40deg,
+        rgba(255, 180, 50, 0.12) 80deg,
+        rgba(255, 255, 80, 0.12) 120deg,
+        rgba(100, 220, 100, 0.12) 160deg,
+        rgba(80, 200, 255, 0.12) 200deg,
+        rgba(100, 120, 255, 0.12) 240deg,
+        rgba(180, 100, 255, 0.12) 280deg,
+        rgba(255, 100, 180, 0.12) 320deg,
+        transparent 350deg
+    );
+    animation: memoryRainbow 8s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(50px);
+}
+
+@keyframes memoryRainbow {
+    from { transform: rotate(0deg) scale(1.1); }
+    to { transform: rotate(360deg) scale(1.2); }
+}
+
+.vocab-card.memory-mode-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.vocab-card.memory-mode-card.memory-rainbow-off::before {
+    display: none;
+}
+
+.vocab-card.memory-mode-card:hover {
+    border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* ================================================================
+   头部区域：标题 + 标签 + 功能按钮
+   ================================================================ */
+
+.memory-mode-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+    padding: 0 0 10px;
+    border-bottom: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 56px;
+}
+
+.memory-mode-header h3,
+.memory-mode-header .memory-mode-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.memory-mode-header-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 标签切换栏 - 药丸形 */
+.memory-mode-tabs {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    height: 46px;
+    padding: 0;
+}
+
+.memory-mode-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-light);
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    flex: 1;
+}
+
+.memory-mode-tab:hover {
+    background: var(--hover-bg);
+    color: var(--text);
+}
+
+.memory-mode-tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ================================================================
+   头部功能按钮（学习统计 / 学习计划）
+   ================================================================ */
+
+.header-section-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--btn-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.header-section-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.header-section-btn .btn-icon {
+    width: 15px;
+    height: 15px;
+}
+
+/* ================================================================
+   模式选择区域
+   ================================================================ */
+
+.mode-select-section {
+    margin-top: 0;
+}
+
+.mode-select-section h4 {
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-light);
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mode-select-section h4::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+/* 模式按钮网格 */
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.mode-card {
+    --mode-accent: var(--accent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    min-height: 110px;
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--mode-accent);
+    border-radius: 3px 3px 0 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.mode-card:hover {
+    border-color: var(--mode-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.mode-card:hover::before {
+    opacity: 1;
+}
+
+.mode-card:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.mode-card:focus-visible {
+    outline: 2px solid var(--mode-accent);
+    outline-offset: 2px;
+}
+
+.mode-card .mode-card-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mode-accent);
+    background: color-mix(in srgb, var(--mode-accent) 10%, transparent);
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.mode-card:hover .mode-card-icon {
+    background: var(--mode-accent);
+    color: white;
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--mode-accent) 40%, transparent);
+}
+
+.mode-card .mode-card-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.mode-card .mode-card-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    position: relative;
+    z-index: 1;
+    transition: color 0.2s;
+}
+
+.mode-card .mode-card-desc {
+    font-size: 11px;
+    color: var(--text-light);
+    position: relative;
+    z-index: 1;
+    margin-top: -4px;
+}
+
+.mode-card-stat {
+    font-size: 10px;
+    color: var(--text-light);
+    opacity: 0.55;
+    position: relative;
+    z-index: 1;
+    margin-top: 1px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+}
+
+.mode-card.coming-soon {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mode-card.coming-soon:hover {
+    transform: none;
+    border-color: var(--border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.mode-card.coming-soon:hover::before {
+    opacity: 0;
+}
+
+.mode-card.coming-soon:hover .mode-card-icon {
+    background: color-mix(in srgb, var(--mode-accent) 10%, transparent);
+    color: var(--mode-accent);
+    transform: none;
+    box-shadow: none;
+}
+
+.mode-card.coming-soon .mode-card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: var(--btn-bg);
+    color: var(--text-light);
+    z-index: 2;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    border: 1px solid var(--border);
+}
+
+/* 单词/文章tab内容区域 */
+.memory-mode-tab-content {
+    animation: tabFadeIn 0.25s ease;
+}
+
+@keyframes tabFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================================
+   生词本选择器（单词模式）
+   ================================================================ */
+
+.memory-notebook-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.memory-notebook-current {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.memory-notebook-current:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.08);
+}
+
+.memory-nb-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.memory-nb-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.memory-nb-count {
+    font-size: 12px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.memory-nb-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-light);
+    transition: transform 0.2s;
+}
+
+.memory-notebook-selector.open .memory-nb-arrow {
+    transform: rotate(180deg);
+}
+
+.memory-notebook-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.memory-notebook-dropdown::-webkit-scrollbar {
+    display: none;
+}
+
+.memory-notebook-dropdown.open {
+    display: block;
+}
+
+.memory-nb-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.memory-nb-option:hover {
+    background: var(--btn-bg);
+}
+
+.memory-nb-option.active {
+    background: var(--accent);
+    color: white;
+}
+
+.memory-nb-option.active .memory-nb-count {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.memory-nb-option:first-child {
+    border-radius: 10px 10px 0 0;
+}
+
+.memory-nb-option:last-child {
+    border-radius: 0 0 10px 10px;
+}
+
+.memory-nb-option:only-child {
+    border-radius: 10px;
+}
+
+/* ================================================================
+   文章选择器（文章模式）
+   ================================================================ */
+
+.memory-article-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.memory-article-current {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    user-select: none;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.memory-article-current:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.memory-article-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-light);
+    flex-shrink: 0;
+}
+
+.memory-article-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.memory-article-date {
+    font-size: 11px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.memory-article-vocab-count {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.memory-article-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-light);
+    transition: transform 0.2s;
+}
+
+.memory-article-selector.open .memory-article-arrow {
+    transform: rotate(180deg);
+}
+
+.memory-article-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.memory-article-dropdown.open {
+    display: block;
+}
+
+.memory-article-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.memory-article-option:hover {
+    background: var(--btn-bg);
+}
+
+.memory-article-option.active {
+    background: var(--accent);
+    color: white;
+}
+
+.memory-article-option.active .memory-article-title,
+.memory-article-option.active .memory-article-date,
+.memory-article-option.active .memory-article-vocab-count,
+.memory-article-option.active .memory-article-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.memory-article-option.empty {
+    color: var(--text-light);
+    cursor: default;
+    font-size: 13px;
+    padding: 14px;
+}
+
+.memory-article-option:first-child {
+    border-radius: 10px 10px 0 0;
+}
+
+.memory-article-option:last-child {
+    border-radius: 0 0 10px 10px;
+}
+
+.memory-article-option:only-child {
+    border-radius: 10px;
+}
+
+/* ================================================================
+   生词本多选器（文章模式）
+   ================================================================ */
+
+.memory-nb-multi-section {
+    margin-bottom: 14px;
+}
+
+.memory-nb-multi-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.memory-nb-multi-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.memory-nb-multi-label::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+/* 色块列表 - 药丸形组合 */
+.memory-nb-multi-list {
+    display: inline-flex;
+    border-radius: 999px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    height: 40px;
+    align-items: stretch;
+    flex-shrink: 0;
+}
+
+.memory-nb-multi-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 0 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.25s ease;
+    background: var(--chip-color);
+}
+
+.memory-nb-multi-item:first-child {
+    border-radius: 999px 0 0 999px;
+}
+
+.memory-nb-multi-item:last-child {
+    border-radius: 0 999px 999px 0;
+}
+
+.memory-nb-multi-item:only-child {
+    border-radius: 999px;
+}
+
+.memory-nb-multi-item:hover {
+    min-width: 76px;
+    padding: 0 14px;
+}
+
+.memory-nb-multi-item:first-child:hover,
+.memory-nb-multi-item:last-child:hover {
+    padding: 0 14px;
+}
+
+/* 选中态 - 展开显示名称 */
+.memory-nb-multi-item.selected {
+    min-width: 76px;
+    padding: 0 14px;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+.memory-nb-multi-item.selected:first-child,
+.memory-nb-multi-item.selected:last-child {
+    padding: 0 14px;
+}
+
+.memory-nb-multi-item.selected:first-child {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.memory-nb-multi-item.selected .memory-nb-multi-name {
+    opacity: 1;
+}
+
+/* 隐藏原生 checkbox */
+.memory-nb-multi-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* 名称文字 - 悬浮时显示在色块内 */
+.memory-nb-multi-name {
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s 0.08s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    letter-spacing: 0.3px;
+    line-height: 1;
+}
+
+.memory-nb-multi-item:hover .memory-nb-multi-name {
+    opacity: 1;
+}
+
+/* 词数 tooltip - 像 copy-btn 一样弹出 */
+.memory-nb-multi-count {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease,
+                visibility 0.2s ease,
+                transform 0.2s ease;
+    margin-bottom: 10px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.memory-nb-multi-count::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--text);
+}
+
+.memory-nb-multi-item:hover .memory-nb-multi-count {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-2px);
+}
+
+/* 全选按钮 */
+.memory-nb-multi-toggle {
+    font-size: 12px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.memory-nb-multi-toggle:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.memory-nb-multi-toggle:active {
+    transform: scale(0.95);
+}
+
+/* 空状态 */
+.memory-nb-multi-empty {
+    font-size: 13px;
+    color: var(--text-light);
+    text-align: center;
+    padding: 20px;
+    background: var(--btn-bg);
+    border-radius: 12px;
+    border: 1.5px dashed var(--border);
+    flex: 1;
+}
+
+/* 入场动画 */
+.memory-nb-multi-item {
+    animation: nb-chip-enter 0.4s ease both;
+}
+
+.memory-nb-multi-item:nth-child(1) { animation-delay: 0.02s; }
+.memory-nb-multi-item:nth-child(2) { animation-delay: 0.06s; }
+.memory-nb-multi-item:nth-child(3) { animation-delay: 0.10s; }
+.memory-nb-multi-item:nth-child(4) { animation-delay: 0.14s; }
+.memory-nb-multi-item:nth-child(5) { animation-delay: 0.18s; }
+.memory-nb-multi-item:nth-child(6) { animation-delay: 0.22s; }
+.memory-nb-multi-item:nth-child(7) { animation-delay: 0.26s; }
+.memory-nb-multi-item:nth-child(8) { animation-delay: 0.30s; }
+
+@keyframes nb-chip-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 暗色模式 */
+[data-theme="dark"] .memory-nb-multi-item.selected {
+    min-width: 76px;
+    padding: 0 14px;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .memory-nb-multi-item.selected:first-child,
+[data-theme="dark"] .memory-nb-multi-item.selected:last-child {
+    padding: 0 14px;
+}
+
+[data-theme="dark"] .memory-nb-multi-item.selected:first-child {
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* ================================================================
+   连线奖励通用样式
+   ================================================================ */
+
+.streak-fire {
+    font-size: 14px;
+    font-weight: 600;
+    color: #d97706;
+    animation: streakPop 0.4s ease-out;
+}
+
+@keyframes streakPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ================================================================
+   暗色模式适配
+   ================================================================ */
+
+[data-theme="dark"] .mode-card {
+    background: rgba(30, 30, 45, 0.55);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .mode-card:hover {
+    background: rgba(30, 30, 45, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mode-card::before {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+[data-theme="dark"] .mode-card .mode-card-icon {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"] .mode-card.coming-soon {
+    opacity: 0.45;
+    background: rgba(30, 30, 45, 0.35);
+}
+
+[data-theme="dark"] .mode-card.coming-soon .mode-card-badge {
+    background: rgba(30, 30, 45, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .mode-card-stat {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .memory-notebook-current,
+[data-theme="dark"] .memory-article-current {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+[data-theme="dark"] .memory-notebook-dropdown,
+[data-theme="dark"] .memory-article-dropdown {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .header-section-btn {
+    background: rgba(51, 65, 85, 0.6);
+}
+
+[data-theme="dark"] .header-section-btn:hover {
+    background: var(--accent);
+}
+
+[data-theme="dark"] .memory-nb-multi-list {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .memory-nb-multi-toggle {
+    border-color: var(--border);
+}
+
+/* ================================================================
+   记忆模式界面容器
+   ================================================================ */
+
+div#memoryModeInterface {
+    display: none !important; /* 默认隐藏，防止页面加载闪烁，由 JS 显式设置为 flex */
+    background-color: transparent;
+    box-shadow: none;
+    border-width: 0px;
+    border-style: solid;
+    border-color: #000000;
+    overflow: visible;
+    scrollbar-width: none;
+}
+
+div#memoryModeInterface::-webkit-scrollbar {
+    display: none;
+}
+
+/* ================================================================
+   响应式适配
+   ================================================================ */
+
+@media (max-width: 640px) {
+    .vocab-card.memory-mode-card {
+        padding: 0 12px 16px;
+        border-radius: 10px;
+    }
+
+    .memory-mode-header {
+        gap: 6px;
+        padding: 6px 0 8px;
+    }
+
+    .memory-mode-header .memory-mode-title {
+        font-size: 15px;
+        width: 100%;
+    }
+
+    .memory-mode-header-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .header-section-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    .mode-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .mode-card {
+        padding: 18px 14px;
+        min-height: 90px;
+        gap: 8px;
+        flex-direction: row;
+        text-align: left;
+    }
+
+    .mode-card .mode-card-icon {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+    }
+
+    .mode-card .mode-card-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .mode-card .mode-card-label {
+        font-size: 13px;
+    }
+
+    .mode-card .mode-card-desc {
+        font-size: 10px;
+        margin-top: 0;
+    }
+
+    .mode-card-stat {
+        font-size: 9px;
+        margin-top: 0;
+    }
+
+    .mode-card.coming-soon .mode-card-badge {
+        top: 6px;
+        right: 6px;
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .memory-mode-tabs {
+        width: 100%;
+    }
+
+    .memory-mode-tab {
+        flex: 1;
+        text-align: center;
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    .memory-mode-tab svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .memory-nb-multi-header {
+        gap: 6px;
+    }
+
+    .memory-nb-multi-list {
+        height: 36px;
+    }
+
+    .memory-nb-multi-item {
+        min-width: 26px;
+        padding: 0 7px;
+    }
+
+    .memory-nb-multi-item:hover {
+        min-width: 62px;
+        padding: 0 10px;
+    }
+
+    .memory-notebook-current,
+    .memory-article-current {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .memory-nb-name {
+        font-size: 12px;
+    }
+}

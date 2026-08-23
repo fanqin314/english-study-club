@@ -77,6 +77,16 @@
     return { fresh, learning, mastered, total: list.length };
   }
 
+  // 依据标签色计算可读前景色（深底白字 / 浅底深字）
+  function textOn(bg) {
+    if (!bg) return '#ffffff';
+    const h = bg.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 0.6 ? '#202020' : '#ffffff';
+  }
+
   function paint() {
     if (!rootEl) return;
     const notebooks = Store.getNotebooks();
@@ -90,11 +100,11 @@
     const goal = s.dailyGoal || 20;
     const pct = goal ? Math.min(100, Math.round((today / goal) * 100)) : 0;
 
-    // 多生词本切换胶囊
+    // 多生词本切换胶囊（整颗标签使用生词本色，小圆点随之移除）
     const tabsEl = rootEl.querySelector('#m-nb-tabs');
     tabsEl.innerHTML = notebooks.map((n) => {
       const active = n.id === currentId ? ' is-active' : '';
-      return `<button class="esc-nb-tab${active}" data-nb="${esc(n.id)}">${esc(n.name)}<span class="esc-nb-tab-count">${n.wordCount}</span></button>`;
+      return `<button class="esc-nb-tab${active}" data-nb="${esc(n.id)}" data-color="${esc(n.color)}" style="--nb:${esc(n.color)};--nb-fg:${textOn(n.color)}"><span class="esc-nb-tab-name">${esc(n.name)}</span><span class="esc-nb-tab-count">${n.wordCount}</span></button>`;
     }).join('') + `<button class="esc-nb-tab esc-add" data-act="new-nb">${icon('plus')}</button>`;
 
     rootEl.querySelector('#m-vocab-badge').textContent = `共 ${total} 词`;
@@ -186,13 +196,8 @@
       });
     });
 
-    // 多生词本切换
-    container.querySelector('#m-nb-tabs').addEventListener('click', (e) => {
-      const tab = e.target.closest('[data-nb]');
-      if (tab) { Store.setCurrentNotebook(tab.getAttribute('data-nb')); return; }
-      const add = e.target.closest('[data-act="new-nb"]');
-      if (add) createNotebookFlow();
-    });
+    // 生词本标签手势：单击切换 / 双击重命名 / 长按选色 / 长按拖拽合并
+    bindTabGestures(container.querySelector('#m-nb-tabs'));
 
     // 管理生词本
     container.querySelector('#m-vocab-manage').addEventListener('click', () => manageNotebooks());
@@ -336,6 +341,338 @@
 
   // 生词数据变化时自动刷新（由 Store 事件触发）
   Store.on('vocab', () => { if (rootEl && !rootEl.hidden) paint(); });
+
+  /* ============================================================
+     生词本标签手势：单击切换 / 双击重命名 / 长按选色 / 长按拖拽合并
+     （Pointer Events 统一鼠标与触摸；长按后抑制合成 click 防重入）
+     ============================================================ */
+  let tabRowEl = null;
+  let lpSuppress = false;      // 长按/拖拽后抑制后续合成 click
+  let tapInfo = null;          // { id, t } 双击判定
+  let press = null;            // 长按/拖拽状态机
+  let pressEndAt = 0;          // 长按抬起时间，用于忽略合成点击（400ms 锁定期）
+  let colorPickerEl = null;    // 当前颜色选择气泡
+  let mergeTargetEl = null;    // 当前悬停的合并目标标签
+  let mergeBubbleEl = null;    // 合并气泡（fixed 挂在 body，避免 tabs 横向滚动裁剪）
+  let bubbleOver = false;      // 幽灵中心是否落在气泡内（用于进出触感反馈）
+  let pickerOutsideBound = false; // 外部点击关闭监听是否已绑定
+  let pickerOutsideFn = null;  // 外部点击关闭监听引用
+
+  function bindTabGestures(tabsEl) {
+    tabRowEl = tabsEl;
+
+    // 单击切换生词本 / 双击重命名
+    tabsEl.addEventListener('click', (e) => {
+      if (lpSuppress) {
+        lpSuppress = false;
+        e.stopPropagation(); // 阻止长按抬起后的合成 click 冒泡到 document，避免立刻关闭选色气泡
+        return;
+      }
+      const tab = e.target.closest('[data-nb]');
+      if (tab) {
+        const id = tab.getAttribute('data-nb');
+        const now = Date.now();
+        if (tapInfo && tapInfo.id === id && now - tapInfo.t <= 300) {
+          tapInfo = null;
+          e.preventDefault();
+          e.stopPropagation();
+          renameFlow(id);
+          return;
+        }
+        tapInfo = { id, t: now };
+        setTimeout(() => { if (tapInfo && tapInfo.id === id) tapInfo = null; }, 340);
+        Store.setCurrentNotebook(id);
+        return;
+      }
+      const add = e.target.closest('[data-act="new-nb"]');
+      if (add) createNotebookFlow();
+    });
+
+    // 长按（500ms）弹出颜色气泡；继续移动（>12px）进入拖拽合并
+    tabsEl.addEventListener('pointerdown', (e) => {
+      const tab = e.target.closest('[data-nb]');
+      if (!tab || press) return;
+      if (tabsEl.setPointerCapture) { try { tabsEl.setPointerCapture(e.pointerId); } catch (_) {} }
+      press = {
+        id: tab.getAttribute('data-nb'),
+        tab,
+        x0: e.clientX, y0: e.clientY,
+        fired: false,       // 长按已触发
+        dragging: false,    // 已进入拖拽
+        ghost: null,
+        timer: setTimeout(() => {
+          if (!press || press.dragging) return;
+          press.fired = true;
+          if (navigator.vibrate) { try { navigator.vibrate(12); } catch (_) {} }
+          tab.classList.add('is-pressed');
+          showColorPicker(press.id, tab);
+        }, 500)
+      };
+    });
+
+    tabsEl.addEventListener('pointermove', (e) => {
+      if (!press) return;
+      const dx = e.clientX - press.x0, dy = e.clientY - press.y0;
+      if (!press.fired) {
+        // 长按前移动超过阈值视为滑动，取消
+        if (Math.hypot(dx, dy) > 10) { clearTimeout(press.timer); press = null; }
+        return;
+      }
+      // 长按已触发：移动超过阈值 → 关闭气泡，拖拽合并
+      if (!press.dragging && Math.hypot(dx, dy) > 12) {
+        press.dragging = true;
+        closeColorPicker();
+        press.tab.classList.remove('is-pressed');
+        press.tab.classList.add('is-dragging');
+        createGhost(press.tab, e.clientX, e.clientY);
+      }
+      if (press.dragging) {
+        if (e.cancelable) e.preventDefault();
+        moveGhost(e.clientX, e.clientY);
+        updateMergeTarget();
+      }
+    });
+
+    const end = () => {
+      if (!press) return;
+      const p = press;
+      press = null;
+      if (p.fired) {
+        pressEndAt = Date.now(); // 记录抬起时间，忽略其后 400ms 内的合成点击
+        lpSuppress = true;  // 抑制长按后的合成 click
+        setTimeout(() => { lpSuppress = false; }, 400);
+        p.tab.classList.remove('is-pressed');
+        if (p.dragging) {
+          p.tab.classList.remove('is-dragging');
+          const ghost = p.ghost;
+          const dropId = ghost ? hitMergeBubble(ghost) : null; // 松手点在合并气泡内才合并
+          if (dropId) {
+            const targetRect = mergeTargetEl ? mergeTargetEl.getBoundingClientRect() : null; // paint 前先取 rect
+            const r = doMerge(p.id, dropId);
+            if (r && r.success) {
+              // 合并成功：幽灵吸入目标标签，气泡与高亮随之消失
+              animateGhostOut(ghost, 'absorb', targetRect);
+              setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 280);
+            } else {
+              animateGhostOut(ghost, 'cancel');
+              setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 200);
+            }
+          } else {
+            // 未落在气泡上：幽灵缩小淡出，标签保持原位（取消合并）
+            animateGhostOut(ghost, 'cancel');
+            setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 200);
+          }
+        }
+        // 仅长按未拖动：保留颜色气泡供选色
+      } else {
+        clearTimeout(p.timer);
+      }
+    };
+    tabsEl.addEventListener('pointerup', end);
+    tabsEl.addEventListener('pointercancel', () => {
+      if (!press) return;
+      clearTimeout(press.timer);
+      press.tab.classList.remove('is-pressed', 'is-dragging');
+      removeGhost();
+      clearMergeTarget();
+      closeColorPicker();
+      press = null;
+    });
+  }
+
+  // 拖拽幽灵标签：跟随手指
+  function createGhost(tab, x, y) {
+    removeGhost();
+    if (!press) return;
+    const name = tab.querySelector('.esc-nb-tab-name');
+    const color = tab.getAttribute('data-color') || '#506080';
+    const ghost = document.createElement('div');
+    ghost.className = 'esc-nb-ghost';
+    ghost.innerHTML = `<i class="esc-nb-tab-color" style="background:${esc(color)}"></i><span>${esc(name ? name.textContent : '')}</span>`;
+    document.body.appendChild(ghost);
+    press.ghost = ghost;
+    moveGhost(x, y);
+  }
+  function moveGhost(x, y) {
+    if (press && press.ghost) press.ghost.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+  }
+  function removeGhost(p) {
+    const src = p || press; // end() 中 press 已置空，需显式传入
+    if (src && src.ghost && src.ghost.parentNode) src.ghost.parentNode.removeChild(src.ghost);
+    if (src) src.ghost = null;
+  }
+
+  // 环形颜色选择气泡（还原网页版交互）
+  function showColorPicker(id, tab) {
+    closeColorPicker();
+    const r = tab.getBoundingClientRect();
+    const colors = Store.NOTEBOOK_COLORS || [];
+    const cur = tab.getAttribute('data-color') || colors[0];
+    const n = colors.length;
+    const ringR = 78, center = 118; // 与 .esc-nb-cp-ring (236px) 对应
+    const opts = colors.map((c, i) => {
+      const ang = (i * (360 / n)) * Math.PI / 180;
+      const left = Math.round(Math.cos(ang) * ringR + center);
+      const top = Math.round(Math.sin(ang) * ringR + center);
+      return `<button class="esc-nb-cp-opt${c === cur ? ' is-sel' : ''}" data-color="${c}" style="left:${left}px;top:${top}px;background:${c};--i:${i}" aria-label="选择标签颜色"></button>`;
+    }).join('');
+    const wrap = document.createElement('div');
+    wrap.className = 'esc-nb-cp';
+    // 锚定到标签中心，并夹取在视口内（半环半径 118px）
+    wrap.style.left = Math.min(Math.max(r.left + r.width / 2, 122), Math.max(122, window.innerWidth - 122)) + 'px';
+    wrap.style.top = Math.min(Math.max(r.top + r.height / 2, 130), Math.max(130, window.innerHeight - 130)) + 'px';
+    wrap.innerHTML = `
+      <div class="esc-nb-cp-ring">
+        <button class="esc-nb-cp-center" data-act="close" aria-label="关闭选色">${icon('x')}</button>
+        ${opts}
+      </div>`;
+    document.body.appendChild(wrap);
+    colorPickerEl = wrap;
+    wrap.querySelectorAll('.esc-nb-cp-opt').forEach((o) => {
+      setTimeout(() => o.classList.add('is-show'), Number(o.style.getPropertyValue('--i')) * 30);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('is-open')));
+    UI.refreshIcons(wrap);
+    // 选色
+    wrap.querySelectorAll('.esc-nb-cp-opt').forEach((o) => {
+      o.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const c = o.getAttribute('data-color');
+        const res = Store.updateNotebookColor(id, c);
+        if (res.success) UI.toast('已更新标签颜色');
+        closeColorPicker();
+      });
+    });
+    // 中心关闭
+    wrap.querySelector('[data-act="close"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (Date.now() - pressEndAt < 400) return; // 忽略长按抬起后的合成点击落在关闭按钮上
+      closeColorPicker();
+    });
+    // 点击其它区域关闭（400ms 锁定期内忽略合成点击，之后才生效）
+    armOutsideCloser();
+  }
+
+  // 绑定「点击气泡外区域关闭」：长按抬起后浏览器会合成一次 click，落在气泡中心
+  // 或冒泡到 document，均需在锁定期内忽略，避免气泡刚弹出就被松开动作关闭。
+  function armOutsideCloser() {
+    if (pickerOutsideBound) return;
+    pickerOutsideBound = true;
+    pickerOutsideFn = () => {
+      if (Date.now() - pressEndAt < 400) return; // 合成点击：忽略并保留监听
+      closeColorPicker();
+    };
+    document.addEventListener('click', pickerOutsideFn);
+  }
+  function closeColorPicker() {
+    if (pickerOutsideBound && pickerOutsideFn) {
+      document.removeEventListener('click', pickerOutsideFn);
+      pickerOutsideBound = false;
+      pickerOutsideFn = null;
+    }
+    if (!colorPickerEl) return;
+    const el = colorPickerEl;
+    colorPickerEl = null;
+    el.classList.remove('is-open');
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 220);
+  }
+
+  // 拖拽悬停检测：与目标标签重叠面积最大的作为合并目标，并在其上方实时显示合并气泡
+  function updateMergeTarget() {
+    if (!press || !press.dragging || !press.ghost) return;
+    const g = press.ghost.getBoundingClientRect();
+    let target = null, best = 0;
+    tabRowEl.querySelectorAll('[data-nb]').forEach((t) => {
+      if (t === press.tab) return;
+      const r = t.getBoundingClientRect();
+      const w = Math.min(g.right, r.right) - Math.max(g.left, r.left);
+      const h = Math.min(g.bottom, r.bottom) - Math.max(g.top, r.top);
+      const ov = (w > 0 && h > 0) ? w * h : 0;
+      if (ov > best) { best = ov; target = t; }
+    });
+    if (target !== mergeTargetEl) {
+      clearMergeTarget();
+      if (target) {
+        mergeTargetEl = target;
+        target.classList.add('is-merge-target');
+        showMergeBubble(target);
+      }
+    }
+    updateBubbleOverState();
+  }
+  // 清空合并目标：移除高亮与气泡
+  function clearMergeTarget() {
+    if (mergeTargetEl) {
+      mergeTargetEl.classList.remove('is-merge-target', 'is-over');
+      mergeTargetEl = null;
+    }
+    if (mergeBubbleEl && mergeBubbleEl.parentNode) mergeBubbleEl.parentNode.removeChild(mergeBubbleEl);
+    mergeBubbleEl = null;
+    bubbleOver = false;
+  }
+  // 在目标标签上方添加合并气泡（fixed 挂 body，带指向标签的尾巴与「松手合并」提示）
+  function showMergeBubble(targetEl) {
+    const r = targetEl.getBoundingClientRect();
+    const b = document.createElement('span');
+    b.className = 'esc-nb-merge-bubble';
+    // 52px 气泡中心位于标签上方 10px，并夹取在视口内避免越界
+    const left = Math.max(32, Math.min(window.innerWidth - 32, Math.round(r.left + r.width / 2)));
+    const top = Math.max(46, Math.round(r.top - 36));
+    b.style.left = left + 'px';
+    b.style.top = top + 'px';
+    b.innerHTML = icon('git-merge') + '<span class="esc-nb-merge-hint">松手合并</span>';
+    document.body.appendChild(b);
+    mergeBubbleEl = b;
+    UI.refreshIcons(b);
+    requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('is-open')));
+  }
+  // 幽灵中心是否落在矩形内
+  function pointInRect(ghostRect, r) {
+    const cx = (ghostRect.left + ghostRect.right) / 2;
+    const cy = (ghostRect.top + ghostRect.bottom) / 2;
+    return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+  }
+  // 实时检测幽灵中心是否进入气泡 → 放大反馈 + 触感 + 幽灵描边提示
+  function updateBubbleOverState() {
+    const br = mergeBubbleEl ? mergeBubbleEl.getBoundingClientRect() : null;
+    const over = !!(br && press && press.ghost && pointInRect(press.ghost.getBoundingClientRect(), br));
+    if (over !== bubbleOver) {
+      bubbleOver = over;
+      if (navigator.vibrate) { try { navigator.vibrate(over ? 10 : 5); } catch (_) {} }
+    }
+    if (mergeBubbleEl) mergeBubbleEl.classList.toggle('is-over', over);
+    if (press && press.ghost) press.ghost.classList.toggle('is-drop', over);
+  }
+  // 松手时判定：幽灵中心在气泡内则返回目标 id，否则 null（取消合并）
+  function hitMergeBubble(ghost) {
+    if (!mergeTargetEl || !mergeBubbleEl) return null;
+    const br = mergeBubbleEl.getBoundingClientRect();
+    return pointInRect(ghost.getBoundingClientRect(), br) ? mergeTargetEl.getAttribute('data-nb') : null;
+  }
+  // 松手动效：absorb=吸入目标标签（合并成功） / cancel=原地缩小淡出（取消）
+  function animateGhostOut(ghost, mode, targetRect) {
+    if (!ghost) return;
+    const g = ghost.getBoundingClientRect();
+    const cx = g.left + g.width / 2, cy = g.top + g.height / 2;
+    if (mode === 'absorb' && targetRect) {
+      ghost.classList.add('is-absorb');
+      ghost.style.opacity = '0';
+      ghost.style.transform = `translate(${targetRect.left + targetRect.width / 2}px, ${targetRect.top + targetRect.height / 2}px) translate(-50%,-50%) scale(.15)`;
+    } else {
+      ghost.classList.add('is-cancel');
+      ghost.style.opacity = '0';
+      ghost.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%) scale(.55)`;
+    }
+  }
+  // 执行合并：fromId 并入 toId
+  function doMerge(fromId, toId) {
+    const names = {};
+    Store.getNotebooks().forEach((n) => { names[n.id] = n.name; });
+    const r = Store.mergeNotebooks(fromId, toId);
+    if (r.success) UI.toast(`已合并「${names[fromId] || ''}」到「${names[toId] || ''}」，目标本共 ${r.count} 词`);
+    else UI.toast(r.error);
+    return r;
+  }
 
   Mobile.Views = Mobile.Views || {};
   Mobile.Views.vocab = { render };

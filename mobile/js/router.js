@@ -12,7 +12,7 @@
   const NAV_KEYS = ['home', 'vocab', 'history', 'memory', 'settings'];
 
   // 二级页面：仅通过顶栏/内部入口进入，需返回键，且不显示底部 tab 栏
-  const SUB_VIEWS = ['history'];
+  const SUB_VIEWS = ['history', 'detail'];
 
   let current = null;
   let switching = false;
@@ -37,7 +37,7 @@
 
   function go(key, params) {
     if (switching) return;
-    if (!NAV_KEYS.includes(key)) key = 'home';
+    if (!NAV_KEYS.includes(key) && !SUB_VIEWS.includes(key)) key = 'home';
     const container = viewContainer(key);
     if (!container) return;
     const prevKey = current;
@@ -77,6 +77,7 @@
   function goByOffset(offset) {
     if (!current) return;
     const i = NAV_KEYS.indexOf(current);
+    if (i < 0) return; // 二级页面（detail 等）不响应滑动切换
     const next = NAV_KEYS[i + offset];
     if (next) go(next);
   }

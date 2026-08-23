@@ -43,7 +43,9 @@
         function getApiKey() {
             const encrypted = localStorage.getItem(API_KEY_STORAGE_KEY);
             if (!encrypted) return DEFAULT_API_KEY;
-            return decrypt(encrypted);
+            const decrypted = decrypt(encrypted);
+            // 自愈：已保存的 Key 若含非 ASCII 字符（非法值，会导致 fetch 请求头抛 TypeError），回退到内置默认 Key
+            return (decrypted && /^[\x20-\x7E]+$/.test(decrypted)) ? decrypted : DEFAULT_API_KEY;
         }
 
         // 清除API Key
@@ -66,10 +68,12 @@
             const encryptedBaseUrl = localStorage.getItem(API_BASE_STORAGE_KEY);
             const encryptedModelName = localStorage.getItem(MODEL_NAME_STORAGE_KEY);
             
+            const rawBase = encryptedBaseUrl ? decrypt(encryptedBaseUrl) : '';
+            const rawModel = encryptedModelName ? decrypt(encryptedModelName) : '';
             return {
-                baseUrl: encryptedBaseUrl ? decrypt(encryptedBaseUrl) : 'https://api-inference.modelscope.cn/v1',
+                baseUrl: (rawBase && /^https?:\/\//.test(rawBase)) ? rawBase : 'https://api-inference.modelscope.cn/v1',
                 apiKey: getApiKey(),
-                model: encryptedModelName ? decrypt(encryptedModelName) : 'Qwen/Qwen3.5-35B-A3B',
+                model: (rawModel && /^[A-Za-z0-9/._+-]+$/.test(rawModel)) ? rawModel : 'Qwen/Qwen3.5-35B-A3B',
                 proxyUrl: getProxyUrl()
             };
         }
@@ -125,6 +129,11 @@
             }
             if (apiKey.length < 10) {
                 return { valid: false, error: 'API Key长度不足' };
+            }
+            // API Key 必须是纯可打印 ASCII（字母/数字/连字符等）。
+            // 含中文/全角空格/emoji 等非 ASCII 字符会被 fetch 请求头拒绝，导致连接测试直接报错。
+            if (/[^\x20-\x7E]/.test(apiKey)) {
+                return { valid: false, error: 'API Key 含无效字符（请仅使用英文字母、数字与连字符）' };
             }
             return { valid: true };
         }

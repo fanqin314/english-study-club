@@ -1,6 +1,5 @@
 // popup.js - English Study Club Popup Controller
 
-const statusDot = document.getElementById('statusDot');
 const detectCaptionsBtn = document.getElementById('detectCaptionsBtn');
 const langRow = document.getElementById('langRow');
 const langSelect = document.getElementById('langSelect');
@@ -9,6 +8,14 @@ const extractProgress = document.getElementById('extractProgress');
 const captionStatus = document.getElementById('captionStatus');
 const selectionStatus = document.getElementById('selectionStatus');
 const settingsLink = document.getElementById('settingsLink');
+
+// 本地存储相关节点
+const savedList = document.getElementById('savedList');
+const savedStats = document.getElementById('savedStats');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+const ioStatus = document.getElementById('ioStatus');
 
 let captionTracks = [];
 
@@ -37,23 +44,12 @@ function buildCaptionMd(title, sourceUrl, capturedAt, langName, text) {
   ].join('\n');
 }
 
-// Check Native Host connection status
-async function checkConnection() {
-  try {
-    const response = await chrome.runtime.sendMessage({ action: 'ping' });
-    if (response && response.connected) {
-      statusDot.classList.remove('disconnected');
-      statusDot.classList.add('connected');
-      statusDot.title = 'Native Host: connected';
-      return true;
-    }
-  } catch (e) {
-    // ignore
-  }
-  statusDot.classList.remove('connected');
-  statusDot.classList.add('disconnected');
-  statusDot.title = 'Native Host: disconnected';
-  return false;
+// 检查本地存储是否可用（替代原 native host 连接检查）
+function checkConnection() {
+  const ready = !!(window.ESCStore && chrome.storage && chrome.storage.local);
+  if (statusBadge) statusBadge.textContent = ready ? '就绪' : '存储不可用';
+  if (footer) footer.textContent = ready ? '本地存储就绪' : '本地存储不可用';
+  return ready;
 }
 
 // Show status message
@@ -108,6 +104,21 @@ detectCaptionsBtn.addEventListener('click', async () => {
 });
 
 // Extract selected captions
+// 写入已选定的本地文件夹（与 content.js 共用 session 中存储的 DirectoryHandle）。
+// chrome.storage.session 支持结构化克隆存储 FileSystemHandle，popup 也可读取。
+async function writeToFolder(filename, content) {
+  try {
+    const s = await chrome.storage.session.get('escFolder');
+    const handle = s.escFolder && s.escFolder.handle;
+    if (!handle || !window.showDirectoryPicker) return false;
+    const fileHandle = await handle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+    return true;
+  } catch (e) { return false; }
+}
+
 extractBtn.addEventListener('click', async () => {
   const selectedIndex = parseInt(langSelect.value);
   if (isNaN(selectedIndex) || !captionTracks[selectedIndex]) return;
@@ -125,31 +136,34 @@ extractBtn.addEventListener('click', async () => {
     });
 
     if (response && response.success && response.text) {
-      const connected = await checkConnection();
       const videoTitle = response.videoTitle || 'youtube_captions';
       const langCode = captionTracks[selectedIndex].code;
       const langName = captionTracks[selectedIndex].name || langCode;
       const sourceUrl = response.url || (tab ? tab.url : '');
       const capturedAt = response.capturedAt || formatLocalDateTime(new Date());
-      const filename = 'video_' + formatLocalFileStamp(new Date()) + '.md';
+      const stamp = formatLocalFileStamp(new Date());
+      const filename = 'video_' + stamp + '.md';
       const path = 'browser-captures/' + filename;
       const content = buildCaptionMd(videoTitle, sourceUrl, capturedAt, langName, response.text);
 
-      if (connected) {
-        try {
-          await chrome.runtime.sendMessage({
-            action: 'write',
-            path: path,
-            content: content
-          });
-          showStatus(captionStatus, '字幕已保存到: ' + path, 'success');
-        } catch (writeErr) {
-          downloadFallback(filename, content);
-          showStatus(captionStatus, 'Native Host 写入失败，已通过浏览器下载', 'error');
-        }
+      // 1) 优先写入本地存储
+      if (window.ESCStore) {
+        await window.ESCStore.addCapture({
+          id: 'cap_' + stamp,
+          title: videoTitle,
+          text: response.text,
+          url: sourceUrl,
+          source: 'youtube',
+          createdAt: window.ESCStore.nowIso(),
+        });
+      }
+
+      // 优先写入已选定的本地文件夹（单篇 md + 自动汇总到 captures.json）；失败则仅存本地存储
+      const toFolder = await writeToFolder(filename, content);
+      if (toFolder) {
+        showStatus(captionStatus, '字幕已保存：单篇 ' + filename + '，并已汇总到 captures.json', 'success');
       } else {
-        downloadFallback(filename, content);
-        showStatus(captionStatus, 'Native Host 未连接，已通过浏览器下载', 'success');
+        showStatus(captionStatus, '字幕已保存到本地存储（未选定文件夹）', 'success');
       }
     } else {
       showStatus(captionStatus, '提取字幕失败: ' + (response ? response.error : '未知错误'), 'error');
@@ -179,10 +193,260 @@ function downloadFallback(filename, content) {
   });
 }
 
-// Settings link
-settingsLink.addEventListener('click', () => {
-  chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : chrome.tabs.create({ url: 'settings.html' });
+// 渲染已保存内容列表
+async function loadSavedList() {
+  if (!window.ESCStore) return;
+  const store = await window.ESCStore.getStore();
+  const total = store.captures.length + store.articles.length + store.vocab.length;
+  savedStats.textContent =
+    '采集 ' + store.captures.length +
+    ' · 文章 ' + store.articles.length +
+    ' · 生词 ' + store.vocab.length;
+
+  savedList.innerHTML = '';
+  const items = [];
+  store.captures.forEach((c) => items.push({
+    title: c.title || '网页采集',
+    meta: (c.source === 'youtube' ? '字幕' : '划线') + ' · ' + (c.createdAt || ''),
+  }));
+  store.articles.forEach((a) => items.push({
+    title: a.title || '文章',
+    meta: '文章 · ' + (a.createdAt || ''),
+  }));
+  store.vocab.forEach((v) => items.push({
+    title: v.word,
+    meta: '生词 · ' + (v.notebook || 'default'),
+  }));
+
+  items.slice(0, 50).forEach((it) => {
+    const li = document.createElement('li');
+    li.innerHTML =
+      '<span class="li-title"></span><span class="li-meta"></span>';
+    li.querySelector('.li-title').textContent = it.title;
+    li.querySelector('.li-meta').textContent = it.meta;
+    savedList.appendChild(li);
+  });
+
+  if (items.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'saved-empty';
+    li.textContent = '暂无保存内容';
+    savedList.appendChild(li);
+  }
+}
+
+// 导出 JSON（按统一 schema）
+async function exportStore() {
+  if (!window.ESCStore) return;
+  try {
+    const json = await window.ESCStore.exportJson();
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const stamp = formatLocalFileStamp(new Date());
+    chrome.downloads.download({
+      url: url,
+      filename: 'english-study-club-' + stamp + '.json',
+      saveAs: true
+    }).catch(() => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'english-study-club-' + stamp + '.json';
+      a.click();
+    });
+    showStatus(ioStatus, '已导出 JSON（可在 Obsidian 插件中导入）', 'success');
+  } catch (e) {
+    showStatus(ioStatus, '导出失败: ' + e.message, 'error');
+  }
+}
+
+// 导入 JSON（合并到本地存储）
+async function importStore(file) {
+  if (!window.ESCStore) return;
+  try {
+    const text = await file.text();
+    const added = await window.ESCStore.importJson(text);
+    showStatus(ioStatus, '导入成功，新增 ' + added + ' 条', 'success');
+    await loadSavedList();
+  } catch (e) {
+    showStatus(ioStatus, '导入失败: ' + e.message, 'error');
+  }
+}
+
+// ---- 视图切换（侧边栏内：主面板 / 设置）----
+const mainView = document.getElementById('mainView');
+const settingsView = document.getElementById('settingsView');
+const statusBadge = document.getElementById('statusBadge');
+const footer = document.getElementById('footer');
+
+function switchView(view) {
+  const toMain = view === 'main';
+  mainView.classList.toggle('hidden', !toMain);
+  settingsView.classList.toggle('hidden', toMain);
+  if (!toMain) loadApiSettings(); // 进入设置时刷新表单
+}
+
+settingsLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  // 设置按钮在"主面板"时进入设置；在"设置"时返回主面板
+  const inSettings = !settingsView.classList.contains('hidden');
+  switchView(inSettings ? 'main' : 'settings');
 });
+
+const settingsBackBtn = document.getElementById('settingsBackBtn');
+if (settingsBackBtn) {
+  settingsBackBtn.addEventListener('click', () => switchView('main'));
+}
+
+// 「查看数据结构示例」展开/收起（平滑高度过渡）
+const showSchemaBtn = document.getElementById('showSchemaBtn');
+const schemaBox = document.getElementById('schemaBox');
+if (showSchemaBtn && schemaBox) {
+  showSchemaBtn.addEventListener('click', () => {
+    const open = schemaBox.hasAttribute('hidden');
+    if (open) {
+      schemaBox.removeAttribute('hidden');
+      schemaBox.style.maxHeight = schemaBox.scrollHeight + 'px';
+      showSchemaBtn.textContent = '收起数据结构示例';
+    } else {
+      schemaBox.style.maxHeight = schemaBox.scrollHeight + 'px';
+      requestAnimationFrame(() => { schemaBox.style.maxHeight = '0px'; });
+      showSchemaBtn.textContent = '查看数据结构示例';
+      setTimeout(() => schemaBox.setAttribute('hidden', ''), 240);
+    }
+  });
+}
+
+// ---- 设置面板逻辑（原 settings.js 合并至此）----
+const apiKeyInput = document.getElementById('apiKeyInput');
+const baseUrlInput = document.getElementById('baseUrlInput');
+const srcGroup = document.getElementById('srcGroup');
+const saveApiBtn = document.getElementById('saveApiBtn');
+const saveTip = document.getElementById('saveTip');
+const statusLabel = document.getElementById('statusLabel');
+const statusDesc = document.getElementById('statusDesc');
+
+async function loadApiSettings() {
+  try {
+    if (!window.ESCStore) return;
+    const s = await window.ESCStore.getSettings();
+    apiKeyInput.value = s.apiKey || '';
+    baseUrlInput.value = s.baseUrl || 'https://api-inference.modelscope.cn/v1';
+    const radio = srcGroup.querySelector('input[value="' + (s.translateSource || 'A') + '"]');
+    if (radio) radio.checked = true;
+  } catch (e) { /* 忽略 */ }
+}
+
+if (saveApiBtn) {
+  saveApiBtn.addEventListener('click', async () => {
+    saveApiBtn.disabled = true;
+    saveTip.className = 'save-tip'; saveTip.textContent = '保存中…';
+    try {
+      const patch = {
+        apiKey: apiKeyInput.value.trim(),
+        baseUrl: baseUrlInput.value.trim() || 'https://api-inference.modelscope.cn/v1',
+        translateSource: (srcGroup.querySelector('input[name="src"]:checked') || {}).value || 'A',
+      };
+      await window.ESCStore.updateSettings(patch);
+      saveTip.className = 'save-tip ok';
+      saveTip.textContent = '已保存（默认源：' + (patch.translateSource === 'A' ? '魔塔 AI' : '本地词库') + '）';
+    } catch (e) {
+      saveTip.className = 'save-tip err';
+      saveTip.textContent = '保存失败：' + (e.message || e);
+    } finally {
+      saveApiBtn.disabled = false;
+    }
+  });
+}
+
+function updateSettingsStatus() {
+  if (statusLabel) statusLabel.textContent = '就绪';
+  if (statusDesc) statusDesc.textContent = '无需安装本地组件，采集自动存浏览器本地并下载';
+}
+
+// 设置页：选定本地文件夹
+// 在 popup 内直接调用 showDirectoryPicker（popup 由用户手势打开，自带用户激活，
+// 不受 content script 激活丢失限制）。拿到 DirectoryHandle 后存入
+// chrome.storage.session（结构化克隆可存 FileSystemHandle）。
+const pickFolderBtn = document.getElementById('pickFolderBtn');
+const folderStatus = document.getElementById('folderStatus');
+
+function setFolderStatus(text, type) {
+  if (!folderStatus) return;
+  folderStatus.classList.remove('hidden', 'info', 'error');
+  if (type) folderStatus.classList.add(type);
+  folderStatus.textContent = text;
+  folderStatus.classList.remove('hidden');
+}
+
+async function refreshFolderStatus() {
+  if (!folderStatus || !pickFolderBtn) return;
+  // 先请求当前活动标签页的 content script 让网页端重发一次文件夹状态，
+  // 再延迟读取 session，覆盖 popup 打开早于网页端广播的时序问题。
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.id) {
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'requestWebFolderState' });
+      } catch (e) { /* 页面无 content script 时忽略 */ }
+    }
+  } catch (e) { /* ignore */ }
+  await new Promise(r => setTimeout(r, 250));
+  try {
+    const s = await chrome.storage.session.get(['escFolder', 'escWebFolder']);
+    if (s.escFolder && s.escFolder.name) {
+      // 插件自身已选定
+      setFolderStatus('已选定文件夹：' + s.escFolder.name + '（保存时实时写入 browser-extension/ 下的 articles/vocab/captures 三个 .json）', 'info');
+      pickFolderBtn.textContent = '更换本地文件夹';
+      pickFolderBtn.disabled = false;
+    } else if (s.escWebFolder && s.escWebFolder.active) {
+      // 网页端已选，插件尚未对齐 —— 引导用户对齐（点此仍走同 id 选同一文件夹）
+      const webName = s.escWebFolder.name ? '（' + s.escWebFolder.name + '）' : '';
+      setFolderStatus('网页端已连接本地文件夹' + webName + '，点下方按钮即可对齐到同一文件夹，数据分层共存不冲突。', 'info');
+      pickFolderBtn.textContent = '对齐到网页端文件夹';
+      pickFolderBtn.disabled = false;
+    } else {
+      setFolderStatus('尚未选定本地文件夹，采集内容仅存浏览器本地并下载。');
+      pickFolderBtn.textContent = '选定本地文件夹';
+      pickFolderBtn.disabled = false;
+    }
+  } catch (e) {
+    folderStatus.classList.add('hidden');
+  }
+}
+
+if (pickFolderBtn) {
+  pickFolderBtn.addEventListener('click', async () => {
+    pickFolderBtn.disabled = true;
+    pickFolderBtn.textContent = '请选择文件夹…';
+    try {
+      if (!window.showDirectoryPicker) {
+        throw new Error('当前浏览器不支持文件夹选择（需 Chrome/Edge 86+）');
+      }
+      // 使用与网页端相同的 id，浏览器会自动定位到网页端已选定的同一文件夹，
+      // 实现"与网页端共享同一本地文件夹"的对齐效果（无需重新浏览选择）。
+      const handle = await window.showDirectoryPicker({ id: 'english-study-club', mode: 'readwrite', startIn: 'documents' });
+      try {
+        const opts = { mode: 'readwrite' };
+        if ((await handle.queryPermission(opts)) !== 'granted') {
+          const req = await handle.requestPermission(opts);
+          if (req !== 'granted') throw new Error('未授予文件夹写入权限');
+        }
+      } catch (permErr) {
+        // 某些实现无 queryPermission，可直接使用
+      }
+      await chrome.storage.session.set({ escFolder: { handle: handle, name: handle.name } });
+      setFolderStatus('已选定并共享同一本地文件夹：' + handle.name + '（数据写入 browser-extension/ 子目录，保存时实时写入 articles/vocab/captures 三个 .json）', 'info');
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        setFolderStatus('已取消选择文件夹。', 'error');
+      } else {
+        setFolderStatus('无法选定文件夹：' + (e && e.message ? e.message : e), 'error');
+      }
+    } finally {
+      await refreshFolderStatus(); // 统一刷新按钮文案与状态
+    }
+  });
+}
 
 // Text selection status
 async function updateSelectionStatus() {
@@ -204,6 +468,17 @@ async function updateSelectionStatus() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  await checkConnection();
+  checkConnection();
+  updateSettingsStatus();
+  await refreshFolderStatus();
   await updateSelectionStatus();
+  await loadSavedList();
+
+  exportBtn.addEventListener('click', exportStore);
+  importBtn.addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importStore(file);
+    importFile.value = '';
+  });
 });

@@ -1,131 +1,27 @@
-// background.js - English Study Club Service Worker
-
-const NATIVE_HOST_NAME = 'com.englishstudyclub.nativehost';
-let nativePort = null;
-let pendingRequests = new Map();
-let requestId = 0;
-
-// ============================================================
-// Native Messaging Connection
-// ============================================================
-
-function connectNativeHost() {
-  if (nativePort) {
-    try {
-      nativePort.disconnect();
-    } catch (e) { /* ignore */ }
-    nativePort = null;
-  }
-
-  try {
-    nativePort = chrome.runtime.connectNative(NATIVE_HOST_NAME);
-    console.log('[English Study Club] Connected to native host');
-
-    nativePort.onMessage.addListener((message) => {
-      console.log('[English Study Club] Native host message:', message);
-      if (message.requestId !== undefined && pendingRequests.has(message.requestId)) {
-        const { resolve } = pendingRequests.get(message.requestId);
-        pendingRequests.delete(message.requestId);
-        resolve(message);
-      }
-    });
-
-    nativePort.onDisconnect.addListener(() => {
-      console.log('[English Study Club] Native host disconnected');
-      nativePort = null;
-      // Reject all pending requests
-      pendingRequests.forEach(({ reject }, id) => {
-        reject(new Error('Native host disconnected'));
-      });
-      pendingRequests.clear();
-      updateConnectionStatus(false);
-    });
-
-    updateConnectionStatus(true);
-    return true;
-  } catch (err) {
-    console.error('[English Study Club] Failed to connect native host:', err.message);
-    nativePort = null;
-    updateConnectionStatus(false);
-    return false;
-  }
-}
-
-function updateConnectionStatus(connected) {
-  chrome.storage.local.set({ nativeHostConnected: connected });
-}
-
-function isNativeHostConnected() {
-  return nativePort !== null;
-}
-
-function sendToNativeHost(data) {
-  return new Promise((resolve, reject) => {
-    if (!nativePort) {
-      reject(new Error('Native host not connected'));
-      return;
-    }
-
-    const id = ++requestId;
-    const message = { ...data, requestId: id };
-    pendingRequests.set(id, { resolve, reject });
-
-    try {
-      nativePort.postMessage(message);
-    } catch (err) {
-      pendingRequests.delete(id);
-      reject(err);
-    }
-
-    // Timeout after 30 seconds
-    setTimeout(() => {
-      if (pendingRequests.has(id)) {
-        pendingRequests.delete(id);
-        reject(new Error('Request timeout'));
-      }
-    }, 30000);
-  });
-}
+// background.js - 英研社 (English Study Club) Service Worker
+//
+// 说明：本插件不再依赖 native messaging host（本地文件夹持久化已废弃）。
+// 保存采集统一走「下载兜底」或「网页端 companion 实时写入」，因此后台无需连接 native host。
 
 // ============================================================
 // Message Handlers
 // ============================================================
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // Ping to check connection status
+  // Ping：返回连接状态（本地 host 已废弃，恒为 false，避免页面误用）
   if (request.action === 'ping') {
-    sendResponse({ connected: isNativeHostConnected() });
+    sendResponse({ connected: false });
     return true;
   }
 
-  // Write file via native host
+  // 兼容旧调用：写文件走 native host 的接口已停用，直接返回未连接
   if (request.action === 'write') {
-    if (!request.path || request.content === undefined) {
-      sendResponse({ success: false, error: 'Missing path or content' });
-      return true;
-    }
-
-    if (!isNativeHostConnected()) {
-      sendResponse({ success: false, error: 'Native host not connected' });
-      return true;
-    }
-
-    sendToNativeHost({
-      command: 'write',
-      path: request.path,
-      content: request.content
-    }).then(result => {
-      sendResponse({ success: true, result: result });
-    }).catch(err => {
-      sendResponse({ success: false, error: err.message });
-    });
-
-    return true; // Keep channel open for async response
+    sendResponse({ success: false, error: '本地写入已停用，采集将自动下载保存' });
+    return true;
   }
 
-  // Get connection status
+  // 获取连接状态
   if (request.action === 'getStatus') {
-    sendResponse({ connected: isNativeHostConnected() });
+    sendResponse({ connected: false });
     return true;
   }
 });
@@ -133,23 +29,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // ============================================================
 // Lifecycle
 // ============================================================
-
-// Try to connect on startup
-connectNativeHost();
-
-// Keep service worker alive for native messaging
+// 仅保留 service worker 存活，不再连接 native host。
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'keepalive') {
-    port.onDisconnect.addListener(() => {
-      // Service worker may be terminated
-    });
+    port.onDisconnect.addListener(() => { /* noop */ });
   }
 });
 
-// Reconnect if needed
-setInterval(() => {
-  if (!isNativeHostConnected()) {
-    console.log('[English Study Club] Attempting reconnection to native host...');
-    connectNativeHost();
+// ============================================================
+// Side Panel：点击工具栏图标从右侧拉出常驻侧边栏
+// ============================================================
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+  } catch (e) {
+    console.warn('[英研社] 打开侧边栏失败：', e);
   }
-}, 60000);
+});
+
+console.log('[英研社] 后台 Service Worker 已加载');

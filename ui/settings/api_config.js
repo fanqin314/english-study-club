@@ -112,6 +112,12 @@
                 ErrorHandler.handleValidationError('请先填写 API Key 或配置代理地址');
                 return;
             }
+            // 已保存的旧 Key 若混入非 ASCII 字符（中文/全角空格/emoji），会令 fetch 请求头直接抛 TypeError，
+            // 这里提前拦截并给出清晰提示，避免暴露浏览器原始报错。
+            if (!useProxy && apiConfig.apiKey && /[^\x20-\x7E]/.test(apiConfig.apiKey)) {
+                ErrorHandler.handleValidationError('API Key 含无效字符（请清空后重新填写纯英文字母/数字的 Key）');
+                return;
+            }
             
             ErrorHandler.showError('测试中...', 'info');
             

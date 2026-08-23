@@ -81,6 +81,7 @@
                 await this._saveHandleToDB(this._dirHandle);
                 this._active = true;
                 console.log('[LocalFileStorage] 已选择本地文件夹');
+                broadcastFolderState();
                 return true;
             } catch (e) {
                 if (e.name === 'AbortError') {
@@ -186,6 +187,7 @@
             this._dirHandle = null;
             this._active = false;
             await this._deleteHandleFromDB();
+            broadcastFolderState();
         },
 
         /**
@@ -294,8 +296,34 @@
     // 暴露到全局
     window.LocalFileStorage = LocalFileStorage;
 
+    // 向浏览器扩展（content script）广播本地文件夹连接状态。
+    // 仅发送文件夹名，不含句柄，无隐私/句柄泄露风险。
+    function broadcastFolderState() {
+        try {
+            window.postMessage({
+                source: 'esc-web-folder',
+                active: LocalFileStorage.isActive(),
+                name: LocalFileStorage.isActive() && LocalFileStorage._dirHandle ? LocalFileStorage._dirHandle.name : ''
+            }, '*');
+        } catch (e) { /* ignore */ }
+    }
+    window.LocalFileStorage._broadcast = broadcastFolderState;
+
+    // 响应浏览器扩展 content script 的「请重发状态」请求。
+    // 解决时序问题：页面 init 广播可能早于 content script 监听注册，
+    // 由 content script 注入后主动请求一次，确保插件能感知网页端已选文件夹。
+    window.addEventListener('message', (event) => {
+        try {
+            const data = event.data;
+            if (data && data.source === 'esc-web-req-folder') {
+                broadcastFolderState();
+            }
+        } catch (e) { /* ignore */ }
+    });
+
     // 自动初始化
     LocalFileStorage.init().then(active => {
+        broadcastFolderState();
         if (active) {
             // 触发事件通知其他模块
             if (window.EventBus && window.EventBus.emit) {
@@ -303,4 +331,7 @@
             }
         }
     });
+
+    // init 完成后延迟再广播一次，覆盖 content script 注入晚于 init 的情况
+    setTimeout(broadcastFolderState, 1500);
 })();

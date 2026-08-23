@@ -56,10 +56,21 @@
             return;
         }
 
-        // 打开：设置按钮（侧边栏底部）
+        // 打开：设置按钮（侧边栏底部 / 桌面端）
         const settingsBtn = document.getElementById('settingsBtn');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openSettings();
+            });
+        }
+
+        // 打开：移动端顶栏设置按钮（≤768px 显示）
+        // 单独绑定，避免依赖 main_button 的移动侧边栏初始化（否则侧边栏元素缺失时设置按钮失效）
+        const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+        if (mobileSettingsBtn) {
+            mobileSettingsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 openSettings();

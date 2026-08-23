@@ -1,341 +1,177 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>English Study Club</title>
-<style>
-  /* ===== 设计令牌 ===== */
-  :root {
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --accent-soft: #eff6ff;
-    --text: #1e293b;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    --border: #e2e8f0;
-    --card-bg: #ffffff;
-    --page-bg: #f5f7fb;
-    --success: #10b981;
-    --danger: #ef4444;
-    --radius-card: 12px;
-    --radius-control: 8px;
-    --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
-    --selection-bg: rgba(59,130,246,0.22);
-    --dot-success-glow: rgba(16,185,129,0.20);
-    --dot-danger-glow: rgba(239,68,68,0.16);
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-  }
-
-  /* ===== 暗色模式 ===== */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --accent: #60a5fa;
-      --accent-hover: #3b82f6;
-      --accent-soft: rgba(96,165,250,0.16);
-      --text: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --border: #334155;
-      --card-bg: #1e293b;
-      --page-bg: #0f172a;
-      --success: #34d399;
-      --danger: #f87171;
-      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.28);
-      --selection-bg: rgba(96,165,250,0.35);
-      --dot-success-glow: rgba(52,211,153,0.30);
-      --dot-danger-glow: rgba(248,113,113,0.24);
-    }
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  ::selection { background: var(--selection-bg); }
-
-  body {
-    width: 360px;
-    font-family: var(--font);
-    background: var(--page-bg);
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ===== 头部 ===== */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    background: var(--card-bg);
-    border-bottom: 1px solid var(--border);
-  }
-  .logo { width: 28px; height: 28px; flex-shrink: 0; }
-  .header h1 { font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: 0.2px; }
-  .header-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; line-height: 1.3; }
-
-  .status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: auto;
-    flex-shrink: 0;
-    transition: background 0.2s ease, box-shadow 0.2s ease;
-  }
-  .status-dot.connected {
-    background: var(--success);
-    box-shadow: 0 0 0 3px var(--dot-success-glow);
-    animation: pulse 2.2s ease-in-out infinite;
-  }
-  .status-dot.disconnected {
-    background: var(--danger);
-    box-shadow: 0 0 0 3px var(--dot-danger-glow);
-  }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 3px var(--dot-success-glow); }
-    50% { box-shadow: 0 0 0 6px var(--dot-success-glow); }
-  }
-
-  /* ===== 内容 ===== */
-  .content { padding: 12px 16px 16px; }
-
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    padding: 20px;
-    margin-bottom: 12px;
-    box-shadow: var(--shadow-card);
-  }
-  .card:last-child { margin-bottom: 0; }
-
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--text);
-    margin: 0 0 12px;
-  }
-  .card-title-icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); }
-
-  /* ===== 按钮 ===== */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 9px 16px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-control);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
-  }
-  .btn:active { transform: scale(0.98); }
-  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn:disabled:active { transform: none; }
-  .btn-primary { background: var(--accent); color: #ffffff; }
-  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-
-  /* ===== 表单 ===== */
-  .lang-row { display: none; }
-  .lang-row.show { display: block; }
-  .field-label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin: 12px 0 6px;
-  }
-  .select-wrap { position: relative; }
-  .select-wrap select {
-    appearance: none;
-    width: 100%;
-    padding: 8px 36px 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    font-family: var(--font);
-    font-size: 13px;
-    color: var(--text);
-    background: var(--card-bg);
-    cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-  .select-wrap select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-    outline: none;
-  }
-  .select-wrap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .select-chevron {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 15px;
-    height: 15px;
-    color: var(--text-secondary);
-    pointer-events: none;
-  }
-
-  /* ===== 进度与状态 ===== */
-  .progress {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-  .status-text {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    margin-top: 12px;
-    font-size: 12px;
-    line-height: 1.55;
-    color: var(--text-secondary);
-    word-break: break-all;
-  }
-  .status-text .status-icon { display: none; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
-  .status-text.success { color: var(--success); }
-  .status-text.success .icon-success { display: block; }
-  .status-text.error { color: var(--danger); }
-  .status-text.error .icon-error { display: block; }
-
-  .hidden { display: none !important; }
-
-  /* ===== Spinner（SVG 圆弧动画） ===== */
-  .spinner {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    transform-origin: center;
-    animation: spin 0.8s linear infinite;
-  }
-  .spinner-track { stroke: var(--border); stroke-width: 2.5; }
-  .spinner-arc { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 40 22; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ===== 底部 ===== */
-  .footer {
-    display: flex;
-    justify-content: center;
-    padding: 10px 16px 12px;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border);
-  }
-  .footer a {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: var(--radius-control);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: color 0.15s ease, background 0.15s ease;
-  }
-  .footer a:hover { color: var(--accent); background: var(--accent-soft); }
-  .footer a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .footer a svg { width: 14px; height: 14px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英研社 · 侧边栏</title>
+  <link rel="stylesheet" href="styles.css?v=20250620">
+  <script src="storage.js"></script>
 </head>
-<body>
-  <header class="header">
-    <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" aria-hidden="true">
-      <rect width="128" height="128" rx="24" fill="#3b82f6"/>
-      <path d="M40 28h48c8 0 14 6 14 14v4c0 8-6 14-14 14H40c-8 0-14-6-14-14v-4c0-8 6-14 14-14z" fill="white" opacity="0.95"/>
-      <path d="M40 64h48c8 0 14 6 14 14v4c0 8-6 14-14 14H40c-8 0-14-6-14-14v-4c0-8 6-14 14-14z" fill="white" opacity="0.95"/>
-      <path d="M40 100h30c6 0 10 4 10 10v2c0 6-4 10-10 10H40c-6 0-10-4-10-10v-2c0-6 4-10 10-10z" fill="white" opacity="0.95"/>
-      <line x1="34" y1="36" x2="34" y2="106" stroke="white" stroke-width="4" stroke-linecap="round"/>
-      <line x1="34" y1="36" x2="94" y2="36" stroke="white" stroke-width="3" stroke-linecap="round"/>
-      <line x1="34" y1="72" x2="94" y2="72" stroke="white" stroke-width="3" stroke-linecap="round"/>
-      <line x1="34" y1="108" x2="80" y2="108" stroke="white" stroke-width="3" stroke-linecap="round"/>
-    </svg>
-    <div>
-      <h1>English Study Club</h1>
-      <p class="header-sub">英研社</p>
+<body class="sidebar">
+
+  <!-- 顶部栏 -->
+  <div class="header">
+    <div class="left">
+      <span class="logo">英</span>
+      <span class="title">英研社</span>
+      <span class="mode-badge" id="statusBadge">就绪</span>
     </div>
-    <div class="status-dot disconnected" id="statusDot" title="Native Host: disconnected"></div>
-  </header>
-
-  <main class="content">
-    <!-- 视频字幕提取 -->
-    <section class="card">
-      <h2 class="card-title">
-        <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="2" y="5" width="20" height="14" rx="2"/>
-          <path d="M6 11h12"/>
-          <path d="M6 15h8"/>
-        </svg>
-        视频字幕提取
-      </h2>
-      <button class="btn btn-primary" id="detectCaptionsBtn">提取字幕</button>
-      <div class="lang-row" id="langRow">
-        <label class="field-label" for="langSelect">字幕语言</label>
-        <div class="select-wrap">
-          <select id="langSelect"></select>
-          <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </div>
-        <button class="btn btn-primary" id="extractBtn">提取选中语言字幕</button>
-      </div>
-      <div class="progress hidden" id="extractProgress">
-        <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle class="spinner-track" cx="12" cy="12" r="9"/>
-          <circle class="spinner-arc" cx="12" cy="12" r="9"/>
-        </svg>
-        <span>正在提取字幕...</span>
-      </div>
-      <div class="status-text hidden" id="captionStatus">
-        <svg class="status-icon icon-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        <svg class="status-icon icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <span class="status-msg"></span>
-      </div>
-    </section>
-
-    <!-- 网页划线保存 -->
-    <section class="card">
-      <h2 class="card-title">
-        <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-        网页划线保存
-      </h2>
-      <p class="status-text" id="selectionStatus">请在网页上选中文本后保存</p>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <a href="#" id="settingsLink">
+    <button id="settingsLink" class="icon-btn" title="设置">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
-      <span>设置</span>
-    </a>
-  </footer>
+    </button>
+  </div>
+
+  <!-- 内容区：主面板 -->
+  <div id="mainView" class="content">
+    <!-- 字幕提取 -->
+    <section class="card">
+      <h2 class="card-title">YouTube 字幕提取</h2>
+      <p class="card-desc">在 YouTube 视频页面点击「检测」，选择字幕语言后保存。</p>
+      <button id="detectCaptionsBtn" class="btn btn-primary">检测字幕</button>
+      <div id="langRow" class="lang-row">
+        <select id="langSelect" class="select"></select>
+        <button id="extractBtn" class="btn btn-primary">提取并保存</button>
+      </div>
+      <div id="extractProgress" class="progress hidden">提取中…</div>
+      <div id="captionStatus" class="status-msg hidden"></div>
+    </section>
+
+    <!-- 网页采集状态 -->
+    <section class="card">
+      <h2 class="card-title">网页采集</h2>
+      <p id="selectionStatus" class="selection-status">请在网页上选中文本后保存</p>
+    </section>
+
+    <!-- 本地保存内容 -->
+    <section class="card">
+      <h2 class="card-title">本地保存
+        <span id="savedStats" class="stat-pill">—</span>
+      </h2>
+      <ul id="savedList" class="saved-list"></ul>
+    </section>
+
+    <!-- 数据导入导出 -->
+    <section class="card">
+      <h2 class="card-title">数据同步</h2>
+      <p class="card-desc">导出为 JSON 可在 Obsidian 插件中导入，或备份到本地。</p>
+      <div class="btn-row">
+        <button id="exportBtn" class="btn">导出 JSON</button>
+        <button id="importBtn" class="btn">导入 JSON</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+      <div id="ioStatus" class="status-msg hidden"></div>
+    </section>
+  </div>
+
+  <!-- 内容区：设置（内嵌于侧边栏，默认隐藏） -->
+  <div id="settingsView" class="content hidden">
+    <button id="settingsBackBtn" class="back-btn">← 返回</button>
+    <section class="card">
+      <h2 class="card-title">运行状态</h2>
+      <div class="status-block">
+        <span id="statusDot2" class="status-dot connected"></span>
+        <div>
+          <div id="statusLabel" class="status-label">就绪</div>
+          <div id="statusDesc" class="status-desc">无需安装本地组件，采集自动存浏览器本地并下载</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">查词 / 翻译源</h2>
+      <p class="card-desc">魔塔 AI（源 A）需要 API Key；本地词库（源 B）离线可用。</p>
+
+      <label class="field-label" for="apiKeyInput">API Key</label>
+      <input id="apiKeyInput" type="password" class="input" placeholder="留空则使用本地词库">
+
+      <label class="field-label" for="baseUrlInput">Base URL</label>
+      <input id="baseUrlInput" type="text" class="input" placeholder="https://api-inference.modelscope.cn/v1">
+
+      <div class="field-label">默认翻译源</div>
+      <div id="srcGroup" class="radio-group">
+        <label class="radio"><input type="radio" name="src" value="A"><span>魔塔 AI</span></label>
+        <label class="radio"><input type="radio" name="src" value="B"><span>本地词库</span></label>
+      </div>
+
+      <button id="saveApiBtn" class="btn btn-primary btn-block">保存设置</button>
+      <div id="saveTip" class="save-tip hidden"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">本地文件夹缓存</h2>
+      <p class="card-desc">选定本地文件夹后，保存的内容会实时写入 browser-extension/ 子目录：articles.json（文章）、vocab.json（生词）、captures.json（网页采集 / 字幕）。若网页端已选过文件夹，点此会自动对齐到同一文件夹，数据分层共存不冲突。授权仅在当前浏览器会话有效，重启浏览器后需重新选定。</p>
+      <button id="pickFolderBtn" class="btn btn-primary btn-block">选定本地文件夹</button>
+      <div id="folderStatus" class="status-msg hidden"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">关于数据</h2>
+      <p class="card-desc">所有采集内容保存于浏览器本地（chrome.storage.local），不会上传。可随时导出备份或通过 Obsidian 插件同步。</p>
+      <button id="showSchemaBtn" class="btn btn-ghost btn-block">查看数据结构示例</button>
+      <div id="schemaBox" class="schema-box" hidden>
+        <p class="schema-note">以下为 browser-extension/ 子目录分文件导出的结构示例（非真实数据）：</p>
+        <div class="schema-file">
+          <div class="schema-name">articles.json</div>
+          <pre class="schema-code">{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-23T14:35:00+08:00",
+  "articles": [
+    {
+      "id": "1k4p5q-2f8g9h",
+      "title": "为何我们总在深夜emo",
+      "source": "web",
+      "content": "原文全文……",
+      "lang": "en",
+      "createdAt": "2026-08-20T09:05:11+08:00"
+    }
+  ]
+}</pre>
+        </div>
+        <div class="schema-file">
+          <div class="schema-name">vocab.json</div>
+          <pre class="schema-code">{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-23T14:35:00+08:00",
+  "vocab": [
+    {
+      "word": "serendipity",
+      "phonetic": "/ˌserənˈdɪpəti/",
+      "definition": "意外发现珍奇事物的本领",
+      "example": "Finding this café was pure serendipity.",
+      "pos": "n.",
+      "context": "划线时所在句子",
+      "notebook": "default",
+      "createdAt": "2026-08-23T14:31:20+08:00"
+    }
+  ]
+}</pre>
+        </div>
+        <div class="schema-file">
+          <div class="schema-name">captures.json</div>
+          <pre class="schema-code">{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-23T14:35:00+08:00",
+  "captures": [
+    {
+      "id": "1k2j3k-9x2a1b",
+      "title": "网页采集",
+      "text": "The quick brown fox jumps…",
+      "url": "https://example.com/article/123",
+      "source": "selection",
+      "createdAt": "2026-08-23T14:30:05+08:00"
+    }
+  ]
+}</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 底部状态行 -->
+  <div class="footer" id="footer">本地存储就绪</div>
 
   <script src="popup.js"></script>
 </body>

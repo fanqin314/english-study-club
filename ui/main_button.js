@@ -544,18 +544,6 @@
                         setMobileSidebar(false);
                     }
                 });
-
-                // 移动端顶栏设置按钮（复用现有设置面板）
-                const mobileSettingsBtn = this.getElement('mobileSettingsBtn');
-                if (mobileSettingsBtn) {
-                    mobileSettingsBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (window.openSettingsModal) {
-                            window.openSettingsModal();
-                        }
-                    });
-                }
             }
 
             // 设置侧边栏折叠状态并同步按钮文案

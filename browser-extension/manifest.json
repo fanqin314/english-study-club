@@ -1,24 +1,26 @@
 {
   "manifest_version": 3,
-  "name": "English Study Club",
+  "name": "英研社 (English Study Club)",
   "version": "1.0.0",
-  "description": "English Study Club browser extension - YouTube subtitle extraction and web page text selection saving.",
+  "description": "英研社浏览器插件 - 网页选区查词、加入生词本（与网页端实时同步），并支持 YouTube 字幕提取。",
   "permissions": [
-    "nativeMessaging",
     "activeTab",
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://www.youtube.com/*"
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "English Study Club",
+    "default_title": "英研社 (English Study Club)",
     "default_icon": {
       "16": "icons/icon.svg",
       "48": "icons/icon.svg",
       "128": "icons/icon.svg"
     }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "background": {
     "service_worker": "background.js"
@@ -26,12 +28,12 @@
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["content.js"],
+      "js": ["storage.js", "translate.js", "content.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["storage.js", "translate.js", "content.js"],
       "run_at": "document_idle"
     }
   ],

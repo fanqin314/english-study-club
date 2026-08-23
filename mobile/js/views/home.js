@@ -290,7 +290,7 @@
     const hist = Store.getHistory();
     const dup = hist.find((h) => h.text === text);
     if (dup) Store.removeHistory(dup.id);
-    Store.addHistory({ title, text, snippet, words: res.stats ? res.stats.words : 0, sentences: res.sentences.length });
+    Store.addHistory({ title, text, snippet, words: res.stats ? res.stats.words : 0, result: { sentences: res.sentences } });
     UI.toast('当前分析已保存到历史');
   }
 
@@ -590,6 +590,14 @@
       </div>`;
 
     bind(container);
+    // 切换视图后返回：只要应用未退出，就保留当前文章的解析数据
+    if (state.last && state.last.sentences && state.last.sentences.length) {
+      ['#m-ft-title', '#m-cards-title'].forEach((sel) => {
+        const t = container.querySelector(sel);
+        if (t) t.hidden = false;
+      });
+      renderParsed(container, state.last);
+    }
     UI.refreshIcons(container);
   }
 
@@ -991,6 +999,24 @@
     renderFullTranslationFromArr(root, state.last ? state.last.sentences : null);
   }
 
+  // 离线渲染已保存的解析结果（供历史「查看解析」详情页复用）
+  // res: { sentences: [...], stats?: {...} }
+  function renderParsed(container, res) {
+    const sentences = (res && Array.isArray(res.sentences)) ? res.sentences : [];
+    const text = sentences.map((s) => s.en || '').join(' ');
+    const stats = (res && res.stats) || API.computeStats(text);
+    const statsEl = container.querySelector('#m-stats');
+    if (statsEl) statsEl.innerHTML = statsHTML(stats);
+    const cardsEl = container.querySelector('#m-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = sentences.map(sentenceCard).join('') || '<div class="esc-empty"><p class="esc-empty-title">没有可解析的内容</p></div>';
+      bindSentenceCards(container);
+    }
+    applyHighlight(container);
+    renderFullTranslationFromArr(container, sentences);
+    UI.refreshIcons(container);
+  }
+
   // 全文翻译条目点击逻辑已内联到 renderFullTranslationFromArr 的新条目上（仅绑定一次）
   // ============================================================
   async function doParse(root) {
@@ -1084,7 +1110,7 @@
       const hist = Store.getHistory();
       const dup = hist.find((h) => h.text === text);
       if (dup) Store.removeHistory(dup.id);
-      Store.addHistory({ title, text, snippet, words: res.stats ? res.stats.words : 0, sentences: res.sentences.length });
+      Store.addHistory({ title, text, snippet, words: res.stats ? res.stats.words : 0, result: { sentences: res.sentences } });
     }
   }
 
@@ -1102,5 +1128,5 @@
   Mobile.Highlight = Highlight;
 
   Mobile.Views = Mobile.Views || {};
-  Mobile.Views.home = { render };
+  Mobile.Views.home = { render, renderParsed };
 })(window);
