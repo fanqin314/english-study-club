@@ -106,5 +106,25 @@
     return close;
   }
 
-  Mobile.UI = { esc, icon, refreshIcons, toast, confirmDialog, ripple, bottomSheet, overlay };
+  // 居中浮窗（模态）：屏幕中央弹出，背景遮罩；点击遮罩关闭。返回 close()
+  function modal(html, opts) {
+    opts = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'esc-modal-backdrop';
+    wrap.innerHTML = `<div class="esc-modal" role="dialog" aria-modal="true">${html}</div>`;
+    document.body.appendChild(wrap);
+    const dlg = wrap.querySelector('.esc-modal');
+    const close = function () {
+      wrap.classList.remove('is-show');
+      const done = () => { if (wrap.parentNode) wrap.remove(); if (typeof opts.onClose === 'function') opts.onClose(); };
+      dlg.addEventListener('transitionend', done, { once: true });
+      setTimeout(done, 260);
+    };
+    wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('is-show')));
+    if (typeof opts.onOpen === 'function') opts.onOpen(dlg, close);
+    return close;
+  }
+
+  Mobile.UI = { esc, icon, refreshIcons, toast, confirmDialog, ripple, bottomSheet, overlay, modal };
 })(window);

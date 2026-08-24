@@ -373,6 +373,13 @@
     localStorage.setItem(ESC + 'readingStyle', style);
     emit('readingStyle', style);
   }
+  // 移动端独有偏好：删除生词本前是否跳过确认（勾选「不再提示」后直接删除）
+  function getSkipDeleteConfirm() {
+    return localStorage.getItem(ESC + 'skipDeleteConfirm') === 'true';
+  }
+  function setSkipDeleteConfirm(skip) {
+    localStorage.setItem(ESC + 'skipDeleteConfirm', skip ? 'true' : 'false');
+  }
   // 注意：移动端不再维护「按单词的掌握状态」（桌面端也无此字段）。
   // 「已掌握」是桌面端 StatsTracker 的全局累加计数器（stats_mastered_words），
   // 由记忆模式完成时通过 recordWordsMastered 累加，见下方进度相关函数。
@@ -661,6 +668,7 @@
     setCurrentNotebook, renameNotebook, updateNotebookColor, mergeNotebooks, deleteNotebook,
     NOTEBOOK_COLORS,
     getReadingStyle, setReadingStyle,
+    getSkipDeleteConfirm, setSkipDeleteConfirm,
     getHistory, addHistory, getHistoryItem, removeHistory, clearHistory,
     getSettings, updateSettings,
     getProgress, updateProgress,

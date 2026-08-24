@@ -172,6 +172,45 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 }
 .esc-icon-btn:hover { background: var(--study-muted); }
 .esc-icon-btn:active { background: var(--study-border); }
+/* 删除生词本按钮：还原网页版「清空历史记录」按钮样式（黑色圆形 + 白色垃圾桶图标，
+   拖拽/悬停到其上时展开为红色胶囊并显现「删除」文字） */
+.esc-nb-delete {
+  width: 50px; height: 50px; border-radius: 50%;
+  background-color: rgb(20, 20, 20); border: none;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, .16);
+  cursor: pointer; overflow: hidden; position: relative;
+  transition-duration: .3s;
+}
+.esc-nb-delete .esc-nb-del-svg {
+  width: 24px; height: 24px; fill: #fff;
+  transition-duration: .3s;
+}
+/* 显现的「删除」文字（默认隐藏于按钮上方） */
+.esc-nb-delete::before {
+  content: "删除"; position: absolute; top: -20px;
+  color: #fff; font-size: 2px; opacity: 0;
+  transition-duration: .3s;
+}
+/* 拖拽悬停（is-delete-over）或鼠标悬停：展开为胶囊 + 红色背景 + 文字下滑显现 */
+.esc-nb-delete.is-delete-over,
+.esc-nb-delete:hover {
+  width: 132px; border-radius: 50px;
+  background-color: rgb(255, 69, 69); align-items: center;
+}
+.esc-nb-delete.is-delete-over .esc-nb-del-svg,
+.esc-nb-delete:hover .esc-nb-del-svg {
+  width: 50px; transform: translateY(55%);
+}
+.esc-nb-delete.is-delete-over::before,
+.esc-nb-delete:hover::before {
+  font-size: 13px; opacity: 1; transform: translateY(28px);
+}
+/* 深色主题下按钮底色跟随卡片 */
+[data-theme="dark"] .esc-nb-delete { background-color: var(--study-card); box-shadow: 0 0 20px rgba(0, 0, 0, .3); }
+[data-theme="dark"] .esc-nb-delete.is-delete-over,
+[data-theme="dark"] .esc-nb-delete:hover { background-color: rgb(255, 69, 69); }
 /* 标题行右侧的纯图标按钮（上传/拍照）：无边框、无 header 的负外边距 */
 .esc-title-icon { width: 30px; height: 30px; margin-right: 0; color: var(--study-muted-foreground); }
 .esc-section-title .esc-title-icon .esc-ico { width: 16px; height: 16px; color: var(--study-muted-foreground); }
@@ -218,6 +257,8 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-btn-primary:hover { background: var(--study-accent-hover); }
 .esc-btn-ghost { background: var(--study-card); border: 1px solid var(--study-border); color: var(--study-foreground); }
 .esc-btn-ghost:hover { background: var(--study-muted); }
+.esc-btn-danger { background: var(--study-danger); color: #fff; }
+.esc-btn-danger:hover { background: color-mix(in srgb, var(--study-danger) 88%, #000); }
 .esc-btn-block { width: 100%; }
 .esc-btn[disabled] { opacity: .5; pointer-events: none; }
 .esc-btn .esc-ico { width: 16px; height: 16px; }
@@ -1075,6 +1116,34 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-bsheet-row.esc-danger { color: var(--study-error); }
 .esc-bsheet-row.esc-danger .esc-ico { color: var(--study-error); }
 .esc-bsheet-divider { height: 1px; background: var(--study-border); margin: 4px 0; }
+
+/* 19.2b 居中浮窗（.esc-modal）：屏幕中央弹出，用于删除确认等模态 */
+.esc-modal-backdrop {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0,0,0,.42);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; opacity: 0; transition: opacity var(--study-dur) var(--study-ease);
+}
+.esc-modal-backdrop.is-show { opacity: 1; }
+.esc-modal {
+  width: min(340px, 100%);
+  background: var(--study-card); color: var(--study-foreground);
+  border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-lg);
+  padding: 20px;
+  transform: translateY(10px) scale(.96); opacity: 0;
+  transition: transform .2s var(--study-ease-spring), opacity .16s ease;
+}
+.esc-modal-backdrop.is-show .esc-modal { transform: none; opacity: 1; }
+.esc-modal-title { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.esc-modal-text { font-size: 14px; color: var(--study-muted-foreground); margin: 0 0 16px; line-height: 1.55; }
+.esc-modal-check {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 13px; color: var(--study-muted-foreground); margin-bottom: 18px; user-select: none;
+}
+.esc-modal-check input { width: 18px; height: 18px; accent-color: var(--study-danger); }
+.esc-modal-actions { display: flex; gap: 10px; }
+.esc-modal-actions .esc-btn { flex: 1 1 0; justify-content: center; }
 
 /* 19.3 全屏转场弹层（.esc-overlay）增强：轻微缩放 + 淡入 */
 .esc-overlay { animation: esc-overlay-in var(--study-dur) var(--study-ease); }

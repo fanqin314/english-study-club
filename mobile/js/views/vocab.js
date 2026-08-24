@@ -107,7 +107,6 @@
       return `<button class="esc-nb-tab${active}" data-nb="${esc(n.id)}" data-color="${esc(n.color)}" style="--nb:${esc(n.color)};--nb-fg:${textOn(n.color)}"><span class="esc-nb-tab-name">${esc(n.name)}</span><span class="esc-nb-tab-count">${n.wordCount}</span></button>`;
     }).join('') + `<button class="esc-nb-tab esc-add" data-act="new-nb">${icon('plus')}</button>`;
 
-    rootEl.querySelector('#m-vocab-badge').textContent = `共 ${total} 词`;
     rootEl.querySelector('#m-vocab-stats').innerHTML = `
       <div class="esc-grid-3" style="grid-template-columns:repeat(3,1fr)">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-primary);font-family:var(--study-font-serif)">${today}</span><span style="font-size:12px;color:var(--study-muted-foreground)">今日新增</span></div>
@@ -161,8 +160,9 @@
         <header class="esc-header">
           <div class="esc-title-row">${icon('book-open', 'esc-logo')}<h1>生词本</h1></div>
           <div class="esc-header-actions">
-            <button id="m-vocab-manage" class="esc-icon-btn" aria-label="管理生词本">${icon('settings-2')}</button>
-            <span id="m-vocab-badge" class="esc-badge">${icon('layers')}<span>共 0 词</span></span>
+            <button id="m-vocab-manage" class="esc-nb-delete" aria-label="删除生词本（拖动生词本到此处删除）">
+              <svg class="esc-nb-del-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"></path></svg>
+            </button>
           </div>
         </header>
 
@@ -199,22 +199,21 @@
     // 生词本标签手势：单击切换 / 双击重命名 / 长按选色 / 长按拖拽合并
     bindTabGestures(container.querySelector('#m-nb-tabs'));
 
-    // 管理生词本
-    container.querySelector('#m-vocab-manage').addEventListener('click', () => manageNotebooks());
+    // 删除按钮：仅作为拖拽删除的投放目标（移除原「管理生词本」点按功能）
+    deleteBtnEl = container.querySelector('#m-vocab-manage');
 
     paint();
     UI.refreshIcons(container);
   }
 
-  // 新建生词本流程（底部弹层表单）
+  // 新建生词本流程（居中浮窗表单）
   function createNotebookFlow() {
     const html = `
-      <div class="esc-bsheet-grip"></div>
-      <div class="esc-bsheet-title">新建生词本</div>
+      <div class="esc-modal-title">新建生词本</div>
       <input type="text" class="esc-nb-input esc-input" placeholder="生词本名称" maxlength="20" style="margin-bottom:14px" />
       <div class="esc-nb-error" hidden style="color:var(--study-error);font-size:12px;margin-bottom:8px"></div>
       <button class="esc-btn esc-btn-primary" data-act="create" style="width:100%;justify-content:center">创建</button>`;
-    UI.bottomSheet(html, {
+    UI.modal(html, {
       onOpen: (sheet, close) => {
         const input = sheet.querySelector('.esc-nb-input');
         const err = sheet.querySelector('.esc-nb-error');
@@ -227,41 +226,6 @@
           UI.toast(`已创建「${name}」`);
           close();
         });
-      }
-    });
-  }
-
-  // 管理生词本：重命名 / 删除 / 合并（底部弹层）
-  function manageNotebooks() {
-    const notebooks = Store.getNotebooks();
-    const currentId = Store.getCurrentNotebookId();
-    const rows = notebooks.map((n) => {
-      const isCurrent = n.id === currentId;
-      return `<button class="esc-bsheet-row" data-act="rename" data-id="${esc(n.id)}">
-          ${icon('edit-3')}<span>重命名「${esc(n.name)}」${isCurrent ? '（当前）' : ''}</span>
-        </button>
-        <button class="esc-bsheet-row" data-act="merge" data-id="${esc(n.id)}">
-          ${icon('git-merge')}<span>合并「${esc(n.name)}」到其它本</span>
-        </button>
-        <button class="esc-bsheet-row esc-danger" data-act="del" data-id="${esc(n.id)}">
-          ${icon('trash-2')}<span>删除「${esc(n.name)}」</span>
-        </button>`;
-    }).join('');
-    const html = `
-      <div class="esc-bsheet-grip"></div>
-      <div class="esc-bsheet-title">管理生词本</div>
-      ${rows}`;
-    UI.bottomSheet(html, {
-      onOpen: (sheet, close) => {
-        sheet.querySelectorAll('[data-act="rename"]').forEach((b) => b.addEventListener('click', () => {
-          close(); renameFlow(b.getAttribute('data-id'));
-        }));
-        sheet.querySelectorAll('[data-act="merge"]').forEach((b) => b.addEventListener('click', () => {
-          close(); mergeFlow(b.getAttribute('data-id'));
-        }));
-        sheet.querySelectorAll('[data-act="del"]').forEach((b) => b.addEventListener('click', () => {
-          close(); deleteFlow(b.getAttribute('data-id'));
-        }));
       }
     });
   }
@@ -290,55 +254,6 @@
     });
   }
 
-  function mergeFlow(fromId) {
-    const notebooks = Store.getNotebooks();
-    const targets = notebooks.filter((n) => n.id !== fromId);
-    if (!targets.length) { UI.toast('没有可合并的目标生词本'); return; }
-    const fromName = (notebooks.find((n) => n.id === fromId) || {}).name || '';
-    const rows = targets.map((n) =>
-      `<button class="esc-bsheet-row" data-id="${esc(n.id)}">${icon('book-open')}<span>${esc(n.name)} <span style="color:var(--study-muted-foreground);font-size:12px">(${n.wordCount})</span></span></button>`
-    ).join('');
-    const html = `
-      <div class="esc-bsheet-grip"></div>
-      <div class="esc-bsheet-title">合并「${esc(fromName)}」到</div>
-      ${rows}`;
-    UI.bottomSheet(html, {
-      onOpen: (sheet, close) => {
-        sheet.querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => {
-          const r = Store.mergeNotebooks(fromId, b.getAttribute('data-id'));
-          if (!r.success) { UI.toast(r.error); return; }
-          UI.toast(`已合并，目标本共 ${r.count} 词`);
-          close();
-        }));
-      }
-    });
-  }
-
-  function deleteFlow(id) {
-    const n = Store.getNotebooks().find((x) => x.id === id);
-    if (!n) return;
-    if (Store.getNotebooks().length <= 1) { UI.toast('至少保留一个生词本'); return; }
-    const html = `
-      <div class="esc-bsheet-grip"></div>
-      <div class="esc-bsheet-title">删除生词本</div>
-      <p style="font-size:14px;color:var(--study-muted-foreground);margin:0 0 12px">确定删除「${esc(n.name)}」？本内 ${n.wordCount} 个单词将一并移除（不可恢复）。</p>
-      <div style="display:flex;gap:10px">
-        <button class="esc-btn esc-btn-ghost" data-act="cancel" style="flex:1;justify-content:center">取消</button>
-        <button class="esc-btn esc-btn-danger" data-act="ok" style="flex:1;justify-content:center">删除</button>
-      </div>`;
-    UI.bottomSheet(html, {
-      onOpen: (sheet, close) => {
-        sheet.querySelector('[data-act="cancel"]').addEventListener('click', close);
-        sheet.querySelector('[data-act="ok"]').addEventListener('click', () => {
-          const r = Store.deleteNotebook(id);
-          if (!r.success) { UI.toast(r.error); return; }
-          UI.toast('已删除');
-          close();
-        });
-      }
-    });
-  }
-
   // 生词数据变化时自动刷新（由 Store 事件触发）
   Store.on('vocab', () => { if (rootEl && !rootEl.hidden) paint(); });
 
@@ -355,6 +270,8 @@
   let mergeTargetEl = null;    // 当前悬停的合并目标标签
   let mergeBubbleEl = null;    // 合并气泡（fixed 挂在 body，避免 tabs 横向滚动裁剪）
   let bubbleOver = false;      // 幽灵中心是否落在气泡内（用于进出触感反馈）
+  let deleteBtnEl = null;      // 删除按钮（拖拽删除的投放目标）
+  let deleteOver = false;      // 幽灵中心是否落在删除按钮上
   let pickerOutsideBound = false; // 外部点击关闭监听是否已绑定
   let pickerOutsideFn = null;  // 外部点击关闭监听引用
 
@@ -452,15 +369,26 @@
             if (r && r.success) {
               // 合并成功：幽灵吸入目标标签，气泡与高亮随之消失
               animateGhostOut(ghost, 'absorb', targetRect);
-              setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 280);
+              setTimeout(() => { removeGhost(p); clearMergeTarget(); clearDeleteOver(); }, 280);
             } else {
               animateGhostOut(ghost, 'cancel');
-              setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 200);
+              setTimeout(() => { removeGhost(p); clearMergeTarget(); clearDeleteOver(); }, 200);
             }
+          } else if (ghost && hitDeleteBtn(ghost)) {
+            // 松手点在删除按钮上：幽灵吸入删除按钮，随后弹出居中确认（可勾选「不再提示」）
+            const br = deleteBtnEl ? deleteBtnEl.getBoundingClientRect() : null;
+            const id = p.id;
+            animateGhostOut(ghost, 'absorb', br);
+            setTimeout(() => {
+              removeGhost(p);
+              clearMergeTarget();
+              clearDeleteOver();
+              doDeleteFlow(id);
+            }, 260);
           } else {
-            // 未落在气泡上：幽灵缩小淡出，标签保持原位（取消合并）
+            // 未落在气泡/删除按钮上：幽灵缩小淡出，标签保持原位（取消）
             animateGhostOut(ghost, 'cancel');
-            setTimeout(() => { removeGhost(p); clearMergeTarget(); }, 200);
+            setTimeout(() => { removeGhost(p); clearMergeTarget(); clearDeleteOver(); }, 200);
           }
         }
         // 仅长按未拖动：保留颜色气泡供选色
@@ -475,6 +403,7 @@
       press.tab.classList.remove('is-pressed', 'is-dragging');
       removeGhost();
       clearMergeTarget();
+      clearDeleteOver();
       closeColorPicker();
       press = null;
     });
@@ -577,10 +506,19 @@
     setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 220);
   }
 
-  // 拖拽悬停检测：与目标标签重叠面积最大的作为合并目标，并在其上方实时显示合并气泡
+  // 拖拽悬停检测：与目标标签重叠面积最大的作为合并目标，并在其上方实时显示合并气泡；
+  // 命中删除按钮时高亮按钮并清掉合并目标（二者互斥）
   function updateMergeTarget() {
     if (!press || !press.dragging || !press.ghost) return;
     const g = press.ghost.getBoundingClientRect();
+    // 删除按钮命中检测（幽灵中心是否落入按钮内）
+    const overDel = hitDeleteBtn(press.ghost);
+    if (overDel !== deleteOver) {
+      deleteOver = overDel;
+      if (deleteBtnEl) deleteBtnEl.classList.toggle('is-delete-over', overDel);
+      if (overDel && navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
+    }
+    if (overDel) { clearMergeTarget(); return; } // 落在删除按钮上：不再检测合并目标
     let target = null, best = 0;
     tabRowEl.querySelectorAll('[data-nb]').forEach((t) => {
       if (t === press.tab) return;
@@ -599,6 +537,11 @@
       }
     }
     updateBubbleOverState();
+  }
+  // 清空删除按钮高亮
+  function clearDeleteOver() {
+    if (deleteBtnEl) deleteBtnEl.classList.remove('is-delete-over');
+    deleteOver = false;
   }
   // 清空合并目标：移除高亮与气泡
   function clearMergeTarget() {
@@ -649,6 +592,11 @@
     const br = mergeBubbleEl.getBoundingClientRect();
     return pointInRect(ghost.getBoundingClientRect(), br) ? mergeTargetEl.getAttribute('data-nb') : null;
   }
+  // 松手/悬停时判定：幽灵中心是否落在删除按钮内（触发删除）
+  function hitDeleteBtn(ghost) {
+    if (!deleteBtnEl) return false;
+    return pointInRect(ghost.getBoundingClientRect(), deleteBtnEl.getBoundingClientRect());
+  }
   // 松手动效：absorb=吸入目标标签（合并成功） / cancel=原地缩小淡出（取消）
   function animateGhostOut(ghost, mode, targetRect) {
     if (!ghost) return;
@@ -672,6 +620,37 @@
     if (r.success) UI.toast(`已合并「${names[fromId] || ''}」到「${names[toId] || ''}」，目标本共 ${r.count} 词`);
     else UI.toast(r.error);
     return r;
+  }
+
+  // 拖拽松手到删除按钮：若已勾选「不再提示」则直接删除，否则弹出居中确认浮窗
+  function doDeleteFlow(id) {
+    const n = Store.getNotebooks().find((x) => x.id === id);
+    if (!n) return;
+    if (Store.getNotebooks().length <= 1) { UI.toast('至少保留一个生词本'); return; }
+    if (Store.getSkipDeleteConfirm()) { performDelete(id); return; }
+    const html = `
+      <div class="esc-modal-title">删除生词本</div>
+      <p class="esc-modal-text">确定删除「${esc(n.name)}」？本内 ${n.wordCount} 个单词将一并移除（不可恢复）。</p>
+      <label class="esc-modal-check"><input type="checkbox" id="m-del-skip" /><span>不再提示，下次直接删除</span></label>
+      <div class="esc-modal-actions">
+        <button class="esc-btn esc-btn-ghost" data-act="cancel">取消</button>
+        <button class="esc-btn esc-btn-danger" data-act="ok">删除</button>
+      </div>`;
+    UI.modal(html, {
+      onOpen: (dlg, close) => {
+        dlg.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dlg.querySelector('[data-act="ok"]').addEventListener('click', () => {
+          if (dlg.querySelector('#m-del-skip').checked) Store.setSkipDeleteConfirm(true);
+          close();
+          performDelete(id);
+        });
+      }
+    });
+  }
+  function performDelete(id) {
+    const r = Store.deleteNotebook(id);
+    if (!r.success) { UI.toast(r.error); return; }
+    UI.toast('已删除');
   }
 
   Mobile.Views = Mobile.Views || {};
