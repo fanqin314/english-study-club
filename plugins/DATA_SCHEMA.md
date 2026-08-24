@@ -3,6 +3,27 @@
 本文件约定 **browser-extension** 与 **obsidian-plugin** 之间对齐学习数据时使用的统一 JSON 结构。
 两个插件各自独立存储（浏览器写 `chrome.storage.local`，Obsidian 读写 vault），通过「导出 / 导入 JSON」桥接对齐，不依赖任何原生程序（native host）。
 
+## 本地文件夹闭环（推荐）
+
+浏览器插件 / 网页端「选定本地文件夹」后，会**实时写出三个分散文件**到所选目录：
+
+```
+<你选定的本地文件夹>/
+├── browser-extension/          ← 浏览器插件写出（子目录）
+│   ├── articles.json           ← 文章（同顶层 articles 结构）
+│   ├── vocab.json              ← 生词（同顶层 vocab 结构）
+│   └── captures.json           ← 采集（同顶层 captures 结构）
+└── （网页端直接写出在根目录，无 browser-extension/ 前缀）
+    ├── articles.json
+    └── vocab.json
+```
+
+每个文件本身即对应顶层 `articles` / `vocab` / `captures` 的**数组**（或包裹成 `{ "articles": [...] }` 形式），导入方需两种都兼容。
+
+**Obsidian 插件对接方式**：设置项「本地文件夹同步路径」填写该文件夹在 **vault 内**的相对路径（如 `english-study-club`），然后执行「从文件夹同步」命令（或在设置页点击「从文件夹同步」）。插件会按 `基础目录 → 基础目录/browser-extension` 顺序探测 JSON 文件，读取后复用统一 JSON 导入逻辑写入 `history/` `vocab/` `browser-captures/`，自动去重。
+
+> 由于 Obsidian 插件沙箱只能读写 **vault 内** 文件，请把浏览器插件 / 网页端所选的本地文件夹放在 vault 目录之内（或软链到 vault 内），同步路径填对应的相对路径即可。
+
 ## 顶层结构
 
 ```json

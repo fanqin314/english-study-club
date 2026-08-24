@@ -18,6 +18,8 @@
 
   let state = { filter: 'all', search: '' };
   let rootEl = null;
+  let editBubble = null; // 编辑单词气泡（网页版风格）
+  let expandToken = 0;   // 展开动画令牌：防止上一帧尚未执行的展开回调把其它卡错误展开
 
   function isToday(ts) {
     const d = new Date(ts), n = new Date();
@@ -32,27 +34,45 @@
     return arr;
   }
 
-  function wordCard(w) {
+  function wordCard(w, nbId) {
+    const ex = w.example || w.context;
+    const wid = `${nbId || ''}::${(w.word || '').toLowerCase()}`;
     return `
-      <div class="esc-word" data-word="${esc(w.word)}">
+      <div class="esc-word" data-word="${esc(w.word)}" data-id="${esc(wid)}">
         <div class="esc-word-inner">
           <div class="esc-word-accent"></div>
           <div class="esc-word-body">
-            <div class="esc-word-top">
-              <div style="min-width:0">
-                <h3 class="esc-word-name">${esc(w.word)}</h3>
-                ${w.phonetic ? `<div class="esc-word-phon">/${esc(w.phonetic)}/</div>` : ''}
-                <p class="esc-word-mean">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || w.zh || '')}</p>
+            <div class="esc-word-bwrap">
+              <div class="esc-word-top">
+                <div style="min-width:0">
+                  <h3 class="esc-word-name">${esc(w.word)}</h3>
+                  ${w.phonetic ? `<div class="esc-word-phon">/${esc(w.phonetic)}/</div>` : ''}
+                  <p class="esc-word-mean">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || w.zh || '')}</p>
+                </div>
+                <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="edit" aria-label="编辑">${icon('pencil')}</button>
+                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除">${icon('trash-2')}</button>
+                </div>
               </div>
-            </div>
-            ${w.example ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(w.example)}"</p>${w.exampleZh ? `<p class="esc-word-ex-zh">${esc(w.exampleZh)}</p>` : ''}</div>` : ''}
-            <div class="esc-word-foot">
-              <button class="esc-word-pron" data-act="pron">${icon('volume-2')}<span>发音</span></button>
-              <span class="esc-word-date">${esc(relTime(w.createdAt))}</span>
+              ${ex ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(ex)}"</p>${w.exampleZh ? `<p class="esc-word-ex-zh">${esc(w.exampleZh)}</p>` : ''}</div>` : ''}
+              <div class="esc-word-foot">
+                <button class="esc-word-pron" data-act="pron">${icon('volume-2')}<span>发音</span></button>
+                <span class="esc-word-date">${esc(relTime(w.createdAt))}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>`;
+  }
+
+  // 每两个单词卡一组包一层 .esc-word-row；末尾单张自成一行（.is-alone 占满整行）
+  function wordRows(arr, nbId) {
+    const rows = [];
+    for (let i = 0; i < arr.length; i += 2) {
+      const pair = arr.slice(i, i + 2);
+      rows.push(`<div class="esc-word-row${pair.length === 1 ? ' is-alone' : ''}">${pair.map((w) => wordCard(w, nbId)).join('')}</div>`);
+    }
+    return rows.join('');
   }
 
   function relTime(ts) {
@@ -120,11 +140,14 @@
     const arr = filtered(list);
     const wrap = rootEl.querySelector('#m-vocab-list');
     wrap.innerHTML = arr.length
-      ? arr.map(wordCard).join('')
+      ? wordRows(arr, currentId)
       : `<div class="esc-empty">${icon('book-open', 'esc-ico')}<p class="esc-empty-title" style="margin-top:16px">还没有生词</p><p class="esc-empty-desc">深度解析单词后，点击收藏即可将单词添加到生词本中</p></div>`;
 
     UI.refreshIcons(wrap);
     bindCards(wrap);
+    // 展开/收起期间行高恒定：把每行钉到自然高度（两卡均分时的内容高度）。
+    // 之后点击展开/恢复只改变行内宽度分配，行高不变 → 页面高度与滚动条完全稳定，不抖动。
+    wrap.querySelectorAll('.esc-word-row').forEach((r) => { r.style.height = r.offsetHeight + 'px'; });
   }
 
   // 掌握度分级可视化（新学 / 学习中 / 已掌握）
@@ -149,8 +172,191 @@
   function bindCards(wrap) {
     wrap.querySelectorAll('.esc-word').forEach((el) => {
       const word = el.getAttribute('data-word');
+      const id = el.getAttribute('data-id');
       const pron = el.querySelector('[data-act="pron"]');
       if (pron) pron.addEventListener('click', (e) => { e.stopPropagation(); if (word) Speech.speak(word); });
+      const edit = el.querySelector('[data-act="edit"]');
+      if (edit) edit.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (id) editWordFlow(id, edit); });
+      const del = el.querySelector('[data-act="delete"]');
+      if (del) del.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (id) deleteWordFlow(id); });
+      el.addEventListener('click', () => toggleExpand(el));
+    });
+  }
+
+  // 编辑单词：网页版风格的「气泡」表单（词性/释义/例句），锚定在编辑按钮附近
+  function editWordFlow(id, anchor) {
+    const w = Store.getWord(id);
+    if (!w) return;
+    closeEditBubble();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'esc-wbubble';
+    bubble.innerHTML = `
+      <div class="bubble-arrow"></div>
+      <div class="bubble-inner">
+        <div class="bubble-title">编辑单词</div>
+        <div class="form-group">
+          <label>词性:</label>
+          <input type="text" class="pos-input" value="${esc(w.pos || '')}" placeholder="如: n., v., adj.等">
+        </div>
+        <div class="form-group">
+          <label>释义:</label>
+          <textarea class="meaning-input" placeholder="请输入中文释义">${esc(w.meaning || '')}</textarea>
+        </div>
+        <div class="form-group">
+          <label>上下文/例句:</label>
+          <textarea class="context-input" placeholder="请输入单词的上下文或例句">${esc(w.example || w.context || '')}</textarea>
+        </div>
+        <div class="esc-nb-error" hidden></div>
+        <div class="form-actions">
+          <button class="save-btn">保存</button>
+          <button class="cancel-btn">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(bubble);
+    editBubble = bubble;
+    positionEditBubble(bubble, anchor);
+    bindEditBubbleClose(bubble);
+
+    bubble.querySelector('.cancel-btn').addEventListener('click', (e) => { e.stopPropagation(); closeEditBubble(); });
+    bubble.querySelector('.save-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const pos = bubble.querySelector('.pos-input').value.trim();
+      const meaning = bubble.querySelector('.meaning-input').value.trim();
+      const ctx = bubble.querySelector('.context-input').value.trim();
+      const err = bubble.querySelector('.esc-nb-error');
+      if (!meaning) { err.textContent = '释义不能为空'; err.hidden = false; return; }
+      const r = Store.updateWord(id, { pos, meaning, context: ctx });
+      if (!r.success) { err.textContent = r.error; err.hidden = false; return; }
+      closeEditBubble();
+      UI.toast('单词信息已更新');
+    });
+  }
+
+  // 关闭编辑气泡（解除全局点击 / Esc 监听）
+  function closeEditBubble() {
+    if (editBubble) {
+      if (editBubble._docHandler) document.removeEventListener('click', editBubble._docHandler);
+      if (editBubble._escHandler) document.removeEventListener('keydown', editBubble._escHandler);
+      editBubble._docHandler = editBubble._escHandler = null;
+      editBubble.remove();
+      editBubble = null;
+    }
+  }
+
+  // 定位气泡：使右上箭头（右缘 24px）正对编辑按钮中心，故气泡整体偏左，超出视口时自动翻转/夹紧
+  function positionEditBubble(bubble, anchor) {
+    bubble.style.visibility = 'hidden';
+    const rect = anchor.getBoundingClientRect();
+    const bw = bubble.offsetWidth || 260;
+    const bh = bubble.offsetHeight || 320;
+    const vw = innerWidth, vh = innerHeight;
+    let left = rect.left + rect.width / 2 + 24 - bw; // 箭头对准按钮中心，气泡整体偏左
+    let top = rect.bottom + 8;
+    let above = false;
+    if (left + bw > vw - 8) left = vw - bw - 8;
+    if (left < 8) left = 8;
+    if (top + bh > vh - 8) { top = rect.top - bh - 8; above = true; }
+    bubble.classList.toggle('is-above', above);
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${top}px`;
+    bubble.style.visibility = '';
+  }
+
+  // 点击气泡外部 / 按 Esc 关闭（同时记录两个 handler 供关闭时解绑，避免监听泄漏）
+  function bindEditBubbleClose(bubble) {
+    const handler = (e) => { if (editBubble && !editBubble.contains(e.target)) closeEditBubble(); };
+    const escHandler = (e) => { if (e.key === 'Escape') closeEditBubble(); };
+    bubble._docHandler = handler;
+    bubble._escHandler = escHandler;
+    setTimeout(() => {
+      if (!editBubble) return; // 气泡已在 10ms 内被关闭：不再绑定，防止泄漏
+      document.addEventListener('click', handler);
+      document.addEventListener('keydown', escHandler);
+    }, 10);
+  }
+
+  // 删除单词：居中确认后调用 Store.removeWord
+  function deleteWordFlow(id) {
+    const w = Store.getWord(id);
+    if (!w) return;
+    const html = `
+      <div class="esc-modal-title">删除单词</div>
+      <p class="esc-modal-text">确定删除单词「${esc(w.word)}」吗？删除后不可恢复。</p>
+      <div class="esc-modal-actions">
+        <button class="esc-btn esc-btn-ghost" data-act="cancel">取消</button>
+        <button class="esc-btn esc-btn-danger" data-act="ok">删除</button>
+      </div>`;
+    UI.modal(html, {
+      onOpen: (dlg, close) => {
+        dlg.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dlg.querySelector('[data-act="ok"]').addEventListener('click', () => { close(); Store.removeWord(id); UI.toast('已删除'); });
+      }
+    });
+  }
+
+  // 清除当前所有展开/收起状态（两张卡都恢复为均分），并解除行高钉定回到自然高度
+  function clearExpand() {
+    if (!rootEl) return;
+    const rows = rootEl.querySelectorAll('#m-vocab-list .esc-word-row');
+    rows.forEach((r) => {
+      // 移除上一张卡遗留的 transitionend 释放回调，避免误清掉新的钉定行高
+      if (r._expandRelease && r._expandCard) {
+        r._expandCard.removeEventListener('transitionend', r._expandRelease);
+      }
+      r._expandRelease = null;
+      r._expandCard = null;
+      r.style.height = '';
+    });
+    rootEl.querySelectorAll('#m-vocab-list .esc-word.is-expanded, #m-vocab-list .esc-word.is-collapsed')
+      .forEach((c) => c.classList.remove('is-expanded', 'is-collapsed'));
+  }
+
+  // 点击单词卡：展开自身并挤压同行相邻卡为细条；再点或点细条恢复
+  // 行高处理：展开前先以「无过渡」状态把目标卡铺到最终宽度，量取展开后内容真实高度并钉定；
+  // 再恢复初始均分态，交由 flex-basis 过渡平滑推挤。动画期间行高恒定 → 页面高度与滚动条稳定。
+  function toggleExpand(el) {
+    const expanding = !el.classList.contains('is-expanded') && !el.classList.contains('is-collapsed');
+    const row = el.closest('.esc-word-row');
+    clearExpand();
+    if (!expanding) return; // 已展开/已收起的卡：仅恢复均分，行高回到自然高度
+
+    const sibling = (c) => { if (c !== el) c.classList.add('is-collapsed'); };
+    const unsibling = (c) => c.classList.remove('is-collapsed');
+
+    // 量取展开后真实行高：
+    // 测量期间禁用整行所有过渡，让相邻卡立即收为细条（body 0fr），
+    // 避免其收起过渡尚未开始、仍占满内容高度而把行高撑高 → 展开后再“反弹”回正确高度。
+    const meas = row ? Array.from(row.querySelectorAll('.esc-word, .esc-word-body')) : [];
+    const prevT = meas.map((c) => c.style.transition);
+    meas.forEach((c) => { c.style.transition = 'none'; });
+    el.classList.add('is-expanded');
+    if (row) row.querySelectorAll('.esc-word').forEach(sibling);
+    const expandedH = row ? row.offsetHeight : el.offsetHeight;
+    el.classList.remove('is-expanded');
+    if (row) row.querySelectorAll('.esc-word').forEach(unsibling);
+    meas.forEach((c, i) => { c.style.transition = prevT[i]; });
+
+    // 用 requestAnimationFrame 让浏览器先真正渲染一帧「收起起始态」，下一帧再正式展开，
+    // 这样 flex-basis 宽度过渡必然被触发；否则类名在同一帧内来回切换会被合并 → 无动效。
+    // token 令牌：若在下一帧前又点了其它卡（clearExpand 已重置），则丢弃本回调，避免误展开。
+    const token = ++expandToken;
+    requestAnimationFrame(() => {
+      if (token !== expandToken) return;
+      el.classList.add('is-expanded');
+      if (row) row.querySelectorAll('.esc-word').forEach(sibling);
+      if (row) {
+        row.style.height = expandedH + 'px';
+        const release = (e) => {
+          if (e.target !== el || e.propertyName !== 'flex-basis') return;
+          el.removeEventListener('transitionend', release);
+          if (row._expandRelease === release) { row._expandRelease = null; row._expandCard = null; }
+          row.style.height = '';
+        };
+        row._expandRelease = release; // 记录到行上，供 clearExpand 在动画被中断时解绑
+        row._expandCard = el;
+        el.addEventListener('transitionend', release);
+      }
     });
   }
 

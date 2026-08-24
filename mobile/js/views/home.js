@@ -414,7 +414,7 @@
           ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
         </div>
         ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
-        <div class="esc-word-actions">
+        <div class="esc-wordpop-actions">
           <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
           <button class="esc-btn esc-btn-primary" data-act="add">${icon('bookmark-plus')}<span>加入生词本</span></button>
         </div>

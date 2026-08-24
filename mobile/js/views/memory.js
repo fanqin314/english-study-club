@@ -267,8 +267,55 @@
   let overlay = null;
   let session = null;
 
+  // ---------------- 陀螺仪（跟随手机晃动） ----------------
+  let gyroActive = false, gyroTried = false;
+  let gyroTargetX = 0, gyroTargetY = 0, gyroX = 0, gyroY = 0, gyroRaf = null;
+
+  function gyroLoop() {
+    gyroX += (gyroTargetX - gyroX) * 0.14; // 平滑
+    gyroY += (gyroTargetY - gyroY) * 0.14;
+    if (overlay) {
+      const c = overlay.querySelector('#magicCard');
+      if (c) c.style.transform = `perspective(1200px) rotateX(${gyroX}deg) rotateY(${gyroY}deg)`;
+    }
+    gyroRaf = requestAnimationFrame(gyroLoop);
+  }
+  function onDeviceOrientation(e) {
+    if (e.gamma == null || e.beta == null) return;
+    // gamma: 左右倾斜 → rotateY；beta: 前后倾斜 → rotateX
+    let gy = Math.max(-24, Math.min(24, e.gamma));
+    let gx = Math.max(-24, Math.min(24, -e.beta));
+    gyroTargetY = gy; gyroTargetX = gx;
+  }
+  function startGyro() {
+    if (gyroActive) return;
+    gyroActive = true;
+    window.addEventListener('deviceorientation', onDeviceOrientation, true);
+    if (!gyroRaf) gyroRaf = requestAnimationFrame(gyroLoop);
+  }
+  function stopGyro() {
+    if (!gyroActive) return;
+    gyroActive = false;
+    window.removeEventListener('deviceorientation', onDeviceOrientation, true);
+    if (gyroRaf) { cancelAnimationFrame(gyroRaf); gyroRaf = null; }
+  }
+  function enableGyro() {
+    if (gyroTried) return;
+    gyroTried = true;
+    if (window.DeviceOrientationEvent == null) return;
+    // iOS 需要用户手势授权
+    if (typeof window.DeviceOrientationEvent.requestPermission === 'function') {
+      window.DeviceOrientationEvent.requestPermission()
+        .then((p) => { if (p === 'granted') startGyro(); })
+        .catch(() => {});
+    } else {
+      startGyro();
+    }
+  }
+
   function closeOverlay() {
     if (!overlay) return;
+    stopGyro();
     const el = overlay;
     overlay = null; session = null;
     el.style.transition = 'opacity .2s ease';
@@ -399,34 +446,151 @@
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
   }
 
-  // 闪卡：点击翻转，认识/不认识
+  // 闪卡：网页版 3D 卡片风格（光晕 + 倾斜 + 评级），适配移动端主题
+  const FC_STAR = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+  const FC_EYE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" stroke-width="2.5"></line></svg>`;
+  const FC_EYE_OFF = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+  const FC_CHEV_L = `<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+  const FC_CHEV_R = `<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+  const FC_MASTERY = {
+    unknown: `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>`,
+    vague: `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle><line x1="8" y1="15" x2="16" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>`,
+    known: `<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle><polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>`
+  };
+  const FC_RATE_LABEL = { unknown: '不认识', vague: '模糊', known: '已掌握' };
+
   function renderFlash(body, w) {
+    const total = session.queue.length;
+    const idx = session.idx;
+    const pct = total ? (((idx + 1) / total) * 100).toFixed(2) : 0;
+    // 例句兼容两种形状：字符串（移动端 context）或 { en, zh }（网页版）
+    const ex = (w.example && typeof w.example === 'object') ? w.example
+      : (w.example ? { en: w.example, zh: '' } : { en: '', zh: '' });
+
     body.innerHTML = `
-      <div class="esc-flash">
-        <div class="esc-flash-inner" data-act="flip">
-          <p class="esc-flash-word">${esc(w.word)}</p>
-          ${w.phonetic ? `<p class="esc-flash-phon">/${esc(w.phonetic)}/</p>` : ''}
-          <div class="esc-flash-back esc-hidden">
-            <p>${esc((w.pos ? w.pos + '. ' : '') + (w.meaning || ''))}</p>
-            ${w.example ? `<p class="esc-flash-back esc-muted">"${esc(w.example)}"</p>` : ''}
-          </div>
-          <p class="esc-flash-hint">点击卡片查看释义</p>
+      <div class="esc-fc">
+        <div class="fc-top">
+          <div class="fill-progress-track"><div class="fill-progress-fill" id="progressBar" style="width:${pct}%"></div></div>
+          <button class="fc-tool" id="flashcardGenExampleBtn" title="生成例句">${FC_STAR}</button>
+          <button class="fc-tool" id="flashcardToggleTransBtn" title="隐藏/显示翻译">${FC_EYE}</button>
         </div>
-      </div>
-      <div class="esc-flash-actions">
-        <button class="esc-btn esc-btn-ghost" data-act="no">不认识</button>
-        <button class="esc-btn esc-btn-primary" data-act="yes">认识</button>
+        <div class="card-3d" id="magicCard">
+          <div class="glare" id="glareLayer"></div>
+          <div class="card-face card-front">
+            <div class="word-section" id="wordSection">
+              <span class="word" id="currentWord">${esc(w.word)}</span>
+              ${w.phonetic ? `<span class="phon" id="currentPhon">/${esc(w.phonetic)}/</span>` : ''}
+              <span class="pos" id="currentPos">${esc(w.pos || '')}</span>
+              <span class="meaning" id="currentMeaning">${esc(w.meaning || '')}</span>
+            </div>
+            <div class="example-area" id="exampleArea">
+              <div class="example-en" id="exampleEn">${ex.en ? esc(ex.en) : '点击顶部星星生成例句'}</div>
+              <div class="example-zh" id="exampleZh">${ex.zh ? esc(ex.zh) : ''}</div>
+            </div>
+          </div>
+          <div class="card-face card-back" id="cardBack"></div>
+          <div class="feedback-overlay" id="feedbackOverlay" style="display:none">
+            <div class="feedback-content">
+              <div class="feedback-icon" id="feedbackIcon"></div>
+              <div class="feedback-text" id="feedbackText"></div>
+              <div class="feedback-detail" id="feedbackDetail"></div>
+            </div>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="nav-btn" id="prevBtn">${FC_CHEV_L}<span>上一个</span></button>
+          <span class="counter" id="counter">${idx + 1} / ${total}</span>
+          <button class="nav-btn" id="nextBtn"><span>下一个</span>${FC_CHEV_R}</button>
+        </div>
+        <div class="mastery-ratings" id="masteryRatings">
+          ${['unknown', 'vague', 'known'].map((r) => `
+            <button class="mastery-btn ${r}" data-rating="${r}">${FC_MASTERY[r]}<span>${FC_RATE_LABEL[r]}</span></button>`).join('')}
+        </div>
       </div>`;
-    UI.refreshIcons(body);
-    const inner = body.querySelector('[data-act="flip"]');
-    const back = inner.querySelector('.esc-flash-back');
-    const hint = inner.querySelector('.esc-flash-hint');
-    inner.addEventListener('click', () => {
-      back.classList.toggle('esc-hidden');
-      hint.textContent = back.classList.contains('esc-hidden') ? '点击卡片查看释义' : '点击收起';
+
+    // 3D 倾斜 + 光晕：有陀螺仪跟随手机晃动，否则用指针/鼠标
+    const card = body.querySelector('#magicCard');
+    const glare = body.querySelector('#glareLayer');
+    enableGyro();
+    if (!gyroActive) {
+      let tX = 0, tY = 0;
+      const applyTilt = () => { card.style.transform = `perspective(1200px) rotateX(${tX}deg) rotateY(${tY}deg)`; };
+      card.addEventListener('pointermove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        tY = (x - 0.5) * 14; tX = (y - 0.5) * -14;
+        applyTilt();
+        const gX = x * 100, gY = y * 100;
+        glare.style.background = `radial-gradient(circle at ${gX}% ${gY}%, rgba(255,255,255,0.6) 0%, transparent 70%)`;
+        glare.style.opacity = '0.9';
+      });
+      card.addEventListener('pointerleave', () => { tX = 0; tY = 0; applyTilt(); glare.style.opacity = '0'; });
+      applyTilt();
+    }
+
+    // 导航：上/下一个（浏览不计数）
+    const goPrev = () => { if (session.idx > 0) { session.idx--; step(); } };
+    const goNext = () => { if (session.idx < session.queue.length - 1) { session.idx++; step(); } };
+    body.querySelector('#prevBtn').addEventListener('click', goPrev);
+    body.querySelector('#nextBtn').addEventListener('click', goNext);
+
+    // 例句生成：无例句时补一个默认例句
+    const exEn = body.querySelector('#exampleEn');
+    const exZh = body.querySelector('#exampleZh');
+    body.querySelector('#flashcardGenExampleBtn').addEventListener('click', () => {
+      if (!ex.en) {
+        ex.en = `"${w.word}" is a great word.`;
+        ex.zh = '';
+        exEn.textContent = ex.en;
+        exZh.textContent = '';
+      }
     });
-    body.querySelector('[data-act="yes"]').addEventListener('click', () => { session.total++; session.correct++; next(); });
-    body.querySelector('[data-act="no"]').addEventListener('click', () => { session.total++; next(); });
+
+    // 隐藏/显示翻译（切换示例区中文 + 图标）
+    const toggleTransBtn = body.querySelector('#flashcardToggleTransBtn');
+    const exampleArea = body.querySelector('#exampleArea');
+    let hideZh = false;
+    toggleTransBtn.addEventListener('click', () => {
+      hideZh = !hideZh;
+      exampleArea.classList.toggle('hide-zh', hideZh);
+      toggleTransBtn.innerHTML = hideZh ? FC_EYE_OFF : FC_EYE;
+      toggleTransBtn.setAttribute('title', hideZh ? '显示翻译' : '隐藏/显示翻译');
+    });
+
+    // 评级：计数 + 即时反馈 + 自动前进
+    const fbOverlay = body.querySelector('#feedbackOverlay');
+    const fbIcon = body.querySelector('#feedbackIcon');
+    const fbText = body.querySelector('#feedbackText');
+    const fbDetail = body.querySelector('#feedbackDetail');
+    let _advanceLock = false;
+    body.querySelectorAll('.mastery-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (_advanceLock) return;
+        _advanceLock = true;
+        const rating = btn.getAttribute('data-rating');
+        session.total++;
+        if (rating === 'known') session.correct++;
+        // 即时反馈
+        const map = {
+          known: ['✓', '已掌握', 'var(--study-success)'],
+          vague: ['?', '模糊', 'var(--study-warning)'],
+          unknown: ['✗', '不认识', 'var(--study-error)']
+        }[rating];
+        fbIcon.textContent = map[0];
+        fbIcon.style.color = map[2];
+        fbText.textContent = map[1];
+        fbText.style.color = map[2];
+        const exStr = ex.en ? ` — ${ex.en}` : '';
+        fbDetail.textContent = `${w.word}${w.pos ? ' ' + w.pos : ''} ${w.meaning || ''}${exStr}`;
+        fbOverlay.style.display = 'flex';
+        fbOverlay.style.animation = 'none'; void fbOverlay.offsetWidth; fbOverlay.style.animation = '';
+        setTimeout(() => {
+          fbOverlay.style.display = 'none';
+          next();
+        }, 500);
+      });
+    });
   }
 
   // 选择：选出正确释义

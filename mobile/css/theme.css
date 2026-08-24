@@ -342,12 +342,28 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   z-index: 30;
 }
 .esc-nav-item {
+  position: relative;
   display: flex; align-items: center; justify-content: center;
   color: var(--study-muted-foreground);
-  transition: color .2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: color .22s ease, transform .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.esc-nav-item .esc-ico { width: 22px; height: 22px; }
+/* 选中高亮：淡色圆片在图标后方弹簧展开，提供明确选中反馈（无廉价渐变/内阴影） */
+.esc-nav-item::before {
+  content: ""; position: absolute; width: 44px; height: 44px; border-radius: 999px;
+  background: color-mix(in srgb, var(--study-primary) 13%, transparent);
+  transform: scale(0); opacity: 0;
+  transition: transform .34s cubic-bezier(0.16, 1, 0.3, 1), opacity .22s ease;
+}
+.esc-nav-item .esc-ico {
+  width: 22px; height: 22px;
+  transition: transform .34s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* 点按时轻压反馈 */
+.esc-nav-item:active { transform: scale(.92); }
 .esc-nav-item.is-active { color: var(--study-primary); }
+.esc-nav-item.is-active::before { transform: scale(1); opacity: 1; }
+.esc-nav-item.is-active .esc-ico { transform: translateY(-2px) scale(1.12); }
 
 /* ---------- 9. Stats Grid ---------- */
 .esc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -668,8 +684,44 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 
 /* ---------- 11. Word Card（生词本） ---------- */
 /* 生词本列表：一行两个单词块 */
-#m-vocab-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-#m-vocab-list .esc-empty { grid-column: 1 / -1; }
+/* 生词列表：每行一个 .esc-word-row 独立 flex 容器，避免整列 flex-wrap 在动画时逐帧重排。
+   点击某张卡展开、同行相邻卡收缩为细条；展开/收起统一用 flex-basis 过渡，两侧同步平滑推挤。
+   行内 contain:layout 把动画期间的重排隔离在本行内，避免影响整页滚动与其它行布局。 */
+#m-vocab-list {
+  display: flex; flex-direction: column; gap: 12px;
+  contain: layout style;
+}
+.esc-word-row {
+  display: flex; gap: 12px; align-items: stretch;
+  contain: layout;
+}
+.esc-word-row > .esc-word {
+  flex: 1 1 50%; min-width: 0;
+  /* min-height:0 关键：行高已钉死，动画中间宽度下内容换行会撑高 min-height:auto，
+     让卡片超出钉死行高并向页面滚动区溢出 → 滚动条颤抖。改为 0 后卡片高度始终等于行高，
+     多余内容被自身 overflow:hidden 裁剪，页面高度完全不变。 */
+  min-height: 0;
+  transition: flex-basis .34s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color .15s ease, box-shadow .15s ease;
+}
+.esc-word-row > .esc-word.is-expanded { flex: 1 1 calc(100% - 26px); }
+.esc-word-row > .esc-word.is-collapsed { flex: 0 0 14px; cursor: pointer; padding: 0; }
+/* 单张自成一行（奇数个生词）：默认即占满整行，展开时保持满行 */
+.esc-word-row.is-alone > .esc-word { flex-basis: 100%; }
+#m-vocab-list .esc-empty { flex: 1 1 100%; }
+#m-vocab-list .esc-word.is-collapsed .esc-word-inner { height: 100%; }
+#m-vocab-list .esc-word.is-collapsed .esc-word-accent {
+  width: 100%; height: 100%; border-radius: var(--study-radius-lg);
+}
+#m-vocab-list .esc-word.is-collapsed .esc-word-body {
+  grid-template-rows: 0fr; opacity: 0; padding: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .esc-word-row > .esc-word { transition: background-color .15s ease, box-shadow .15s ease; }
+  .esc-word-body { transition: opacity .15s ease; }
+  .esc-nav-item, .esc-nav-item::before, .esc-nav-item .esc-ico { transition: none; }
+  .esc-nav-item.is-active .esc-ico { transform: none; }
+}
 .esc-word {
   background: var(--study-card); border: 1px solid var(--study-border);
   border-radius: var(--study-radius-lg); box-shadow: var(--study-shadow-sm);
@@ -679,14 +731,25 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word:active { background: var(--study-muted); }
 .esc-word-inner { display: flex; }
 .esc-word-accent { width: 4px; background: var(--study-primary); flex: 0 0 auto; border-radius: var(--study-radius-lg) 0 0 var(--study-radius-lg); }
-.esc-word-body { flex: 1 1 auto; padding: 16px; min-width: 0; }
+.esc-word-body {
+  flex: 1 1 auto; padding: 16px; min-width: 0;
+  /* 用 grid 0fr→1fr 让内容高度平滑展开/收起（配合 bwrap 裁剪），避免 display:none 恢复瞬间
+     在窄宽度下换行撑高把整行向下弹；opacity 同步淡入淡出 */
+  display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows .34s cubic-bezier(0.16, 1, 0.3, 1),
+              padding .34s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity .22s ease;
+}
+.esc-word-bwrap { min-height: 0; overflow: hidden; }
 .esc-word-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .esc-word-name { font-size: 18px; font-weight: 700; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0; }
 .esc-word-phon { font-size: 12px; color: var(--study-muted-foreground); }
 .esc-word-mean { font-size: 14px; color: color-mix(in srgb, var(--study-foreground) 80%, transparent); margin: 4px 0 0; }
 .esc-word-ex {
+  display: none; /* 例句默认隐藏，展开后展示（与网页版生词本对齐） */
   margin-top: 10px; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--study-primary) 20%, transparent);
 }
+.esc-word.is-expanded .esc-word-ex { display: block; }
 .esc-word-ex-en { font-size: 12px; font-style: italic; color: var(--study-muted-foreground); margin: 0; }
 .esc-word-ex-zh { font-size: 12px; color: var(--study-muted-foreground); margin: 2px 0 0; }
 .esc-word-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
@@ -699,6 +762,74 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word-pron .esc-ico { width: 14px; height: 14px; }
 .esc-dot { width: 4px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--study-muted-foreground) 30%, transparent); }
 .esc-word-date { font-size: 12px; color: var(--study-muted-foreground); }
+/* 编辑/删除图标按钮：默认隐藏，仅展开时显示在标题行右侧 */
+.esc-word-actions { display: none; gap: 8px; flex: 0 0 auto; align-self: flex-start; }
+.esc-word.is-expanded .esc-word-actions { display: flex; }
+.esc-word-act {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; border-radius: 999px;
+  border: 1px solid var(--study-border); background: var(--study-card);
+  color: var(--study-muted-foreground); cursor: pointer;
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 10%, transparent);
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.esc-word-act .esc-ico { width: 16px; height: 16px; }
+.esc-word-act:hover {
+  color: var(--study-primary);
+  border-color: color-mix(in srgb, var(--study-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--study-primary) 6%, transparent);
+}
+.esc-word-act.is-del:hover {
+  color: var(--study-danger);
+  border-color: color-mix(in srgb, var(--study-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--study-danger) 6%, transparent);
+}
+/* 编辑单词气泡（网页版风格，移动端适配） */
+.esc-wbubble {
+  position: fixed; z-index: 80; width: min(280px, calc(100vw - 24px));
+  filter: drop-shadow(0 10px 22px color-mix(in srgb, #000 18%, transparent));
+  animation: esc-fade var(--study-dur-fast) var(--study-ease);
+}
+.esc-wbubble .bubble-inner {
+  background: var(--study-card); border: 1px solid var(--study-border);
+  border-radius: var(--study-radius-lg); padding: 14px;
+  box-shadow: var(--study-shadow-md);
+}
+.esc-wbubble .bubble-title { font-size: 15px; font-weight: 700; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0 0 10px; }
+.esc-wbubble .form-group { margin-bottom: 8px; }
+.esc-wbubble .form-group label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--study-muted-foreground); }
+.esc-wbubble .form-group input,
+.esc-wbubble .form-group textarea {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--study-border);
+  border-radius: 8px; font-size: 13px; background: var(--study-background);
+  color: var(--study-foreground); box-sizing: border-box; outline: none;
+  transition: border-color .15s ease;
+}
+.esc-wbubble .form-group input:focus,
+.esc-wbubble .form-group textarea:focus { border-color: var(--study-primary); }
+.esc-wbubble .form-group textarea { resize: vertical; min-height: 56px; font-family: inherit; }
+.esc-wbubble .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.esc-wbubble .save-btn,
+.esc-wbubble .cancel-btn {
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s ease;
+}
+.esc-wbubble .save-btn { background: var(--study-primary); color: #fff; border: 1px solid transparent; }
+.esc-wbubble .save-btn:hover { opacity: .9; }
+.esc-wbubble .cancel-btn { background: var(--study-card); color: var(--study-foreground); border: 1px solid var(--study-border); }
+.esc-wbubble .cancel-btn:hover { background: color-mix(in srgb, var(--study-muted-foreground) 10%, transparent); }
+.esc-wbubble .esc-nb-error { font-size: 12px; color: var(--study-danger); margin: 4px 0 0; }
+/* 指向锚点的三角箭头 */
+.esc-wbubble .bubble-arrow {
+  position: absolute; right: 24px; top: -7px; width: 14px; height: 14px;
+  background: var(--study-card); border-left: 1px solid var(--study-border); border-top: 1px solid var(--study-border);
+  transform: rotate(45deg);
+}
+.esc-wbubble.is-above .bubble-arrow { top: auto; bottom: -7px; transform: rotate(225deg); }
+/* 编辑单词底部弹层表单字段（兼容旧样式，保留） */
+.esc-field-label { display: block; font-size: 12px; font-weight: 600; color: var(--study-muted-foreground); margin: 0 0 6px; }
+.esc-field { margin-bottom: 12px; }
+.esc-bsheet .esc-textarea { min-height: 72px; }
 
 /* ---------- 12. History Card（历史记录） ---------- */
 .esc-history {
@@ -1415,8 +1546,8 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word-phon { font-size: 14px; color: var(--study-muted-foreground); }
 .esc-word-pos { font-size: 11px; font-weight: 600; color: var(--study-primary); background: color-mix(in srgb, var(--study-primary) 12%, transparent); padding: 2px 8px; border-radius: 999px; }
 .esc-word-gloss { font-size: 15px; color: var(--study-foreground); margin: 12px 0 0; line-height: 1.6; }
-.esc-word-actions { display: flex; gap: 10px; margin-top: 16px; }
-.esc-word-actions .esc-btn { flex: 1; justify-content: center; }
+.esc-wordpop-actions { display: flex; gap: 10px; margin-top: 16px; }
+.esc-wordpop-actions .esc-btn { flex: 1; justify-content: center; }
 /* 通用（高亮设置弹层复用） */
 .esc-word-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .esc-word-hw { font-size: 22px; font-weight: 700; color: var(--study-foreground); margin: 0; }
@@ -1432,3 +1563,118 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   animation: esc-fade var(--study-dur-fast) var(--study-ease);
 }
 .esc-sel-tip.esc-clickable { cursor: pointer; }
+
+/* ================================================================
+   闪卡模式 3D 卡片（网页版风格，适配移动端主题）
+   ================================================================ */
+.esc-fc {
+  flex: 1 1 auto; display: flex; flex-direction: column;
+  gap: 16px; min-height: 0; margin: 0;
+}
+.card-3d {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  width: 100%; max-width: none; margin: 0;
+  border-radius: 24px; transform-style: preserve-3d;
+  background: var(--study-card);
+  box-shadow: 0 18px 34px -16px color-mix(in srgb, #000 30%, transparent),
+    inset 0 0 0 1px var(--study-border), inset 0 1px 0 color-mix(in srgb, #fff 60%, transparent);
+  will-change: transform; user-select: none;
+}
+.card-face.card-front {
+  position: relative; height: 100%; display: flex; flex-direction: column;
+  justify-content: center; gap: 20px; padding: 26px 24px; overflow: hidden;
+}
+.card-face.card-back { display: none; }
+.glare {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  z-index: 3; opacity: 0; mix-blend-mode: soft-light;
+  background: radial-gradient(circle at 0% 0%, rgba(255,255,255,.6), transparent 70%);
+}
+/* 单词区 */
+.word-section { text-align: center; margin: 0; }
+.word {
+  display: block; font-family: var(--study-font-serif); color: var(--study-foreground);
+  font-size: clamp(2rem, 11vw, 2.8rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.05;
+}
+.phon { display: block; font-size: 12px; color: var(--study-muted-foreground); margin: 5px 0 0; }
+.pos {
+  display: inline-block; margin-top: 9px; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  color: var(--study-primary);
+  background: color-mix(in srgb, var(--study-primary) 13%, transparent);
+  padding: 3px 12px; border-radius: 999px;
+}
+.meaning { display: block; margin-top: 9px; font-size: clamp(.95rem, 4vw, 1.12rem); font-weight: 500; color: var(--study-muted-foreground); }
+/* 例句区 */
+.example-area {
+  position: relative; flex: 0 1 auto; min-height: 84px; margin: 2px 0 8px;
+  padding: 12px 14px; border-radius: 14px;
+  display: flex; flex-direction: column; justify-content: center;
+  background: color-mix(in srgb, var(--study-primary) 6%, var(--study-background));
+  border: 1px solid var(--study-border);
+}
+.example-en { font-size: 13px; line-height: 1.5; font-style: italic; color: var(--study-foreground); }
+.example-zh { margin-top: 4px; font-size: 12px; color: var(--study-muted-foreground); }
+.hide-zh .example-zh { display: none; }
+/* 顶部工具条：进度 + 生成例句 + 隐藏翻译 */
+.fc-top { display: flex; align-items: center; gap: 8px; }
+.fc-top .fill-progress-track { flex: 1; }
+.fc-tool {
+  flex: 0 0 auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; cursor: pointer;
+  color: var(--study-muted-foreground); background: var(--study-card);
+  border: 1px solid var(--study-border);
+  box-shadow: 0 2px 5px -2px color-mix(in srgb, #000 18%, transparent);
+  transition: color .15s ease, background-color .15s ease, transform .1s ease;
+}
+.fc-tool:active { transform: scale(.92); background: color-mix(in srgb, var(--study-primary) 14%, transparent); color: var(--study-primary); }
+.fc-tool svg { width: 17px; height: 17px; }
+/* 导航 */
+.nav-buttons { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nav-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  color: var(--study-foreground);
+  background: var(--study-card); border: 1px solid var(--study-border); cursor: pointer;
+  box-shadow: 0 2px 6px -2px color-mix(in srgb, #000 18%, transparent);
+  transition: background-color .15s ease, transform .1s ease;
+}
+.nav-btn:active { transform: scale(.96); }
+.nav-btn svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.2; fill: none; }
+.counter {
+  font-size: 12px; font-weight: 600; color: var(--study-muted-foreground);
+  background: color-mix(in srgb, var(--study-primary) 10%, transparent);
+  padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+}
+/* 进度条 */
+.fill-progress-track { height: 6px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--study-primary) 12%, transparent); }
+.fill-progress-fill { height: 100%; border-radius: 999px; background: var(--study-primary); transition: width .4s cubic-bezier(.22,1,.36,1); }
+/* 评级反馈覆盖层 */
+.feedback-overlay {
+  position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center;
+  border-radius: inherit; background: color-mix(in srgb, var(--study-card) 92%, transparent);
+  backdrop-filter: blur(6px); animation: fc-fb-in .25s ease-out;
+}
+@keyframes fc-fb-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.feedback-content { text-align: center; padding: 12px 18px; }
+.feedback-icon { font-size: 42px; font-weight: 800; line-height: 1; margin-bottom: 8px; }
+.feedback-text { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+.feedback-detail { font-size: 13px; line-height: 1.5; color: var(--study-muted-foreground); max-width: 260px; }
+/* 掌握度评级 */
+.mastery-ratings { display: flex; justify-content: center; gap: 8px; }
+.mastery-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  color: var(--study-muted-foreground); cursor: pointer;
+  background: var(--study-card); border: 1px solid var(--study-border);
+  transition: transform .1s ease, background-color .15s ease, color .15s ease;
+}
+.mastery-btn:active { transform: scale(.95); }
+.mastery-btn svg { width: 15px; height: 15px; }
+.mastery-btn.unknown:active { background: var(--study-error); color: #fff; }
+.mastery-btn.vague:active { background: var(--study-warning); color: #fff; }
+.mastery-btn.known:active { background: var(--study-success); color: #fff; }
+@media (max-width: 380px) {
+  .card-face.card-front { padding: 22px 18px 16px; }
+  .mastery-btn { padding: 6px 10px; font-size: 11px; }
+  .nav-btn { padding: 7px 11px; font-size: 12px; }
+}

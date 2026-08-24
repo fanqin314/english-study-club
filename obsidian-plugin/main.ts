@@ -118,6 +118,10 @@ interface EnglishStudyClubSettings {
 	showArticles: boolean;
 	showVocabulary: boolean;
 	showCaptures: boolean;
+	// 浏览器插件 / 网页端所选「本地文件夹」在 vault 内的对应路径（相对 vault 根）。
+	// 例如浏览器插件把文件夹选在 vault 内的 english-study-club/，
+	// 则此处填 "english-study-club"。留空则禁用「从文件夹同步」。
+	syncFolder: string;
 }
 
 const DEFAULT_SETTINGS: EnglishStudyClubSettings = {
@@ -125,6 +129,7 @@ const DEFAULT_SETTINGS: EnglishStudyClubSettings = {
 	showArticles: true,
 	showVocabulary: true,
 	showCaptures: true,
+	syncFolder: "",
 };
 
 class EnglishStudyClubSettingTab extends PluginSettingTab {
@@ -190,6 +195,45 @@ class EnglishStudyClubSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		// 同步文件夹：浏览器插件 / 网页端所选本地文件夹在 vault 内的对应路径
+		new Setting(containerEl)
+			.setName("本地文件夹同步路径")
+			.setDesc(
+				"浏览器插件或网页端选定「本地文件夹」后，会写出 articles.json / vocab.json / captures.json。若你把这个文件夹放在 vault 内，在此填写其相对路径（如 english-study-club），即可用「从文件夹同步」命令一键导入。留空则禁用同步。"
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("english-study-club")
+					.setValue(this.plugin.settings.syncFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.syncFolder = value.trim();
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("立即同步")
+			.setDesc("读取上方文件夹中的 articles.json / vocab.json / captures.json 并导入 vault（覆盖兼容 browser-extension/ 子目录）。")
+			.addButton((btn) =>
+				btn
+					.setButtonText("从文件夹同步")
+					.setCta()
+					.onClick(async () => {
+						try {
+							const added = await this.plugin.syncFromFolder();
+							if (added > 0) {
+								const leaves = this.plugin.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE);
+								for (const leaf of leaves) {
+									const view = leaf.view as DashboardView;
+									if (view) view.refresh();
+								}
+							}
+						} catch (e) {
+							new Notice("同步失败: " + (e && e.message ? e.message : e));
+						}
+					})
+			);
 	}
 }
 
@@ -240,6 +284,26 @@ export default class EnglishStudyClubPlugin extends Plugin {
 			name: "导入 English Study Club JSON",
 			callback: () => {
 				new ImportEscModal(this.app, this).open();
+			},
+		});
+
+		// Command: 从本地文件夹同步（浏览器插件 / 网页端写出的 articles/vocab/captures.json）
+		this.addCommand({
+			id: "sync-from-folder",
+			name: "从本地文件夹同步",
+			callback: async () => {
+				try {
+					const added = await this.syncFromFolder();
+					if (added > 0) {
+						const leaves = this.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE);
+						for (const leaf of leaves) {
+							const view = leaf.view as DashboardView;
+							if (view) view.refresh();
+						}
+					}
+				} catch (e) {
+					new Notice("同步失败: " + (e && e.message ? e.message : e));
+				}
 			},
 		});
 
@@ -841,6 +905,75 @@ export default class EnglishStudyClubPlugin extends Plugin {
 			const view = leaf.view as DashboardView;
 			if (view) view.refresh();
 		}
+		return added;
+	}
+
+	// 从「本地文件夹」同步：浏览器插件 / 网页端选定文件夹后写出的
+	// articles.json / vocab.json / captures.json（兼容 browser-extension/ 子目录与根目录）。
+	// 与 importEscJson 共用同一套导入逻辑（writeFolder 写出的顶层结构即 {articles,vocab,captures}）。
+	async syncFromFolder(): Promise<number> {
+		const rel = this.settings.syncFolder.trim();
+		if (!rel) {
+			new Notice(
+				"未设置「本地文件夹同步路径」。请先在设置中填写浏览器插件 / 网页端所选文件夹在 vault 内的相对路径。"
+			);
+			return 0;
+		}
+		const adapter = this.app.vault.adapter;
+		// 候选目录：根目录 与 browser-extension/ 子目录（兼容两种写出方式）
+		const candidates = [rel, rel.replace(/\/+$/, "") + "/browser-extension"];
+
+		let baseDir = "";
+		for (const c of candidates) {
+			if (await adapter.exists(c) && (await adapter.list(c)).files.some((f) => f.endsWith(".json"))) {
+				baseDir = c;
+				break;
+			}
+		}
+		if (!baseDir) {
+			new Notice(
+				`在 vault 内未找到文件夹「${rel}」或其 browser-extension/ 子目录下的 JSON 文件。请确认浏览器插件 / 网页端的本地文件夹就在该路径内。`
+			);
+			return 0;
+		}
+
+		const store: any = { schemaVersion: 1, exportedAt: new Date().toISOString(), articles: [], vocab: [], captures: [] };
+		// 把文件名映射到统一 JSON 的键（兼容单文件只含某一类数据）
+		const keyOf = (name: string): "articles" | "vocab" | "captures" | null =>
+			name.startsWith("article") ? "articles" : name.startsWith("vocab") ? "vocab" : name.startsWith("capture") ? "captures" : null;
+
+		const readJson = async (name: string): Promise<any[] | null> => {
+			const key = keyOf(name);
+			if (!key) return null;
+			// 兼容：baseDir 本身已是 browser-extension/ 子目录，或仍是根目录
+			const dirs = [baseDir, baseDir.replace(/\/?browser-extension$/, "")].filter(Boolean);
+			for (const dir of dirs) {
+				const p = (dir.replace(/\/+$/, "") + "/" + name).replace(/^\/+/, "");
+				try {
+					if (await adapter.exists(p)) {
+						const obj = JSON.parse(await adapter.read(p));
+						if (Array.isArray(obj)) return obj;          // 文件本身即数组
+						if (obj && Array.isArray(obj[key])) return obj[key]; // 包裹成 {articles,...}
+					}
+				} catch (e) { /* 损坏文件跳过 */ }
+			}
+			return null;
+		};
+
+		const arts = await readJson("articles.json");
+		const vocs = await readJson("vocab.json");
+		const caps = await readJson("captures.json");
+		if (arts) store.articles = arts;
+		if (vocs) store.vocab = vocs;
+		if (caps) store.captures = caps;
+
+		if (!store.articles.length && !store.vocab.length && !store.captures.length) {
+			new Notice(`「${baseDir}」中未读取到有效的 articles/vocab/captures 数据。`);
+			return 0;
+		}
+
+		const added = await this.importEscJson(JSON.stringify(store));
+		new Notice(`已从「${baseDir}」同步导入 ${added} 条新数据到 vault。`);
 		return added;
 	}
 

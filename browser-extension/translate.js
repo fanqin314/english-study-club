@@ -52,7 +52,7 @@
     will: { phonetic: 'wɪl', pos: 'modal', definition: '将；会', example: 'I will help you.' },
     my: { phonetic: 'maɪ', pos: 'pron.', definition: '我的', example: 'My name is Tom.' },
     one: { phonetic: 'wʌn', pos: 'num.', definition: '一；一个', example: 'One more try.' },
-    all: { phonetic, pos: 'adj./pron.', definition: '全部；所有', example: 'All people laughed.' },
+    all: { phonetic: 'ɔːl', pos: 'adj./pron.', definition: '全部；所有', example: 'All people laughed.' },
     would: { phonetic: 'wʊd', pos: 'modal', definition: '会；愿意（will 过去式）', example: 'I would like tea.' },
     there: { phonetic: 'ðeə', pos: 'adv.', definition: '在那里；存在', example: 'There is a cat.' },
     their: { phonetic: 'ðeə', pos: 'pron.', definition: '他们的', example: 'Their house is big.' },

@@ -244,6 +244,24 @@
     _saveVocabData(d);
     emit('vocab', getVocab());
   }
+  // 更新单词（词性/释义/例句），对齐桌面端 vocab_data.updateWord 语义
+  function updateWord(id, updates) {
+    const { nbId, word } = _parseId(id);
+    if (!nbId) return { success: false, error: '无效的单词标识' };
+    const d = _getVocabData();
+    const nb = d.notebooks[nbId];
+    if (!nb) return { success: false, error: '生词本不存在' };
+    const w = (nb.words || []).find((x) => (x.word || '').toLowerCase() === word);
+    if (!w) return { success: false, error: '单词不存在' };
+    if (updates && typeof updates === 'object') {
+      if ('pos' in updates) w.pos = updates.pos || '';
+      if ('meaning' in updates) w.meaning = updates.meaning || '';
+      if ('context' in updates) w.context = updates.context || '';
+    }
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return { success: true };
+  }
   // 生词本列表（对齐桌面端 VocabData.getAllNotebooks）：返回 [{id,name,wordCount,color}]
   function getNotebooks() {
     const d = _getVocabData();
@@ -663,7 +681,7 @@
   Mobile.Store = {
     on, off, emit,
     uid, todayStr,
-    getVocab, addWord, removeWord, getWord,
+    getVocab, addWord, removeWord, updateWord, getWord,
     getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, isWordInNotebook,
     setCurrentNotebook, renameNotebook, updateNotebookColor, mergeNotebooks, deleteNotebook,
     NOTEBOOK_COLORS,

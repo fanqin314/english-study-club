@@ -102,7 +102,8 @@ var DEFAULT_SETTINGS = {
   reviewIntervalDays: 7,
   showArticles: true,
   showVocabulary: true,
-  showCaptures: true
+  showCaptures: true,
+  syncFolder: ""
 };
 var EnglishStudyClubSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
@@ -141,6 +142,30 @@ var EnglishStudyClubSettingTab = class extends import_obsidian.PluginSettingTab 
         await this.plugin.saveSettings();
       })
     );
+    new import_obsidian.Setting(containerEl).setName("\u672C\u5730\u6587\u4EF6\u5939\u540C\u6B65\u8DEF\u5F84").setDesc(
+      "\u6D4F\u89C8\u5668\u63D2\u4EF6\u6216\u7F51\u9875\u7AEF\u9009\u5B9A\u300C\u672C\u5730\u6587\u4EF6\u5939\u300D\u540E\uFF0C\u4F1A\u5199\u51FA articles.json / vocab.json / captures.json\u3002\u82E5\u4F60\u628A\u8FD9\u4E2A\u6587\u4EF6\u5939\u653E\u5728 vault \u5185\uFF0C\u5728\u6B64\u586B\u5199\u5176\u76F8\u5BF9\u8DEF\u5F84\uFF08\u5982 english-study-club\uFF09\uFF0C\u5373\u53EF\u7528\u300C\u4ECE\u6587\u4EF6\u5939\u540C\u6B65\u300D\u547D\u4EE4\u4E00\u952E\u5BFC\u5165\u3002\u7559\u7A7A\u5219\u7981\u7528\u540C\u6B65\u3002"
+    ).addText(
+      (text) => text.setPlaceholder("english-study-club").setValue(this.plugin.settings.syncFolder).onChange(async (value) => {
+        this.plugin.settings.syncFolder = value.trim();
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian.Setting(containerEl).setName("\u7ACB\u5373\u540C\u6B65").setDesc("\u8BFB\u53D6\u4E0A\u65B9\u6587\u4EF6\u5939\u4E2D\u7684 articles.json / vocab.json / captures.json \u5E76\u5BFC\u5165 vault\uFF08\u8986\u76D6\u517C\u5BB9 browser-extension/ \u5B50\u76EE\u5F55\uFF09\u3002").addButton(
+      (btn) => btn.setButtonText("\u4ECE\u6587\u4EF6\u5939\u540C\u6B65").setCta().onClick(async () => {
+        try {
+          const added = await this.plugin.syncFromFolder();
+          if (added > 0) {
+            const leaves = this.plugin.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE);
+            for (const leaf of leaves) {
+              const view = leaf.view;
+              if (view) view.refresh();
+            }
+          }
+        } catch (e) {
+          new import_obsidian.Notice("\u540C\u6B65\u5931\u8D25: " + (e && e.message ? e.message : e));
+        }
+      })
+    );
   }
 };
 var EnglishStudyClubPlugin = class extends import_obsidian.Plugin {
@@ -173,6 +198,24 @@ var EnglishStudyClubPlugin = class extends import_obsidian.Plugin {
       name: "\u5BFC\u5165 English Study Club JSON",
       callback: () => {
         new ImportEscModal(this.app, this).open();
+      }
+    });
+    this.addCommand({
+      id: "sync-from-folder",
+      name: "\u4ECE\u672C\u5730\u6587\u4EF6\u5939\u540C\u6B65",
+      callback: async () => {
+        try {
+          const added = await this.syncFromFolder();
+          if (added > 0) {
+            const leaves = this.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE);
+            for (const leaf of leaves) {
+              const view = leaf.view;
+              if (view) view.refresh();
+            }
+          }
+        } catch (e) {
+          new import_obsidian.Notice("\u540C\u6B65\u5931\u8D25: " + (e && e.message ? e.message : e));
+        }
       }
     });
     this.addCommand({
@@ -625,10 +668,7 @@ ${sectionHeader}
         let header = "# " + nb + "\n\n| Word | Phonetic | Definition | Example |\n| --- | --- | --- | --- |";
         if (await adapter.exists(path)) {
           const content = await adapter.read(path);
-          existing = content.split("\n").filter((l) => l.trim().startsWith("|")).map((l) => {
-            var _a;
-            return (_a = l.split("|")[1]) == null ? void 0 : _a.trim().toLowerCase();
-          }).filter(Boolean);
+          existing = content.split("\n").filter((l) => l.trim().startsWith("|")).map((l) => l.split("|")[1]?.trim().toLowerCase()).filter(Boolean);
           header = content.trim();
         }
         const rows = [];
@@ -651,6 +691,65 @@ ${sectionHeader}
       const view = leaf.view;
       if (view) view.refresh();
     }
+    return added;
+  }
+  // 从「本地文件夹」同步：浏览器插件 / 网页端选定文件夹后写出的
+  // articles.json / vocab.json / captures.json（兼容 browser-extension/ 子目录与根目录）。
+  // 与 importEscJson 共用同一套导入逻辑（writeFolder 写出的顶层结构即 {articles,vocab,captures}）。
+  async syncFromFolder() {
+    const rel = this.settings.syncFolder.trim();
+    if (!rel) {
+      new import_obsidian.Notice(
+        "\u672A\u8BBE\u7F6E\u300C\u672C\u5730\u6587\u4EF6\u5939\u540C\u6B65\u8DEF\u5F84\u300D\u3002\u8BF7\u5148\u5728\u8BBE\u7F6E\u4E2D\u586B\u5199\u6D4F\u89C8\u5668\u63D2\u4EF6 / \u7F51\u9875\u7AEF\u6240\u9009\u6587\u4EF6\u5939\u5728 vault \u5185\u7684\u76F8\u5BF9\u8DEF\u5F84\u3002"
+      );
+      return 0;
+    }
+    const adapter = this.app.vault.adapter;
+    const candidates = [rel, rel.replace(/\/+$/, "") + "/browser-extension"];
+    let baseDir = "";
+    for (const c of candidates) {
+      if (await adapter.exists(c) && (await adapter.list(c)).files.some((f) => f.endsWith(".json"))) {
+        baseDir = c;
+        break;
+      }
+    }
+    if (!baseDir) {
+      new import_obsidian.Notice(
+        `\u5728 vault \u5185\u672A\u627E\u5230\u6587\u4EF6\u5939\u300C${rel}\u300D\u6216\u5176 browser-extension/ \u5B50\u76EE\u5F55\u4E0B\u7684 JSON \u6587\u4EF6\u3002\u8BF7\u786E\u8BA4\u6D4F\u89C8\u5668\u63D2\u4EF6 / \u7F51\u9875\u7AEF\u7684\u672C\u5730\u6587\u4EF6\u5939\u5C31\u5728\u8BE5\u8DEF\u5F84\u5185\u3002`
+      );
+      return 0;
+    }
+    const store = { schemaVersion: 1, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), articles: [], vocab: [], captures: [] };
+    const keyOf = (name) => name.startsWith("article") ? "articles" : name.startsWith("vocab") ? "vocab" : name.startsWith("capture") ? "captures" : null;
+    const readJson = async (name) => {
+      const key = keyOf(name);
+      if (!key) return null;
+      const dirs = [baseDir, baseDir.replace(/\/?browser-extension$/, "")].filter(Boolean);
+      for (const dir of dirs) {
+        const p = (dir.replace(/\/+$/, "") + "/" + name).replace(/^\/+/, "");
+        try {
+          if (await adapter.exists(p)) {
+            const obj = JSON.parse(await adapter.read(p));
+            if (Array.isArray(obj)) return obj;
+            if (obj && Array.isArray(obj[key])) return obj[key];
+          }
+        } catch (e) {
+        }
+      }
+      return null;
+    };
+    const arts = await readJson("articles.json");
+    const vocs = await readJson("vocab.json");
+    const caps = await readJson("captures.json");
+    if (arts) store.articles = arts;
+    if (vocs) store.vocab = vocs;
+    if (caps) store.captures = caps;
+    if (!store.articles.length && !store.vocab.length && !store.captures.length) {
+      new import_obsidian.Notice(`\u300C${baseDir}\u300D\u4E2D\u672A\u8BFB\u53D6\u5230\u6709\u6548\u7684 articles/vocab/captures \u6570\u636E\u3002`);
+      return 0;
+    }
+    const added = await this.importEscJson(JSON.stringify(store));
+    new import_obsidian.Notice(`\u5DF2\u4ECE\u300C${baseDir}\u300D\u540C\u6B65\u5BFC\u5165 ${added} \u6761\u65B0\u6570\u636E\u5230 vault\u3002`);
     return added;
   }
   // 导出 vault 的 history/ vocab/ browser-captures/ 为统一 JSON

@@ -1,12 +1,22 @@
 /* ============================================================
    English Study Club - Dashboard Styles
+   动效与界面精修层（Operate 模式：动效服务反馈/状态/连续性）
    ============================================================ */
+
+/* ---- 动效令牌 ---- */
+:root {
+  --erl-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --erl-dur-fast: 140ms;
+  --erl-dur: 240ms;
+  --erl-rise: 8px;
+}
 
 /* Dashboard container */
 .erl-dashboard {
   padding: 16px;
   font-family: var(--font-interface);
   color: var(--text-normal);
+  animation: erl-fade 0.28s var(--erl-ease) both;
 }
 
 /* Header */
@@ -14,6 +24,7 @@
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--background-modifier-border);
+  animation: erl-rise 0.32s var(--erl-ease) both;
 }
 
 .erl-dashboard-header h2 {
@@ -21,6 +32,7 @@
   font-size: 1.3em;
   font-weight: 600;
   color: var(--text-normal);
+  letter-spacing: -0.01em;
 }
 
 /* Empty state */
@@ -30,6 +42,7 @@
   justify-content: center;
   padding: 40px 20px;
   text-align: center;
+  animation: erl-rise 0.32s var(--erl-ease) both;
 }
 
 .erl-empty-state p {
@@ -57,11 +70,29 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
   text-align: center;
-  transition: background-color 0.15s ease;
+  transition: transform var(--erl-dur-fast) var(--erl-ease),
+    box-shadow var(--erl-dur-fast) var(--erl-ease),
+    background-color var(--erl-dur-fast) ease;
+  animation: erl-rise 0.36s var(--erl-ease) both;
 }
+
+/* 错峰入场：每张卡递增延迟，但总延迟有上限 */
+.erl-stat-card:nth-child(1) { animation-delay: 0.04s; }
+.erl-stat-card:nth-child(2) { animation-delay: 0.08s; }
+.erl-stat-card:nth-child(3) { animation-delay: 0.12s; }
+.erl-stat-card:nth-child(4) { animation-delay: 0.16s; }
+.erl-stat-card:nth-child(n+5) { animation-delay: 0.2s; }
 
 .erl-stat-card:hover {
   background: var(--background-modifier-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.erl-stat-card:active {
+  transform: translateY(0);
+  box-shadow: none;
+  transition-duration: var(--erl-dur-fast);
 }
 
 .erl-stat-value {
@@ -70,6 +101,8 @@
   color: var(--text-accent);
   line-height: 1.2;
   margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 .erl-stat-label {
@@ -82,6 +115,7 @@
 /* Section */
 .erl-section {
   margin-bottom: 20px;
+  animation: erl-rise 0.4s var(--erl-ease) both;
 }
 
 .erl-section h3 {
@@ -91,6 +125,21 @@
   margin: 20px 0 10px 0;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--background-modifier-border);
+  position: relative;
+}
+
+/* 左侧 accent 短竖条，强化层级但不超 1px 视觉重量 */
+.erl-section h3::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--text-accent);
+  opacity: 0.85;
 }
 
 /* Activity list */
@@ -107,17 +156,20 @@
   padding: 6px 10px;
   border-radius: 6px;
   background: var(--background-secondary);
-  transition: background-color 0.15s ease;
+  transition: background-color var(--erl-dur-fast) ease,
+    transform var(--erl-dur-fast) var(--erl-ease);
 }
 
 .erl-activity-item:hover {
   background: var(--background-modifier-hover);
+  transform: translateX(2px);
 }
 
 .erl-activity-date {
   font-size: 0.85em;
   color: var(--text-normal);
   font-family: var(--font-monospace);
+  font-variant-numeric: tabular-nums;
 }
 
 .erl-activity-count {
@@ -126,6 +178,7 @@
   background: var(--background-primary);
   padding: 2px 8px;
   border-radius: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Captures list */
@@ -138,11 +191,13 @@
 .erl-capture-item {
   padding: 6px 10px;
   border-radius: 6px;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--erl-dur-fast) ease,
+    transform var(--erl-dur-fast) var(--erl-ease);
 }
 
 .erl-capture-item:hover {
   background: var(--background-modifier-hover);
+  transform: translateX(2px);
 }
 
 .erl-capture-item .internal-link {
@@ -155,4 +210,37 @@
 .erl-capture-item .internal-link:hover {
   color: var(--text-accent-hover);
   text-decoration: underline;
+}
+
+/* ---- 关键帧 ---- */
+@keyframes erl-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes erl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--erl-rise));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- 无障碍：减少动效 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .erl-dashboard,
+  .erl-dashboard-header,
+  .erl-empty-state,
+  .erl-stat-card,
+  .erl-section {
+    animation: erl-fade 0.2s ease both;
+  }
+  .erl-stat-card:hover,
+  .erl-activity-item:hover,
+  .erl-capture-item:hover {
+    transform: none;
+  }
 }
