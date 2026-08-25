@@ -149,8 +149,9 @@
                 sentencesContainer,
                 cardHeight,
                 (index) => {
-                    // 检查实例是否已被销毁
-                    if (isDestroyed || !virtualScrollInstance) {
+                    // 仅当容器已被销毁时跳过；注意：实例赋值完成前本回调也会被同步调用，
+                    // 因此不能以 !virtualScrollInstance 作为判空条件，否则会返回 null 导致崩溃。
+                    if (isDestroyed) {
                         return null;
                     }
                     return createSentenceCard(sentences[index], index);

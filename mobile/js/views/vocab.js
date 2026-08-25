@@ -19,7 +19,9 @@
   let state = { filter: 'all', search: '' };
   let rootEl = null;
   let editBubble = null; // 编辑单词气泡（网页版风格）
-  let expandToken = 0;   // 展开动画令牌：防止上一帧尚未执行的展开回调把其它卡错误展开
+  let batchMode = false;         // 批量选择模式开关（点顶部垃圾桶进入）
+  let batchSelected = new Set(); // 已选单词 id（nbId::word）
+  let batchBarEl = null;         // 批量操作底栏
 
   function isToday(ts) {
     const d = new Date(ts), n = new Date();
@@ -37,8 +39,10 @@
   function wordCard(w, nbId) {
     const ex = w.example || w.context;
     const wid = `${nbId || ''}::${(w.word || '').toLowerCase()}`;
+    const sel = batchSelected.has(wid) ? ' is-selected' : '';
     return `
-      <div class="esc-word" data-word="${esc(w.word)}" data-id="${esc(wid)}">
+      <div class="esc-word${sel}" data-word="${esc(w.word)}" data-id="${esc(wid)}">
+        <span class="esc-word-check">${icon('check')}</span>
         <div class="esc-word-inner">
           <div class="esc-word-accent"></div>
           <div class="esc-word-body">
@@ -145,9 +149,6 @@
 
     UI.refreshIcons(wrap);
     bindCards(wrap);
-    // 展开/收起期间行高恒定：把每行钉到自然高度（两卡均分时的内容高度）。
-    // 之后点击展开/恢复只改变行内宽度分配，行高不变 → 页面高度与滚动条完全稳定，不抖动。
-    wrap.querySelectorAll('.esc-word-row').forEach((r) => { r.style.height = r.offsetHeight + 'px'; });
   }
 
   // 掌握度分级可视化（新学 / 学习中 / 已掌握）
@@ -170,9 +171,16 @@
   }
 
   function bindCards(wrap) {
+    const selecting = batchMode;
+    wrap.classList.toggle('is-batch-mode', selecting);
     wrap.querySelectorAll('.esc-word').forEach((el) => {
       const word = el.getAttribute('data-word');
       const id = el.getAttribute('data-id');
+      if (selecting) {
+        // 批量选择模式：点击卡片切换选中，不再展开 / 编辑 / 删除 / 发音
+        el.addEventListener('click', (e) => { e.stopPropagation(); toggleSelect(el, id); });
+        return;
+      }
       const pron = el.querySelector('[data-act="pron"]');
       if (pron) pron.addEventListener('click', (e) => { e.stopPropagation(); if (word) Speech.speak(word); });
       const edit = el.querySelector('[data-act="edit"]');
@@ -181,6 +189,7 @@
       if (del) del.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (id) deleteWordFlow(id); });
       el.addEventListener('click', () => toggleExpand(el));
     });
+    updateBatchBar();
   }
 
   // 编辑单词：网页版风格的「气泡」表单（词性/释义/例句），锚定在编辑按钮附近
@@ -295,69 +304,131 @@
     });
   }
 
-  // 清除当前所有展开/收起状态（两张卡都恢复为均分），并解除行高钉定回到自然高度
-  function clearExpand() {
-    if (!rootEl) return;
-    const rows = rootEl.querySelectorAll('#m-vocab-list .esc-word-row');
-    rows.forEach((r) => {
-      // 移除上一张卡遗留的 transitionend 释放回调，避免误清掉新的钉定行高
-      if (r._expandRelease && r._expandCard) {
-        r._expandCard.removeEventListener('transitionend', r._expandRelease);
-      }
-      r._expandRelease = null;
-      r._expandCard = null;
-      r.style.height = '';
-    });
-    rootEl.querySelectorAll('#m-vocab-list .esc-word.is-expanded, #m-vocab-list .esc-word.is-collapsed')
-      .forEach((c) => c.classList.remove('is-expanded', 'is-collapsed'));
+  /* ============================================================
+     批量选择单词：点顶部垃圾桶进入 → 勾选多词 → 批量删除
+     ============================================================ */
+  function toggleBatchMode() {
+    const nbId = Store.getCurrentNotebookId();
+    const list = Store.getNotebookWords(nbId) || [];
+    if (!batchMode) {
+      if (!list.length) { UI.toast('当前生词本没有单词'); return; }
+      closeEditBubble();
+      batchMode = true;
+      batchSelected.clear();
+      paint();
+    } else {
+      exitBatchMode();
+    }
+    updateTrashState();
   }
 
-  // 点击单词卡：展开自身并挤压同行相邻卡为细条；再点或点细条恢复
-  // 行高处理：展开前先以「无过渡」状态把目标卡铺到最终宽度，量取展开后内容真实高度并钉定；
-  // 再恢复初始均分态，交由 flex-basis 过渡平滑推挤。动画期间行高恒定 → 页面高度与滚动条稳定。
-  function toggleExpand(el) {
-    const expanding = !el.classList.contains('is-expanded') && !el.classList.contains('is-collapsed');
-    const row = el.closest('.esc-word-row');
-    clearExpand();
-    if (!expanding) return; // 已展开/已收起的卡：仅恢复均分，行高回到自然高度
+  function exitBatchMode() {
+    batchMode = false;
+    batchSelected.clear();
+    updateTrashState();
+    paint();
+    updateBatchBar();
+  }
 
-    const sibling = (c) => { if (c !== el) c.classList.add('is-collapsed'); };
-    const unsibling = (c) => c.classList.remove('is-collapsed');
+  function toggleSelect(el, id) {
+    if (!id) return;
+    const on = batchSelected.has(id);
+    if (on) batchSelected.delete(id); else batchSelected.add(id);
+    el.classList.toggle('is-selected', !on);
+    updateBatchBar();
+  }
 
-    // 量取展开后真实行高：
-    // 测量期间禁用整行所有过渡，让相邻卡立即收为细条（body 0fr），
-    // 避免其收起过渡尚未开始、仍占满内容高度而把行高撑高 → 展开后再“反弹”回正确高度。
-    const meas = row ? Array.from(row.querySelectorAll('.esc-word, .esc-word-body')) : [];
-    const prevT = meas.map((c) => c.style.transition);
-    meas.forEach((c) => { c.style.transition = 'none'; });
-    el.classList.add('is-expanded');
-    if (row) row.querySelectorAll('.esc-word').forEach(sibling);
-    const expandedH = row ? row.offsetHeight : el.offsetHeight;
-    el.classList.remove('is-expanded');
-    if (row) row.querySelectorAll('.esc-word').forEach(unsibling);
-    meas.forEach((c, i) => { c.style.transition = prevT[i]; });
+  function batchToggleAll() {
+    const wrap = rootEl ? rootEl.querySelector('#m-vocab-list') : null;
+    const ids = wrap ? [...wrap.querySelectorAll('.esc-word')].map((el) => el.getAttribute('data-id')).filter(Boolean) : [];
+    const allOn = ids.length > 0 && ids.every((id) => batchSelected.has(id));
+    if (allOn) ids.forEach((id) => batchSelected.delete(id));
+    else ids.forEach((id) => batchSelected.add(id));
+    paint();
+    updateBatchBar();
+  }
 
-    // 用 requestAnimationFrame 让浏览器先真正渲染一帧「收起起始态」，下一帧再正式展开，
-    // 这样 flex-basis 宽度过渡必然被触发；否则类名在同一帧内来回切换会被合并 → 无动效。
-    // token 令牌：若在下一帧前又点了其它卡（clearExpand 已重置），则丢弃本回调，避免误展开。
-    const token = ++expandToken;
-    requestAnimationFrame(() => {
-      if (token !== expandToken) return;
-      el.classList.add('is-expanded');
-      if (row) row.querySelectorAll('.esc-word').forEach(sibling);
-      if (row) {
-        row.style.height = expandedH + 'px';
-        const release = (e) => {
-          if (e.target !== el || e.propertyName !== 'flex-basis') return;
-          el.removeEventListener('transitionend', release);
-          if (row._expandRelease === release) { row._expandRelease = null; row._expandCard = null; }
-          row.style.height = '';
-        };
-        row._expandRelease = release; // 记录到行上，供 clearExpand 在动画被中断时解绑
-        row._expandCard = el;
-        el.addEventListener('transitionend', release);
+  function batchDeleteConfirm() {
+    const ids = [...batchSelected];
+    if (!ids.length) return;
+    const html = `
+      <div class="esc-modal-title">批量删除</div>
+      <p class="esc-modal-text">确定删除选中的 <strong>${ids.length}</strong> 个单词吗？删除后不可恢复。</p>
+      <div class="esc-modal-actions">
+        <button class="esc-btn esc-btn-ghost" data-act="cancel">取消</button>
+        <button class="esc-btn esc-btn-danger" data-act="ok">删除</button>
+      </div>`;
+    UI.modal(html, {
+      onOpen: (dlg, close) => {
+        dlg.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dlg.querySelector('[data-act="ok"]').addEventListener('click', () => {
+          close();
+          ids.forEach((id) => Store.removeWord(id));
+          UI.toast(`已删除 ${ids.length} 个单词`);
+          exitBatchMode();
+        });
       }
     });
+  }
+
+  function updateTrashState() {
+    if (!deleteBtnEl) return;
+    deleteBtnEl.classList.toggle('is-on', batchMode);
+    deleteBtnEl.setAttribute('aria-pressed', batchMode ? 'true' : 'false');
+    deleteBtnEl.title = batchMode ? '取消批量选择' : '批量选择单词';
+  }
+
+  function createBatchBar() {
+    if (batchBarEl) return;
+    const bar = document.createElement('div');
+    bar.className = 'esc-batch-bar';
+    bar.id = 'm-vocab-batchbar';
+    bar.hidden = true;
+    bar.innerHTML = `
+      <button class="esc-batch-all" data-act="all">全选</button>
+      <span class="esc-batch-count">已选 0 项</span>
+      <button class="esc-btn esc-btn-danger esc-batch-del" data-act="del">删除</button>
+      <button class="esc-btn esc-btn-ghost esc-batch-cancel" data-act="cancel">取消</button>`;
+    document.body.appendChild(bar);
+    batchBarEl = bar;
+    bar.querySelector('[data-act="all"]').addEventListener('click', (e) => { e.stopPropagation(); batchToggleAll(); });
+    bar.querySelector('[data-act="del"]').addEventListener('click', (e) => { e.stopPropagation(); batchDeleteConfirm(); });
+    bar.querySelector('[data-act="cancel"]').addEventListener('click', (e) => { e.stopPropagation(); exitBatchMode(); });
+    updateBatchBar();
+  }
+
+  function updateBatchBar() {
+    if (!batchBarEl) return;
+    batchBarEl.hidden = !batchMode;
+    if (!batchMode) return;
+    const n = batchSelected.size;
+    batchBarEl.querySelector('.esc-batch-count').textContent = `已选 ${n} 项`;
+    const delBtn = batchBarEl.querySelector('[data-act="del"]');
+    delBtn.textContent = n ? `删除(${n})` : '删除';
+    delBtn.disabled = !n;
+    const wrap = rootEl ? rootEl.querySelector('#m-vocab-list') : null;
+    const ids = wrap ? [...wrap.querySelectorAll('.esc-word')].map((el) => el.getAttribute('data-id')).filter(Boolean) : [];
+    const allOn = ids.length > 0 && ids.every((id) => batchSelected.has(id));
+    batchBarEl.querySelector('[data-act="all"]').textContent = allOn ? '取消全选' : '全选';
+  }
+
+  // 点击单词卡：同时仅允许一卡展开。展开自身并挤压同行相邻卡为细条；
+  // 再点已展开的卡则全部恢复均分。所有宽度变化由 CSS 的 flex-basis 过渡驱动，
+  // 这里只负责切类名，保证过渡必然被触发（简单、无跨帧状态、无监听残留）。
+  function toggleExpand(el) {
+    if (!rootEl) return;
+    const wasExpanded = el.classList.contains('is-expanded');
+    // 先复位全部卡（含其它行），保证任何时刻只有一卡处于展开态
+    rootEl.querySelectorAll('#m-vocab-list .esc-word')
+      .forEach((c) => c.classList.remove('is-expanded', 'is-collapsed'));
+    if (wasExpanded) return;
+    el.classList.add('is-expanded');
+    const row = el.closest('.esc-word-row');
+    if (row) {
+      row.querySelectorAll('.esc-word').forEach((c) => {
+        if (c !== el) c.classList.add('is-collapsed');
+      });
+    }
   }
 
   function render(container) {
@@ -405,8 +476,11 @@
     // 生词本标签手势：单击切换 / 双击重命名 / 长按选色 / 长按拖拽合并
     bindTabGestures(container.querySelector('#m-nb-tabs'));
 
-    // 删除按钮：仅作为拖拽删除的投放目标（移除原「管理生词本」点按功能）
+    // 删除按钮：既作为拖拽删除生词本的投放目标，点按则进入「批量选择单词」模式
     deleteBtnEl = container.querySelector('#m-vocab-manage');
+    deleteBtnEl.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); toggleBatchMode(); });
+
+    createBatchBar();
 
     paint();
     UI.refreshIcons(container);

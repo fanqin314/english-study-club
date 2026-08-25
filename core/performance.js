@@ -256,6 +256,8 @@
                 // 渲染可见项目
                 for (let i = visibleStart; i < visibleEnd; i++) {
                     const item = renderItem(i);
+                    // renderItem 在实例尚未赋值完成时可能返回 null，需保护
+                    if (!item) continue;
                     item.style.position = 'absolute';
                     item.style.top = `${i * itemHeight}px`;
                     item.style.width = '100%';

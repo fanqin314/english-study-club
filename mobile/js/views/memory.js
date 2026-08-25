@@ -124,6 +124,11 @@
     const circ = 2 * Math.PI * 42;
     const offset = circ * (1 - pct / 100);
     const vocabCount = Store.getVocab().length;
+    const nbs = Store.getNotebooks();
+    const curId = Store.getCurrentNotebookId();
+    const curNb = nbs.find((nb) => nb.id === curId) || nbs[0] || null;
+    const curName = curNb ? curNb.name : '默认生词本';
+    const curCount = curNb ? curNb.wordCount : vocabCount;
 
     container.innerHTML = `
       <div class="esc-page">
@@ -171,13 +176,13 @@
 
         <!-- 单词标签内容 -->
         <div id="m-word" class="esc-mmtab-content">
-          <div class="esc-nbcard">
-            <div class="esc-nb-ico">${icon('book-open')}</div>
+          <div class="esc-nbcard" role="button" tabindex="0" data-act="select-nb" aria-label="切换生词本">
+            <div class="esc-nb-ico" ${curNb ? `style="--nb:${curNb.color}"` : ''}>${icon('book-open')}</div>
             <div class="esc-nb-info">
-              <div class="esc-nb-name">默认生词本</div>
-              <div class="esc-nb-sub">${vocabCount} 个生词</div>
+              <div class="esc-nb-name">${esc(curName)}</div>
+              <div class="esc-nb-sub">${curCount} 个生词</div>
             </div>
-            <div class="esc-nb-count">${vocabCount} 词</div>
+            <div class="esc-nb-count">${curCount} 词<span class="esc-nb-caret">${icon('chevron-down')}</span></div>
           </div>
           <div class="esc-mtitle">选择记忆模式</div>
           <div class="esc-mode-grid">
@@ -247,6 +252,9 @@
     // 文章选择
     const sel = root.querySelector('#m-art');
     if (sel) sel.addEventListener('change', () => { selectedArticleId = sel.value; });
+    // 生词本卡片：弹出选择浮窗
+    const nbCard = root.querySelector('[data-act="select-nb"]');
+    if (nbCard) nbCard.addEventListener('click', showNotebookSelect);
     // 模式卡点击（单词 + 文章 共用一个委托）
     root.querySelectorAll('.esc-mode[data-mode]').forEach((el) => {
       el.addEventListener('click', () => openExercise(el.getAttribute('data-mode')));
@@ -261,6 +269,52 @@
     });
     rootEl.querySelector('#m-word').hidden = name !== 'word';
     rootEl.querySelector('#m-article').hidden = name !== 'article';
+  }
+
+  // ---------------- 生词本选择浮窗 ----------------
+  // 点击顶部生词本卡片：居中模态滚动选择生词本，底部「取消 / 选择」
+  function showNotebookSelect() {
+    const nbs = Store.getNotebooks();
+    if (!nbs.length) { UI.toast('暂无生词本'); return; }
+    const curId = Store.getCurrentNotebookId();
+    let selId = curId;
+    const html = `
+      <div class="esc-nbpick-head">
+        <div class="esc-nbpick-ico">${icon('book-open')}</div>
+        <div>
+          <h3 class="esc-nbpick-title">选择生词本</h3>
+          <p class="esc-nbpick-sub">记忆练习将使用当前选中的生词本</p>
+        </div>
+      </div>
+      <div class="esc-nbpick-list">
+        ${nbs.map((nb) => `
+          <button type="button" class="esc-nbpick-item${nb.id === selId ? ' is-on' : ''}" data-id="${esc(nb.id)}">
+            <span class="esc-nbpick-dot" style="--nb:${nb.color}"></span>
+            <span class="esc-nbpick-name">${esc(nb.name)}</span>
+            <span class="esc-nbpick-count">${nb.wordCount} 词</span>
+            <span class="esc-nbpick-check">${icon('check')}</span>
+          </button>`).join('')}
+      </div>
+      <div class="esc-modal-actions">
+        <button class="esc-btn esc-btn-ghost" data-act="cancel">取消</button>
+        <button class="esc-btn esc-btn-primary" data-act="select">选择</button>
+      </div>`;
+    UI.modal(html, {
+      onOpen: (dlg, close) => {
+        const list = dlg.querySelector('.esc-nbpick-list');
+        list.querySelectorAll('.esc-nbpick-item').forEach((it) => {
+          it.addEventListener('click', () => {
+            selId = it.getAttribute('data-id');
+            list.querySelectorAll('.esc-nbpick-item').forEach((o) => o.classList.toggle('is-on', o === it));
+          });
+        });
+        dlg.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dlg.querySelector('[data-act="select"]').addEventListener('click', () => {
+          if (selId && selId !== curId) Store.setCurrentNotebook(selId);
+          close();
+        });
+      }
+    });
   }
 
   // ---------------- 练习弹层 ----------------
@@ -593,85 +647,428 @@
     });
   }
 
-  // 选择：选出正确释义
+  // 选词：选词填空卡（网页版 choice-card 结构，统一到 --study 主题）
+  const CHOICE_VOL_SVG = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
   function renderChoice(body, w) {
+    const word = String(w.word || '');
+    const correct = w.meaning || w.mean || '(无释义)';
     const all = (Store.getVocab().length ? Store.getVocab() : FALLBACK).map((x) => x.meaning || x.mean).filter(Boolean);
-    const opts = shuffle([w.meaning || w.mean, ...pickRandom(all, w.meaning || w.mean, 3)]).slice(0, 4);
+    const opts = shuffle([correct, ...pickRandom(all, correct, 3)]).slice(0, 4);
+    const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
+
     body.innerHTML = `
-      <p class="esc-quiz-q">${esc(w.word)}</p>
-      ${w.example ? `<p class="esc-quiz-ex">${esc(w.example)}</p>` : ''}
-      <div class="esc-quiz-options">
-        ${opts.map((o, i) => `<button class="esc-quiz-opt" data-opt="${i}" data-correct="${o === (w.meaning || w.mean) ? '1' : '0'}">${esc(o)}</button>`).join('')}
-      </div>
-      <p class="esc-quiz-feedback"></p>`;
+      <div class="esc-fill">
+        <div class="fill-top">
+          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
+        </div>
+        <div class="fill-card" data-role="card">
+          <div class="choice-prompt">
+            <span class="choice-word" data-role="word">${esc(word)}</span>
+            <button class="sq-play-btn" data-act="play" title="播放发音">${CHOICE_VOL_SVG}</button>
+          </div>
+          <div class="fill-letter-hint" data-role="hint"></div>
+          <div class="choice-option-grid" data-role="opts">
+            ${opts.map((o, i) => `<button class="choice-opt" data-i="${i}" data-correct="${o === correct ? '1' : '0'}">${esc(o)}</button>`).join('')}
+          </div>
+          <div class="fill-result" data-role="result"></div>
+        </div>
+        <div class="fill-bottom">
+          <button class="fill-hint-btn" data-act="hint" title="显示首字母提示">${FILL_HINT_SVG}</button>
+          <button class="fill-skip-btn" data-act="skip" title="跳过">${FILL_SKIP_SVG}</button>
+        </div>
+      </div>`;
     UI.refreshIcons(body);
-    const fb = body.querySelector('.esc-quiz-feedback');
-    body.querySelectorAll('.esc-quiz-opt').forEach((b) => {
-      b.addEventListener('click', () => {
-        if (b.disabled) return;
+
+    const card = body.querySelector('[data-role="card"]');
+    const resultEl = body.querySelector('[data-role="result"]');
+    const hintEl = body.querySelector('[data-role="hint"]');
+    const hintBtn = body.querySelector('[data-act="hint"]');
+    const wordEl = body.querySelector('[data-role="word"]');
+    let answered = false, hintUsed = false;
+
+    body.querySelector('[data-act="play"]').addEventListener('click', (e) => { e.stopPropagation(); Speech.speak(w.word || word); });
+    body.querySelectorAll('.choice-opt').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (answered || b.disabled) return;
+        answered = true;
         session.total++;
-        const ok = b.getAttribute('data-correct') === '1';
-        b.classList.add(ok ? 'is-correct' : 'is-wrong');
+        const ok = b.dataset.correct === '1';
         if (ok) session.correct++;
-        else body.querySelector('.esc-quiz-opt[data-correct="1"]').classList.add('is-correct');
-        body.querySelectorAll('.esc-quiz-opt').forEach((x) => (x.disabled = true));
-        fb.textContent = ok ? '回答正确！' : '正确答案已标出';
-        fb.className = 'esc-quiz-feedback ' + (ok ? 'is-ok' : 'is-bad');
-        setTimeout(next, 800);
+        b.classList.add(ok ? 'is-correct' : 'is-wrong');
+        b.classList.add('picked');
+        if (!ok) body.querySelector('.choice-opt[data-correct="1"]').classList.add('is-correct');
+        body.querySelectorAll('.choice-opt').forEach((x) => (x.disabled = true));
+        card.classList.add(ok ? 'fill-card-correct' : 'fill-card-wrong');
+        resultEl.innerHTML = ok
+          ? '<span class="fill-correct">✓ 回答正确！</span>'
+          : '<span class="fill-wrong">✗ 正确答案已标出</span>';
+        resultEl.className = 'fill-result ' + (ok ? 'fill-result-correct' : 'fill-result-wrong');
+        setTimeout(next, ok ? 800 : 1200);
       });
+    });
+    const hint = () => {
+      if (answered || hintUsed) return;
+      hintUsed = true;
+      const first = word.charAt(0) || '_';
+      const rest = word.length > 1 ? '·'.repeat(word.length - 1) : '';
+      wordEl.innerHTML = `${esc(first)}<span class="choice-mask">${esc(rest)}</span>`;
+      hintEl.innerHTML = `<span class="fill-letter-box revealed">${esc(first)}</span><span class="fill-letter-box">${esc('_'.repeat(Math.max(word.length - 1, 1)))}</span>`;
+      hintEl.classList.add('show');
+      hintBtn.disabled = true;
+    };
+    body.querySelector('[data-act="hint"]').addEventListener('click', (e) => { e.stopPropagation(); hint(); });
+    body.querySelector('[data-act="skip"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (answered) return;
+      answered = true;
+      session.total++;
+      resultEl.innerHTML = '<span class="fill-skip">已跳过</span>';
+      resultEl.className = 'fill-result fill-result-skip';
+      setTimeout(next, 500);
     });
   }
 
-  // 填空：例句/文章句挖空，填写单词
+  // 填空：例句/文章句挖空 → 网页版 fill-card 字母格（适配移动端主题）
+  const FILL_HINT_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"></path><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="8" x2="12" y2="10"></line><line x1="12" y1="14" x2="12" y2="16"></line><line x1="8" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="16" y2="12"></line></svg>`;
+  const FILL_SKIP_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>`;
   function renderCloze(body, w) {
-    const ex = w.example || (w.word + ' 是一个例子。');
-    const filled = ex.replace(new RegExp(w.word, 'i'), '______');
+    const word = String(w.word || '').toLowerCase();
+    const meaning = w.meaning || w.mean || '(无释义)';
+    const exTxt = (w.example && typeof w.example === 'object') ? (w.example.en || '') : (w.example || '');
+    const sentenceHtml = exTxt
+      ? esc(exTxt.replace(new RegExp(word, 'i'), '␀')).split('␀').join('<span class="fill-blank">______</span>')
+      : '<span class="fill-no-sentence">（无例句）</span>';
+    const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
+
     body.innerHTML = `
-      <p class="esc-quiz-q">根据上下文填写单词</p>
-      <p class="esc-quiz-ex">${esc(filled)}</p>
-      <input class="esc-input esc-quiz-input" data-role="ans" placeholder="输入单词..." />
-      <button class="esc-btn esc-btn-primary esc-btn-block" data-act="submit">提交</button>
-      <p class="esc-quiz-feedback"></p>`;
+      <div class="esc-fill">
+        <div class="fill-top">
+          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
+        </div>
+        <div class="fill-card" data-role="card">
+          <div class="fill-meaning">${esc(meaning)}</div>
+          <div class="fill-sentence">${sentenceHtml}</div>
+          <div class="fill-letter-hint" data-role="hint"></div>
+          <div class="fill-letter-grid" data-role="grid"></div>
+          <button class="fill-check-btn" data-act="check">${icon('check')}<span>检查</span></button>
+          <input type="text" class="fill-hidden-input" data-role="ans" autocomplete="off" spellcheck="false" maxlength="50" />
+          <div class="fill-result" data-role="result"></div>
+        </div>
+        <div class="fill-bottom">
+          <button class="fill-hint-btn" data-act="hint" title="逐字母提示">${FILL_HINT_SVG}</button>
+          <button class="fill-skip-btn" data-act="skip" title="跳过">${FILL_SKIP_SVG}</button>
+        </div>
+      </div>`;
     UI.refreshIcons(body);
+
+    const card = body.querySelector('[data-role="card"]');
+    const grid = body.querySelector('[data-role="grid"]');
+    const hintEl = body.querySelector('[data-role="hint"]');
+    const resultEl = body.querySelector('[data-role="result"]');
     const ans = body.querySelector('[data-role="ans"]');
-    const fb = body.querySelector('.esc-quiz-feedback');
-    ans.focus();
+    const checkBtn = body.querySelector('[data-act="check"]');
+    const hintBtn = body.querySelector('[data-act="hint"]');
+
+    const slotChars = new Array(word.length).fill('');
+    let active = 0, checked = false;
+    const revealed = new Set();
+
+    function renderBoxes() {
+      grid.querySelectorAll('.letter-box').forEach((b, i) => {
+        b.textContent = slotChars[i] || '';
+        b.classList.toggle('filled', !!slotChars[i]);
+        b.classList.toggle('active-slot', i === active);
+      });
+    }
+
+    function buildGrid() {
+      grid.innerHTML = '';
+      for (let i = 0; i < word.length; i++) {
+        const box = document.createElement('span');
+        box.className = 'letter-box';
+        box.dataset.index = i;
+        box.addEventListener('click', (e) => { e.stopPropagation(); active = i; renderBoxes(); ans.focus(); });
+        grid.appendChild(box);
+      }
+      renderBoxes();
+    }
+
+    function renderHint() {
+      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
+      hintEl.innerHTML = word.split('').map((ch, i) =>
+        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
+      hintEl.classList.add('show');
+      hintBtn.disabled = revealed.size >= word.length;
+    }
+
+    function normalizeInput(val) {
+      return val
+        .replace(/[\uFF41-\uFF5A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/[\uFF21-\uFF3A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/[^a-zA-Z]/g, '');
+    }
+
+    // 错字按位标注 + 展示正确答案
+    function revealWrong() {
+      const boxes = grid.querySelectorAll('.letter-box');
+      boxes.forEach((b, i) => {
+        const ch = slotChars[i];
+        setTimeout(() => {
+          if (ch && ch === word[i]) b.classList.add('correct');
+          else { b.classList.add('wrong'); b.textContent = word[i]; }
+        }, i * 40);
+      });
+    }
+
     const submit = () => {
+      if (checked) return; checked = true;
+      const ok = slotChars.join('') === word;
       session.total++;
-      const ok = ans.value.trim().toLowerCase() === w.word.toLowerCase();
       if (ok) session.correct++;
-      fb.textContent = ok ? '正确！' : `正确答案：${w.word}`;
-      fb.className = 'esc-quiz-feedback ' + (ok ? 'is-ok' : 'is-bad');
-      setTimeout(next, 900);
+      resultEl.innerHTML = ok
+        ? '<span class="fill-correct">✓ 正确！</span>'
+        : `<span class="fill-wrong">✗ 正确答案：<strong>${esc(word)}</strong></span>`;
+      resultEl.className = 'fill-result ' + (ok ? 'fill-result-correct' : 'fill-result-wrong');
+      card.classList.toggle('fill-card-correct', ok);
+      card.classList.toggle('fill-card-wrong', !ok);
+      checkBtn.disabled = true;
+      ans.readOnly = true;
+      if (ok) {
+        grid.querySelectorAll('.letter-box').forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
+        setTimeout(next, 900);
+      } else {
+        revealWrong();
+        setTimeout(next, 1500);
+      }
     };
-    body.querySelector('[data-act="submit"]').addEventListener('click', submit);
-    ans.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+
+    const hint = () => {
+      if (checked || revealed.size >= word.length) return;
+      const round = revealed.size;
+      let pos = round % 2 === 0 ? Math.floor(round / 2) : word.length - 1 - Math.floor(round / 2);
+      if (pos < 0 || pos >= word.length || revealed.has(pos)) {
+        for (let i = 0; i < word.length; i++) if (!revealed.has(i)) { pos = i; break; }
+      }
+      revealed.add(pos);
+      slotChars[pos] = word[pos];
+      active = pos;
+      const box = grid.querySelector(`[data-index="${pos}"]`);
+      if (box) {
+        box.style.transition = 'none';
+        box.style.transform = 'scale(.3) rotateX(90deg)';
+        box.style.opacity = '0';
+        requestAnimationFrame(() => {
+          box.style.transition = 'all .35s cubic-bezier(.34,1.56,.64,1)';
+          box.style.transform = '';
+          box.style.opacity = '';
+        });
+      }
+      renderBoxes();
+      renderHint();
+      ans.focus();
+    };
+
+    const skip = () => {
+      if (checked) return; checked = true;
+      session.total++;
+      resultEl.innerHTML = '<span class="fill-skip">已跳过</span>';
+      resultEl.className = 'fill-result fill-result-skip';
+      checkBtn.disabled = true;
+      setTimeout(next, 500);
+    };
+
+    ans.addEventListener('keydown', (e) => {
+      if (checked) { e.preventDefault(); return; }
+      if (e.key === 'Enter') { submit(); e.preventDefault(); return; }
+      if (e.key === 'Backspace') {
+        if (slotChars[active]) { slotChars[active] = ''; renderBoxes(); }
+        else if (active > 0) { active--; renderBoxes(); }
+        e.preventDefault(); return;
+      }
+      if (e.key === 'ArrowLeft') { active = Math.max(0, active - 1); renderBoxes(); e.preventDefault(); return; }
+      if (e.key === 'ArrowRight') { active = Math.min(word.length - 1, active + 1); renderBoxes(); e.preventDefault(); return; }
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        slotChars[active] = normalizeInput(e.key);
+        renderBoxes();
+        if (active < word.length - 1) { active++; renderBoxes(); }
+        e.preventDefault();
+      }
+    });
+
+    checkBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
+    hintBtn.addEventListener('click', (e) => { e.stopPropagation(); hint(); });
+    body.querySelector('[data-act="skip"]').addEventListener('click', (e) => { e.stopPropagation(); skip(); });
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      e.stopPropagation();
+      ans.focus();
+    });
+
+    buildGrid();
+    ans.focus();
   }
 
-  // 听写：听发音，拼写单词
+  // 听写：听音拼写字母格（网页版 spell-card 结构，统一到 --study 主题）
   function renderDictation(body, w) {
+    const word = String(w.word || '').toLowerCase();
+    const meaning = w.meaning || w.mean || '';
+    const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
+
     body.innerHTML = `
-      <p class="esc-quiz-q">听发音，拼写单词</p>
-      <button class="esc-btn esc-btn-ghost esc-btn-block" data-act="play" style="margin-bottom:16px">${icon('volume-2')}<span>播放发音</span></button>
-      <input class="esc-input esc-quiz-input" data-role="ans" placeholder="输入拼写..." />
-      <button class="esc-btn esc-btn-primary esc-btn-block" data-act="submit">提交</button>
-      <p class="esc-quiz-feedback"></p>`;
+      <div class="esc-fill">
+        <div class="fill-top">
+          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
+        </div>
+        <div class="fill-card" data-role="card">
+          <button class="sq-play-btn" data-act="play" title="播放发音">${CHOICE_VOL_SVG}</button>
+          <p class="spell-prompt">听发音，拼写单词</p>
+          ${meaning ? `<p class="spell-sub">${esc(meaning)}</p>` : ''}
+          <div class="fill-letter-hint" data-role="hint"></div>
+          <div class="fill-letter-grid" data-role="grid"></div>
+          <button class="fill-check-btn" data-act="check">${icon('check')}<span>检查</span></button>
+          <input type="text" class="fill-hidden-input" data-role="ans" autocomplete="off" spellcheck="false" maxlength="50" />
+          <div class="fill-result" data-role="result"></div>
+        </div>
+        <div class="fill-bottom">
+          <button class="fill-hint-btn" data-act="hint" title="逐字母提示">${FILL_HINT_SVG}</button>
+          <button class="fill-skip-btn" data-act="skip" title="跳过">${FILL_SKIP_SVG}</button>
+        </div>
+      </div>`;
     UI.refreshIcons(body);
+
+    const card = body.querySelector('[data-role="card"]');
+    const grid = body.querySelector('[data-role="grid"]');
+    const hintEl = body.querySelector('[data-role="hint"]');
+    const resultEl = body.querySelector('[data-role="result"]');
     const ans = body.querySelector('[data-role="ans"]');
-    const fb = body.querySelector('.esc-quiz-feedback');
-    Speech.speak(w.word);
-    ans.focus();
-    body.querySelector('[data-act="play"]').addEventListener('click', () => Speech.speak(w.word));
+    const checkBtn = body.querySelector('[data-act="check"]');
+    const hintBtn = body.querySelector('[data-act="hint"]');
+
+    const slotChars = new Array(word.length).fill('');
+    let active = 0, checked = false;
+    const revealed = new Set();
+
+    function renderBoxes() {
+      grid.querySelectorAll('.letter-box').forEach((b, i) => {
+        b.textContent = slotChars[i] || '';
+        b.classList.toggle('filled', !!slotChars[i]);
+        b.classList.toggle('active-slot', i === active);
+      });
+    }
+
+    grid.innerHTML = '';
+    for (let i = 0; i < word.length; i++) {
+      const box = document.createElement('span');
+      box.className = 'letter-box';
+      box.dataset.index = i;
+      box.addEventListener('click', (e) => { e.stopPropagation(); active = i; renderBoxes(); ans.focus(); });
+      grid.appendChild(box);
+    }
+    renderBoxes();
+
+    function renderHint() {
+      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
+      hintEl.innerHTML = word.split('').map((ch, i) =>
+        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
+      hintEl.classList.add('show');
+      hintBtn.disabled = revealed.size >= word.length;
+    }
+
+    function normalizeInput(val) {
+      return val
+        .replace(/[\uFF41-\uFF5A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/[\uFF21-\uFF3A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/[^a-zA-Z]/g, '');
+    }
+
     const submit = () => {
+      if (checked) return; checked = true;
+      const ok = slotChars.join('') === word;
       session.total++;
-      const ok = ans.value.trim().toLowerCase() === w.word.toLowerCase();
       if (ok) session.correct++;
-      fb.textContent = ok ? '正确！' : `正确答案：${w.word}`;
-      fb.className = 'esc-quiz-feedback ' + (ok ? 'is-ok' : 'is-bad');
-      setTimeout(next, 900);
+      resultEl.innerHTML = ok
+        ? '<span class="fill-correct">✓ 正确！</span>'
+        : `<span class="fill-wrong">✗ 正确答案：<strong>${esc(word)}</strong></span>`;
+      resultEl.className = 'fill-result ' + (ok ? 'fill-result-correct' : 'fill-result-wrong');
+      card.classList.toggle('fill-card-correct', ok);
+      card.classList.toggle('fill-card-wrong', !ok);
+      checkBtn.disabled = true;
+      ans.readOnly = true;
+      if (ok) {
+        grid.querySelectorAll('.letter-box').forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
+        setTimeout(next, 900);
+      } else {
+        grid.querySelectorAll('.letter-box').forEach((b, i) => {
+          const ch = slotChars[i];
+          setTimeout(() => {
+            if (ch && ch === word[i]) b.classList.add('correct');
+            else { b.classList.add('wrong'); b.textContent = word[i]; }
+          }, i * 40);
+        });
+        setTimeout(next, 1500);
+      }
     };
-    body.querySelector('[data-act="submit"]').addEventListener('click', submit);
-    ans.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+
+    const hint = () => {
+      if (checked || revealed.size >= word.length) return;
+      const round = revealed.size;
+      let pos = round % 2 === 0 ? Math.floor(round / 2) : word.length - 1 - Math.floor(round / 2);
+      if (pos < 0 || pos >= word.length || revealed.has(pos)) {
+        for (let i = 0; i < word.length; i++) if (!revealed.has(i)) { pos = i; break; }
+      }
+      revealed.add(pos);
+      slotChars[pos] = word[pos];
+      active = pos;
+      const box = grid.querySelector(`[data-index="${pos}"]`);
+      if (box) {
+        box.style.transition = 'none';
+        box.style.transform = 'scale(.3) rotateX(90deg)';
+        box.style.opacity = '0';
+        requestAnimationFrame(() => {
+          box.style.transition = 'all .35s cubic-bezier(.34,1.56,.64,1)';
+          box.style.transform = '';
+          box.style.opacity = '';
+        });
+      }
+      renderBoxes();
+      renderHint();
+      ans.focus();
+    };
+
+    ans.addEventListener('keydown', (e) => {
+      if (checked) { e.preventDefault(); return; }
+      if (e.key === 'Enter') { submit(); e.preventDefault(); return; }
+      if (e.key === 'Backspace') {
+        if (slotChars[active]) { slotChars[active] = ''; renderBoxes(); }
+        else if (active > 0) { active--; renderBoxes(); }
+        e.preventDefault(); return;
+      }
+      if (e.key === 'ArrowLeft') { active = Math.max(0, active - 1); renderBoxes(); e.preventDefault(); return; }
+      if (e.key === 'ArrowRight') { active = Math.min(word.length - 1, active + 1); renderBoxes(); e.preventDefault(); return; }
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        slotChars[active] = normalizeInput(e.key);
+        renderBoxes();
+        if (active < word.length - 1) { active++; renderBoxes(); }
+        e.preventDefault();
+      }
+    });
+
+    checkBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
+    hintBtn.addEventListener('click', (e) => { e.stopPropagation(); hint(); });
+    body.querySelector('[data-act="skip"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (checked) return; checked = true;
+      session.total++;
+      resultEl.innerHTML = '<span class="fill-skip">已跳过</span>';
+      resultEl.className = 'fill-result fill-result-skip';
+      checkBtn.disabled = true;
+      setTimeout(next, 500);
+    });
+    body.querySelector('[data-act="play"]').addEventListener('click', (e) => { e.stopPropagation(); Speech.speak(w.word || word); });
+
+    Speech.speak(w.word || word);
+    ans.focus();
   }
 
   // 逐句精读：逐句展示（不评分）
