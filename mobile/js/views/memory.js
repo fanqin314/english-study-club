@@ -63,10 +63,18 @@
   let rootEl = null;
   let currentTab = 'word';
   let selectedArticleId = null;
+  // 文章记忆模式的多选生词本（扇形轮盘点选）。默认 = 当前生词本，可继续追加多个。
+  let nbSel = null;
 
   // ---------- 数据辅助 ----------
+  // 轮盘选中的生词本集合 → 归一化生词（对齐桌面端 memory-nb-multi 的多选语义）
+  function getSelectedVocab() {
+    const all = Store.getVocab();
+    const ids = nbSel && nbSel.size ? nbSel : null;
+    return ids ? all.filter((w) => ids.has(w.notebookId)) : all;
+  }
   function getVocabSet() {
-    return new Set(Store.getVocab().map((w) => (w.word || '').toLowerCase()).filter(Boolean));
+    return new Set(getSelectedVocab().map((w) => (w.word || '').toLowerCase()).filter(Boolean));
   }
   function splitSentences(text) {
     if (!text) return [];
@@ -105,11 +113,12 @@
     }
     return queue.slice(0, 10);
   }
-  // 文章「生词测验」队列：文章中出现过的生词
+  // 文章「生词测验」队列：文章中出现过、且属于轮盘选中生词本的生词
   function buildArticleVocabQueue(item) {
     const text = (item.text || '').toLowerCase();
-    const found = Store.getVocab().filter((w) => w.word && text.includes(w.word.toLowerCase()));
-    return (found.length ? found : Store.getVocab()).slice(0, 10);
+    const selected = getSelectedVocab();
+    const found = selected.filter((w) => w.word && text.includes(w.word.toLowerCase()));
+    return (found.length ? found : selected).slice(0, 10);
   }
 
   // ---------- 渲染 ----------
@@ -198,8 +207,14 @@
         <div id="m-article" class="esc-mmtab-content" hidden>
           <div class="esc-field">
             <label class="esc-field-label">选择文章</label>
-            <div class="esc-select-wrap">
-              <select id="m-art" class="esc-select"></select>
+            <div class="esc-art-row">
+              <div class="esc-nbwheel" id="m-nbwheel" role="menu" aria-label="选择生词本">
+                <button type="button" class="esc-nbwheel-btn" data-act="nbwheel" aria-label="选择生词本" aria-haspopup="menu">${icon('book-open')}</button>
+                <ul class="esc-nbwheel-items"></ul>
+              </div>
+              <div class="esc-select-wrap">
+                <select id="m-art" class="esc-select"></select>
+              </div>
             </div>
           </div>
           <div class="esc-mtitle">选择记忆模式</div>
@@ -216,6 +231,7 @@
     rootEl = container;
     paintArticleSelect();
     bind(container);
+    wheelSetup(container);
     selectTab(currentTab);
     UI.refreshIcons(container);
   }
@@ -316,6 +332,171 @@
       }
     });
   }
+
+  // ================ 生词本扇形轮盘（文章标签左侧按钮） ================
+  // 点击圆按钮 → 绕按钮展开扇形轮盘，上下滑动 / 滚轮旋转选择生词本。
+  // 采用「单一实例 + 全局事件只绑一次」模式，避免重复绑定。
+  let nbwheel = null; // { wrap, trigger, listEl, nbs, els, total, step, visible, offset, active, dragging, pointer, sx, so, wheelTimer }
+
+  function wheelSetup(root) {
+    const wrap = root && root.querySelector('.esc-nbwheel');
+    if (!wrap) return;
+    const trigger = wrap.querySelector('[data-act="nbwheel"]');
+    const listEl = wrap.querySelector('.esc-nbwheel-items');
+    if (!trigger || !listEl) return;
+
+    const nbs = Store.getNotebooks();
+    // 首次初始化多选集合：默认只选当前生词本（保留原有高亮观感，可继续追加）
+    if (!nbSel) {
+      const curId = Store.getCurrentNotebookId();
+      nbSel = new Set(nbs.length ? (curId && nbs.some((n) => n.id === curId) ? [curId] : [nbs[0].id]) : []);
+    }
+    const m = {
+      wrap, trigger, listEl,
+      nbs: nbs.map((nb) => ({ id: nb.id, name: nb.name, count: nb.wordCount, color: nb.color })),
+      sel: nbSel,
+      els: [], total: nbs.length, offset: 0,
+      active: false, dragging: false, pointer: null, sx: 0, so: 0, wheelTimer: null
+    };
+    nbwheel = m;
+
+    if (!m.total) {
+      trigger.addEventListener('click', (e) => { e.stopPropagation(); UI.toast('暂无生词本'); });
+      return;
+    }
+    m.step = 360 / m.total;
+    m.visible = Math.min(4, m.total);
+
+    // 生成轮盘项
+    m.nbs.forEach((nb, i) => {
+      const base = (i - Math.floor(m.total / 2)) * m.step;
+      const li = document.createElement('li');
+      li.className = 'esc-nbwheel-item';
+      li.dataset.id = nb.id;
+      li.dataset.base = base;
+      // --nb 绑定在整项上：供「选中态背景 = 生词本颜色」使用，圆点从父级继承同一变量
+      li.style.setProperty('--nb', UI.esc(nb.color || '#506080'));
+      li.innerHTML = `<span class="esc-nbwheel-dot"></span>
+        <span class="esc-nbwheel-name">${UI.esc(nb.name)}</span>
+        <span class="esc-nbwheel-count">${nb.count}</span>
+        <span class="esc-nbwheel-check">${icon('check')}</span>`;
+      listEl.appendChild(li);
+      m.els.push(li);
+    });
+
+    // 按钮开关（开/关切换）
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); if (nbwheel.active) wheelClose(); else wheelOpen(); });
+  }
+
+  function wheelAngles(m) {
+    return m.els.map((el, i) => {
+      let a = parseFloat(el.dataset.base) + m.offset;
+      a = ((a % 360) + 360) % 360;
+      if (a > 180) a -= 360;
+      return { index: i, actual: a };
+    });
+  }
+
+  function wheelRender(m) {
+    const isMobile = window.innerWidth <= 480;
+    const radius = isMobile ? 104 : 140;          // 展开半径（移动端更小，避免溢出屏幕）
+    const maxArc = isMobile ? 78 : 82;            // 扇形最大半角：始终限制在按钮右侧，不越过屏幕边缘
+    const angles = wheelAngles(m);
+    // 按与 0° 的距离排序，取最近的前 visible 个作为可见项
+    const byDist = angles.slice().sort((a, b) => Math.abs(a.actual) - Math.abs(b.actual));
+    const visibleArr = byDist.slice(0, m.visible).sort((a, b) => a.actual - b.actual); // 角度升序（扇形内 左→右）
+    const focusObj = visibleArr.reduce((p, c) => (Math.abs(c.actual) < Math.abs(p.actual) ? c : p), visibleArr[0]);
+    // 把可见项均匀分配到右侧扇形的固定槽位，保证不重叠、不跑出屏幕
+    const V = visibleArr.length;
+    const spacing = V <= 1 ? 0 : (2 * maxArc) / (V - 1);
+    const slotOf = new Map(visibleArr.map((it, k) => [it.index, -maxArc + spacing * k]));
+    m.els.forEach((el, i) => {
+      const a = slotOf.has(i) ? slotOf.get(i) : angles[i].actual;
+      el.style.setProperty('--angle', a + 'deg');
+      el.style.setProperty('--radius', radius + 'px');
+      const visible = slotOf.has(i);
+      const focused = (visible && i === focusObj.index);
+      el.classList.toggle('visible', visible);
+      el.classList.toggle('hidden', !visible);
+      el.classList.toggle('focused', visible && focused);
+      el.classList.toggle('selected', m.sel.has(el.dataset.id)); // 多选：选中态来自 nbSel 集合
+    });
+  }
+
+  function wheelSnap(m) {
+    // 把距离 0° 最近（即将处于扇形中心）的项吸附到中心槽位
+    const sorted = wheelAngles(m).slice().sort((a, b) => Math.abs(a.actual) - Math.abs(b.actual));
+    if (sorted.length) { m.offset += -sorted[0].actual; wheelRender(m); }
+  }
+
+  function wheelOpen() {
+    const m = nbwheel;
+    if (!m || m.active) return false;
+    const curId = Store.getCurrentNotebookId();
+    const idx = m.nbs.findIndex((n) => n.id === curId);
+    m.offset = 0;
+    if (idx >= 0) m.offset = -(idx - Math.floor(m.total / 2)) * m.step;
+    m.wrap.classList.add('active');
+    wheelSnap(m);
+    m.active = true;
+    return true;
+  }
+  function wheelClose() {
+    if (!nbwheel || !nbwheel.active) return;
+    nbwheel.wrap.classList.remove('active');
+    nbwheel.active = false;
+  }
+
+  function toggleWheelItem(li, id) {
+    // 多选：点一下加入 / 再点一下取消；轮盘保持展开，可连续多选
+    const m = nbwheel;
+    if (m.sel.has(id)) { m.sel.delete(id); li.classList.remove('selected'); }
+    else { m.sel.add(id); li.classList.add('selected'); }
+  }
+
+  // 全局事件（仅注册一次）
+  document.addEventListener('click', (e) => { if (nbwheel && nbwheel.active && !e.target.closest('.esc-nbwheel')) wheelClose(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nbwheel && nbwheel.active) wheelClose(); });
+  document.addEventListener('pointerdown', (e) => {
+    const m = nbwheel;
+    if (!m || !m.active || e.target.closest('[data-act="nbwheel"]')) return;
+    m.dragging = true; m.pointer = e.pointerId; m.sx = e.clientY; m.so = m.offset;
+    m.dragStartEl = e.target.closest('.esc-nbwheel-item') || null; // 记录起点是否落在轮盘项上
+    m.wrap.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('pointermove', (e) => {
+    const m = nbwheel;
+    if (!m || !m.dragging || e.pointerId !== m.pointer) return;
+    m.offset = m.so + (e.clientY - m.sx) * 0.5; // 上下滑动旋转
+    wheelRender(m);
+    e.preventDefault();
+  });
+  function wheelPointerEnd(e) {
+    const m = nbwheel;
+    if (!m || !m.dragging || (m.pointer != null && e.pointerId !== m.pointer)) return;
+    m.dragging = false; m.pointer = null;
+    m.wrap.classList.remove('dragging');
+    // 点按（几乎无位移）落在可见项上 → 视为「选择该生词本」。
+    // 不依赖 click 事件：pointerdown 的 preventDefault 会在触屏上吞掉 click，改用 pointerup 判断最稳妥。
+    const item = m.dragStartEl;
+    m.dragStartEl = null;
+    if (item && Math.abs(e.clientY - m.sx) < 8) {
+      if (item.classList.contains('visible')) { toggleWheelItem(item, item.dataset.id); return; }
+    }
+    wheelSnap(m);
+  }
+  document.addEventListener('pointerup', wheelPointerEnd);
+  document.addEventListener('pointercancel', wheelPointerEnd);
+  document.addEventListener('wheel', (e) => {
+    const m = nbwheel;
+    if (!m || !m.active) return;
+    e.preventDefault();
+    m.offset += (e.deltaY > 0 ? 1 : -1) * 6;
+    wheelRender(m);
+    clearTimeout(m.wheelTimer);
+    m.wheelTimer = setTimeout(() => wheelSnap(m), 150);
+  }, { passive: false });
 
   // ---------------- 练习弹层 ----------------
   let overlay = null;

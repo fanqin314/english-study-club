@@ -1049,6 +1049,85 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   border-right: 2px solid var(--study-muted-foreground); border-bottom: 2px solid var(--study-muted-foreground);
   transform: translateY(-65%) rotate(45deg); pointer-events: none;
 }
+/* 文章标签 · 生词本扇形轮盘（文章选择下拉框左侧按钮） */
+.esc-art-row { display: flex; align-items: center; gap: 10px; }
+.esc-art-row .esc-select-wrap { flex: 1 1 auto; min-width: 0; position: relative; z-index: 1; transition: opacity .18s ease; }
+.esc-nbwheel { position: relative; z-index: 20; flex: 0 0 44px; width: 44px; height: 44px; touch-action: none; }
+/* 轮盘展开时：让 select 不再与轮盘项竞争层级，避免遮挡 */
+.esc-nbwheel.active + .esc-select-wrap,
+.esc-art-row:has(.esc-nbwheel.active) .esc-select-wrap { opacity: .18; pointer-events: none; }
+.esc-art-row .esc-nbwheel { transform: translateY(0); }
+.esc-nbwheel-btn {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 44px; height: 44px; border-radius: 50%; border: none;
+  background: var(--study-primary); color: #fff; cursor: pointer;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--study-primary) 70%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 6; transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s;
+}
+.esc-nbwheel-btn:hover { background: color-mix(in srgb, var(--study-primary) 85%, #000); }
+.esc-nbwheel-btn:active { transform: translate(-50%, -50%) scale(.86); }
+.esc-nbwheel-btn .esc-ico { width: 22px; height: 22px; }
+.esc-nbwheel-items {
+  position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; z-index: 7;
+  pointer-events: none;
+}
+.esc-nbwheel-item {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--item-width, 116px); height: var(--item-height, 42px);
+  margin-top: calc(var(--item-height, 42px) / -2); margin-left: calc(var(--item-width, 116px) / -2);
+  display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  background: var(--study-card); border: 1.5px solid var(--study-border); border-radius: 999px;
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, #000 35%, transparent);
+  color: var(--study-foreground); cursor: pointer; white-space: nowrap;
+  transform-origin: center center;
+  transition: opacity .22s ease, transform .35s cubic-bezier(.34, 1.56, .64, 1),
+    border-color .18s ease, background-color .18s ease,
+    box-shadow .18s ease, color .18s ease;
+  pointer-events: none; opacity: 0;
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5);
+}
+/* 收起状态（轮盘未展开时，无论类名如何都隐藏）——保证再次点击按钮一定收回 */
+.esc-nbwheel:not(.active) .esc-nbwheel-item {
+  opacity: 0 !important; pointer-events: none !important;
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5) !important;
+}
+.esc-nbwheel-item.visible { pointer-events: auto; opacity: 1; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1); }
+.esc-nbwheel-item.hidden { pointer-events: none; opacity: 0; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5); }
+.esc-nbwheel-item.focused {
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1.04);
+}
+.esc-art-row .esc-nbwheel.dragging .esc-nbwheel-item.visible { pointer-events: none; }
+.esc-nbwheel-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--nb, #506080); }
+.esc-nbwheel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 600; }
+.esc-nbwheel-count { flex: 0 0 auto; font-size: 11px; color: var(--study-muted-foreground); }
+/* 勾选图标（默认隐藏，选中时弹出） */
+.esc-nbwheel-check {
+  flex: 0 0 auto; width: 15px; height: 15px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; opacity: 0; transform: scale(0);
+  transition: opacity .18s ease, transform .22s cubic-bezier(.34, 1.56, .64, 1);
+}
+.esc-nbwheel-check .esc-ico { width: 15px; height: 15px; }
+/* 选中态：背景切换为生词本对应颜色（--nb）+ 勾选动效 */
+.esc-nbwheel-item.selected {
+  background-color: var(--nb, #506080);
+  border-color: var(--nb, #506080);
+  color: #fff;
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1.08);
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--nb, #506080) 70%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent);
+}
+.esc-nbwheel-item.selected .esc-nbwheel-dot {
+  background: #fff; box-shadow: 0 0 0 2px color-mix(in srgb, #fff 40%, transparent);
+}
+.esc-nbwheel-item.selected .esc-nbwheel-name { color: #fff; }
+.esc-nbwheel-item.selected .esc-nbwheel-count { color: color-mix(in srgb, #fff 88%, transparent); }
+.esc-nbwheel-item.selected .esc-nbwheel-check { opacity: 1; transform: scale(1); }
+@media (max-width: 480px) {
+  .esc-nbwheel-item { --item-width: 104px; --item-height: 38px; }
+}
 /* 文章练习展示 */
 .esc-sentence-block {
   font-size: 18px; line-height: 1.8; color: var(--study-foreground);
