@@ -402,7 +402,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
-.esc-sentence-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.esc-sentence-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; pointer-events: none; }
 .esc-sentence-idx {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 999px;
@@ -535,6 +535,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 
 /* 句子内可点按单词（对齐桌面端点单词加入生词本） */
 .esc-sw {
+  display: inline-block;
   color: var(--study-primary);
   border-bottom: 1px dotted color-mix(in srgb, var(--study-primary) 60%, transparent);
   cursor: pointer; padding: 2px 3px; margin: 0 1px; border-radius: 4px;
