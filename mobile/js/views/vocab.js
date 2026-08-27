@@ -54,11 +54,12 @@
                   <p class="esc-word-mean">${esc(w.pos ? w.pos + '. ' : '')}${esc(w.meaning || w.zh || '')}</p>
                 </div>
                 <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="example" aria-label="AI例句" title="AI 生成例句">${icon('sparkles')}</button>
                   <button class="esc-word-act" data-act="edit" aria-label="编辑">${icon('pencil')}</button>
                   <button class="esc-word-act is-del" data-act="delete" aria-label="删除">${icon('trash-2')}</button>
                 </div>
               </div>
-              ${ex ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(ex)}"</p>${w.exampleZh ? `<p class="esc-word-ex-zh">${esc(w.exampleZh)}</p>` : ''}</div>` : ''}
+              ${ex ? `<div class="esc-word-ex"><p class="esc-word-ex-en">"${esc(ex)}"</p>${(w.exampleZh || w.contextZh) ? `<p class="esc-word-ex-zh">${esc(w.exampleZh || w.contextZh)}</p>` : ''}</div>` : ''}
               <div class="esc-word-foot">
                 <button class="esc-word-pron" data-act="pron">${icon('volume-2')}<span>发音</span></button>
                 <span class="esc-word-date">${esc(relTime(w.createdAt))}</span>
@@ -183,6 +184,8 @@
       }
       const pron = el.querySelector('[data-act="pron"]');
       if (pron) pron.addEventListener('click', (e) => { e.stopPropagation(); if (word) Speech.speak(word); });
+      const example = el.querySelector('[data-act="example"]');
+      if (example) example.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (id) aiExampleFlow(id, el); });
       const edit = el.querySelector('[data-act="edit"]');
       if (edit) edit.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (id) editWordFlow(id, edit); });
       const del = el.querySelector('[data-act="delete"]');
@@ -190,6 +193,33 @@
       el.addEventListener('click', () => toggleExpand(el));
     });
     updateBatchBar();
+  }
+
+  // 一键用 AI 生成例句：请求成功后写入该词的 context/contextZh，Store 会触发重绘展示。
+  // 防重入：busy 标记期间忽略再次点击。
+  async function aiExampleFlow(id, cardEl) {
+    const btn = cardEl.querySelector('[data-act="example"]');
+    if (!btn || btn.dataset.busy) return;
+    const w = Store.getWord(id);
+    if (!w) return;
+    if (!Mobile.API.hasKey()) { UI.toast('请先在设置中配置 API Key 后再生成例句'); return; }
+    const word = w.word || '';
+    const meaning = w.meaning || w.zh || '';
+    btn.dataset.busy = '1';
+    btn.classList.add('is-busy');
+    btn.innerHTML = icon('loader');
+    UI.refreshIcons(cardEl);
+    const r = await Mobile.API.generateExample(word, meaning);
+    delete btn.dataset.busy;
+    btn.classList.remove('is-busy');
+    btn.innerHTML = icon('sparkles');
+    UI.refreshIcons(cardEl);
+    if (r && r.en) {
+      Store.updateWord(id, { context: r.en, contextZh: r.zh || '' });
+      UI.toast('已生成例句');
+    } else {
+      UI.toast('例句生成失败，请稍后重试');
+    }
   }
 
   // 编辑单词：网页版风格的「气泡」表单（词性/释义/例句），锚定在编辑按钮附近

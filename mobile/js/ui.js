@@ -52,7 +52,8 @@
       host.classList.add('esc-ripple-host');
     }
     const rect = host.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
+    // 波纹限制在点按处的一小块（≤56px），避免整卡铺满的大圆视觉上像是点了 header
+    const size = Math.min(56, Math.max(rect.width, rect.height));
     const x = (ev && ev.clientX != null ? ev.clientX : rect.left + rect.width / 2) - rect.left - size / 2;
     const y = (ev && ev.clientY != null ? ev.clientY : rect.top + rect.height / 2) - rect.top - size / 2;
     const dot = document.createElement('span');

@@ -266,7 +266,7 @@
         if (!word || seen[word.toLowerCase()]) return;
         seen[word.toLowerCase()] = true;
         total++;
-        const r = Store.addWordToNotebook(targetId, { word, pos: w.pos, meaning: w.zh || w.meaning, example: st.en });
+        const r = Store.addWordToNotebook(targetId, { word, pos: w.pos, meaning: w.zh || w.meaning });
         if (r.success && r.added) added++;
       }));
       if (!total) { UI.toast('当前解析结果中没有匹配词性的单词'); return; }
@@ -511,11 +511,12 @@
     });
   }
 
-  // 长按快捷收藏：直接加入当前生词本并提示（区别于轻点查词弹层）
-  function quickCollect(word, pos, meaning, example) {
+  // 长按快捷收藏：直接加入当前生词本并提示（区别于轻点查词弹层）。
+  // 仅保存单词本身，不附带原文句子（例句由生词本内 AI 例句按钮按需生成）。
+  function quickCollect(word, pos, meaning) {
     const word0 = (word || '').trim();
     if (!word0) return;
-    const r = Store.addWord({ word: word0, pos, meaning, example, context: example });
+    const r = Store.addWord({ word: word0, pos, meaning });
     if (r) {
       const existed = Store.getNotebooks().some((nb) => Store.isWordInNotebook(nb.id, word0));
       UI.toast(existed ? '该词已在生词本中' : '已加入生词本');
@@ -783,16 +784,16 @@
       const lp = { t: null, fired: false };
       function cancelLp() { if (lp.t) { clearTimeout(lp.t); lp.t = null; } }
       sp.addEventListener('touchstart', (ev) => {
-        ev.preventDefault(); ev.stopPropagation();
-        UI.ripple(sp, ev);
+        // 注意：不要 preventDefault，否则移动端会吞掉随后的 click，导致轻点查词弹层打不开
+        ev.stopPropagation();
         cancelLp(); lp.fired = false;
         lp.t = setTimeout(() => {
           lp.fired = true; lp.t = null;
           pulseEl(sp);
           pulseLinked(el, word, '.esc-pos-badge'); // 联动：对应词性徽章一起提示
-          quickCollect(word, pos, meaning, example);
+          quickCollect(word, pos, meaning);
         }, 500);
-      }, { passive: false });
+      }, { passive: true });
       sp.addEventListener('touchmove', cancelLp);
       sp.addEventListener('touchend', cancelLp);
       sp.addEventListener('touchcancel', cancelLp);
@@ -804,7 +805,7 @@
           lp.fired = true; lp.t = null;
           pulseEl(sp);
           pulseLinked(el, word, '.esc-pos-badge');
-          quickCollect(word, pos, meaning, example);
+          quickCollect(word, pos, meaning);
         }, 500);
       });
       sp.addEventListener('mouseup', cancelLp);
@@ -1099,7 +1100,7 @@
     const s = sMode;
     if (s.autoCollect && res.sentences) {
       res.sentences.forEach((st) => (st.words || []).forEach((w) =>
-        Store.addWord({ word: w.word, pos: w.pos, meaning: w.zh, example: st.en, exampleZh: st.zh })));
+        Store.addWord({ word: w.word, pos: w.pos, meaning: w.zh })));
     }
 
     // 写入历史（按文本去重）

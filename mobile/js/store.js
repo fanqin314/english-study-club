@@ -257,6 +257,7 @@
       if ('pos' in updates) w.pos = updates.pos || '';
       if ('meaning' in updates) w.meaning = updates.meaning || '';
       if ('context' in updates) w.context = updates.context || '';
+      if ('contextZh' in updates) w.contextZh = updates.contextZh || '';
     }
     _saveVocabData(d);
     emit('vocab', getVocab());

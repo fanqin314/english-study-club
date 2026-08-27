@@ -365,6 +365,21 @@
     }
   }
 
+  // 为生词生成一条自然英文例句 + 中文翻译（生词本「AI 例句」按需调用；无 Key/失败返回 null）
+  async function generateExample(word, meaning) {
+    if (!hasKey()) return null;
+    const prompt = `You are an English learning assistant. Write ONE natural, everyday English example sentence that uses the word "${word}"${meaning ? ` (meaning: ${meaning})` : ''}. The sentence should clearly show how the word is used, be easy for a learner to remember, and NOT restate the dictionary definition itself. Respond with ONLY a raw JSON object, no extra text: {"en":"<the English example sentence>","zh":"<concise Chinese translation>"}`;
+    try {
+      const content = await chatOnce([{ role: 'user', content: prompt }], { maxTokens: 600, temperature: 0.6 });
+      const r = extractJSON(content);
+      if (!r || !r.en) return null;
+      return { en: String(r.en).trim(), zh: (r.zh ? String(r.zh).trim() : '') };
+    } catch (e) {
+      console.warn('[api] generateExample failed:', e);
+      return null;
+    }
+  }
+
   // 单句单项补拉：供分句卡片某项为空时，点击该按钮重新请求，返回可直接合并进句子对象的字段
   async function refetch(en, act) {
     switch (act) {
@@ -392,6 +407,7 @@
     split: Shared.splitSentences,            // 分句骨架（本地，毫秒级）
     scaffold: Shared.fallbackParse,          // 本地启发式骨架（含空详情，供「边加载边显示」首屏渲染）
     parseStream,                             // 流式逐句：回调 onSentence(idx, fullSentence)
-    refetch                                  // 单项补拉：refetch(en, act) -> Partial<句子对象>
+    refetch,                                 // 单项补拉：refetch(en, act) -> Partial<句子对象>
+    generateExample                          // 生成例句：generateExample(word, meaning) -> {en,zh}|null
   };
 })(window);

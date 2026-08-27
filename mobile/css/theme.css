@@ -173,6 +173,8 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 }
 .esc-icon-btn:hover { background: var(--study-muted); }
 .esc-icon-btn:active { background: var(--study-border); }
+/* 顶栏返回按钮：左移贴向屏幕左边沿，避免与右侧标题挤在一起 */
+.esc-header .esc-icon-btn[data-act="back"] { margin-left: -8px; }
 /* 删除生词本按钮：还原网页版「清空历史记录」按钮样式（黑色圆形 + 白色垃圾桶图标，
    拖拽/悬停到其上时展开为红色胶囊并显现「删除」文字） */
 .esc-nb-delete {
@@ -287,8 +289,12 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-pill:hover { background: var(--study-muted); color: var(--study-foreground); }
 .esc-pill:active { transform: scale(.94); }
 .esc-pill .esc-ico { width: 12px; height: 12px; }
-.esc-pill-row { display: flex; gap: 6px; flex-wrap: nowrap; margin-bottom: 16px; }
-.esc-pill-row .esc-pill { flex: 1 1 0; justify-content: center; padding-left: 8px; padding-right: 8px; }
+.esc-pill-row { display: flex; gap: 0; flex-wrap: nowrap; margin-bottom: 16px; overflow: hidden; border: 1px solid var(--study-border); border-radius: var(--study-radius-md); }
+.esc-pill-row .esc-pill {
+  flex: 1 1 0; justify-content: center; padding-left: 8px; padding-right: 8px;
+  border: none; border-radius: 0; background: var(--study-card);
+}
+.esc-pill-row .esc-pill + .esc-pill { border-left: 1px solid var(--study-border); }
 
 /* 选中态 tab（生词本筛选） */
 .esc-tab {
@@ -839,6 +845,9 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   border-color: color-mix(in srgb, var(--study-danger) 40%, transparent);
   background: color-mix(in srgb, var(--study-danger) 6%, transparent);
 }
+/* AI 例句按钮：生成中置灰并旋转 loader */
+.esc-word-act.is-busy { opacity: .55; pointer-events: none; color: var(--study-primary); }
+.esc-word-act.is-busy .esc-ico { animation: esc-spin 1s linear infinite; }
 /* 编辑单词气泡（网页版风格，移动端适配） */
 .esc-wbubble {
   position: fixed; z-index: 80; width: min(280px, calc(100vw - 24px));
@@ -1469,7 +1478,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   background: color-mix(in srgb, var(--study-primary) 28%, transparent);
   pointer-events: none; animation: esc-ripple var(--study-dur-slow) var(--study-ease-out);
 }
-@keyframes esc-ripple { to { transform: scale(2.4); opacity: 0; } }
+@keyframes esc-ripple { to { transform: scale(1.5); opacity: 0; } }
 .esc-ripple-host { position: relative; overflow: hidden; }
 /* 通用点按态：缩放回弹 */
 .esc-tap { transition: transform var(--study-dur-fast) var(--study-ease-spring); }

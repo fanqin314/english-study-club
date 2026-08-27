@@ -87,9 +87,9 @@
   }
   // 单词练习队列：取前 10（桌面端不区分「已掌握」，故不再按 status 排序）
   function buildWordQueue() {
+    // 生词本为空时返回空队列，由调用方提示「先去收藏生词」，不再回退演示词
     const vocab = Store.getVocab();
-    const pool = vocab.length ? vocab.slice() : FALLBACK.map((w) => Object.assign({ id: 'fb-' + w.word }, w));
-    return pool.slice(0, 10);
+    return vocab.slice(0, 10);
   }
   // 文章「语境填空」队列：取含生词的句子，挖空该生词
   function buildArticleClozeQueue(item) {
