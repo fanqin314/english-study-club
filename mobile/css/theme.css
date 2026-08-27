@@ -152,8 +152,9 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-  padding: 0 16px;
+  min-height: 56px;
+  /* 顶部安全区域：刘海/状态栏沉浸，内容不被遮挡 */
+  padding: env(safe-area-inset-top, 0px) 16px 0;
   background: color-mix(in srgb, var(--study-background) 95%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--study-border);
@@ -1037,6 +1038,52 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-field { margin-bottom: 16px; }
 .esc-field-label { display: block; font-size: 13px; font-weight: 600; color: var(--study-foreground); margin-bottom: 8px; }
 .esc-select-wrap { position: relative; }
+/* 文章选择触发按钮（原原生 select 的视觉延续，提供统一展开界面入口） */
+.esc-art-trigger {
+  width: 100%; height: 44px; padding: 0 12px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--study-card); color: var(--study-foreground);
+  border: 1px solid var(--study-border); border-radius: var(--study-radius-md);
+  font-size: 14px; font-family: inherit; cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+.esc-art-trigger:hover { border-color: color-mix(in srgb, var(--study-primary) 55%, var(--study-border)); }
+.esc-art-trigger:active { background: var(--study-muted); }
+.esc-art-ico { flex: 0 0 auto; display: flex; color: var(--study-muted-foreground); }
+.esc-art-ico .esc-ico { width: 16px; height: 16px; }
+.esc-art-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-weight: 600; }
+.esc-art-caret { flex: 0 0 auto; display: flex; color: var(--study-muted-foreground); }
+.esc-art-caret .esc-ico { width: 16px; height: 16px; }
+/* 文章选择模态列表项（与生词本选择同为居中模态家族） */
+.esc-apick-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; border-radius: 14px;
+  border: 1px solid var(--study-border); background: var(--study-card);
+  text-align: left; cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, transform .12s ease;
+}
+.esc-apick-item:active { transform: scale(.98); }
+.esc-apick-item:hover { background: var(--study-muted); }
+.esc-apick-item.is-on {
+  border-color: var(--study-primary);
+  background: color-mix(in srgb, var(--study-primary) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--study-primary) 22%, transparent);
+}
+.esc-apick-ico { flex: 0 0 auto; display: flex; color: var(--study-muted-foreground); transition: color .16s ease; }
+.esc-apick-ico .esc-ico { width: 16px; height: 16px; }
+.esc-apick-item.is-on .esc-apick-ico { color: var(--study-primary); }
+.esc-apick-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.esc-apick-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; color: var(--study-foreground); }
+.esc-apick-date { font-size: 11px; color: var(--study-muted-foreground); }
+.esc-apick-check {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  color: #fff; background: var(--study-primary);
+  opacity: 0; transform: scale(.4);
+  transition: opacity .16s ease, transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.esc-apick-check .esc-ico { width: 13px; height: 13px; }
+.esc-apick-item.is-on .esc-apick-check { opacity: 1; transform: scale(1); }
 .esc-select {
   width: 100%; height: 44px; padding: 0 14px;
   background: var(--study-card); color: var(--study-foreground);
@@ -1044,11 +1091,6 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   font-size: 14px; font-family: inherit; appearance: none; -webkit-appearance: none;
 }
 .esc-select:focus { outline: none; border-color: var(--study-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--study-primary) 20%, transparent); }
-.esc-select-wrap::after {
-  content: ""; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px;
-  border-right: 2px solid var(--study-muted-foreground); border-bottom: 2px solid var(--study-muted-foreground);
-  transform: translateY(-65%) rotate(45deg); pointer-events: none;
-}
 /* 文章标签 · 生词本扇形轮盘（文章选择下拉框左侧按钮） */
 .esc-art-row { display: flex; align-items: center; gap: 10px; }
 .esc-art-row .esc-select-wrap { flex: 1 1 auto; min-width: 0; position: relative; z-index: 1; transition: opacity .18s ease; }
@@ -1073,6 +1115,15 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; z-index: 7;
   pointer-events: none;
 }
+/* 展开时的透明捕捉面：放大「可拖动旋转」的触摸区域到整个风扇区（超出芯片本身），
+   避免上下拖动空白风扇时落到下方内容触发滚动。收起时禁用不影响原交互。 */
+.esc-nbwheel-area {
+  position: absolute;
+  left: 14px; top: -130px; width: 210px; height: 300px;
+  z-index: 5; touch-action: none; pointer-events: none;
+  cursor: ns-resize;
+}
+.esc-nbwheel.active .esc-nbwheel-area { pointer-events: auto; }
 .esc-nbwheel-item {
   position: absolute; left: 50%; top: 50%;
   width: var(--item-width, 116px); height: var(--item-height, 42px);
@@ -1116,8 +1167,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   border-color: var(--nb, #506080);
   color: #fff;
   transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1.08);
-  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--nb, #506080) 70%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent);
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--nb, #506080) 70%, transparent);
 }
 .esc-nbwheel-item.selected .esc-nbwheel-dot {
   background: #fff; box-shadow: 0 0 0 2px color-mix(in srgb, #fff 40%, transparent);

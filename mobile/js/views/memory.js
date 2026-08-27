@@ -210,10 +210,16 @@
             <div class="esc-art-row">
               <div class="esc-nbwheel" id="m-nbwheel" role="menu" aria-label="选择生词本">
                 <button type="button" class="esc-nbwheel-btn" data-act="nbwheel" aria-label="选择生词本" aria-haspopup="menu">${icon('book-open')}</button>
+                <!-- 展开时的透明捕捉面：覆盖整个风扇区（含芯片空隙），让上下拖动随处可旋转轮盘 -->
+                <div class="esc-nbwheel-area" data-act="nbwheel-drag" aria-hidden="true"></div>
                 <ul class="esc-nbwheel-items"></ul>
               </div>
               <div class="esc-select-wrap">
-                <select id="m-art" class="esc-select"></select>
+                <button type="button" id="m-art" class="esc-art-trigger" data-act="art-pick" aria-haspopup="listbox">
+                  <span class="esc-art-ico">${icon('file-text')}</span>
+                  <span class="esc-art-label">选择文章</span>
+                  <span class="esc-art-caret">${icon('chevron-down')}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -237,22 +243,61 @@
   }
 
   function paintArticleSelect() {
-    const sel = rootEl && rootEl.querySelector('#m-art');
-    if (!sel) return;
+    const btn = rootEl && rootEl.querySelector('#m-art');
+    if (!btn) return;
+    const label = btn.querySelector('.esc-art-label');
     const list = Store.getHistory();
     if (!list.length) {
-      sel.innerHTML = `<option value="">暂无历史文章</option>`;
       selectedArticleId = null;
+      if (label) label.textContent = '暂无历史文章';
     } else {
       if (!selectedArticleId || !list.find((h) => h.id === selectedArticleId)) {
         selectedArticleId = list[0].id;
       }
-      sel.innerHTML = list.map((h) => {
-        const first = (h.title || (h.text || '').split('\n')[0] || '未命名文章').slice(0, 24);
-        return `<option value="${esc(h.id)}">${esc(first)} · ${esc(h.date || '')}</option>`;
-      }).join('');
-      sel.value = selectedArticleId;
+      const h = list.find((x) => x.id === selectedArticleId);
+      const first = (h.title || (h.text || '').split('\n')[0] || '未命名文章').slice(0, 24);
+      if (label) label.textContent = h.date ? `${first} · ${h.date}` : first;
     }
+  }
+
+  // 文章选择：打开自定义居中选择列表（代替原生下拉框展开界面）
+  function openArticleSelect() {
+    const list = Store.getHistory();
+    if (!list.length) { UI.toast('暂无历史文章'); return; }
+    const html = `
+      <div class="esc-nbpick-head">
+        <div class="esc-nbpick-ico">${icon('file-text')}</div>
+        <div>
+          <h3 class="esc-nbpick-title">选择文章</h3>
+          <p class="esc-nbpick-sub">记忆练习将基于所选文章进行</p>
+        </div>
+      </div>
+      <div class="esc-nbpick-list">
+        ${list.map((h) => {
+          const first = (h.title || (h.text || '').split('\n')[0] || '未命名文章');
+          const isOn = h.id === selectedArticleId;
+          return `
+          <button type="button" class="esc-apick-item${isOn ? ' is-on' : ''}" data-id="${esc(h.id)}">
+            <span class="esc-apick-ico">${icon('file-text')}</span>
+            <span class="esc-apick-main">
+              <span class="esc-apick-name">${esc(first)}</span>
+              <span class="esc-apick-date">${esc(h.date || '')}</span>
+            </span>
+            <span class="esc-apick-check">${icon('check')}</span>
+          </button>`;
+        }).join('')}
+      </div>`;
+    UI.modal(html, {
+      onOpen: (dlg, dlClose) => {
+        dlg.querySelectorAll('.esc-apick-item').forEach((el) => {
+          el.addEventListener('click', () => {
+            selectedArticleId = el.getAttribute('data-id');
+            paintArticleSelect();
+            dlClose();
+          });
+        });
+      }
+    });
   }
 
   function bind(root) {
@@ -265,9 +310,9 @@
     if (statsBtn) statsBtn.addEventListener('click', openStats);
     const planBtn = root.querySelector('[data-act="plan"]');
     if (planBtn) planBtn.addEventListener('click', openPlan);
-    // 文章选择
-    const sel = root.querySelector('#m-art');
-    if (sel) sel.addEventListener('change', () => { selectedArticleId = sel.value; });
+    // 文章选择：打开自定义居中选择列表
+    const artBtn = root.querySelector('[data-act="art-pick"]');
+    if (artBtn) artBtn.addEventListener('click', openArticleSelect);
     // 生词本卡片：弹出选择浮窗
     const nbCard = root.querySelector('[data-act="select-nb"]');
     if (nbCard) nbCard.addEventListener('click', showNotebookSelect);

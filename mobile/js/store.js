@@ -508,13 +508,18 @@
     if ('dailyGoal' in partial) localStorage.setItem(D.dailyWordGoal, String(next.dailyGoal));
 
     // 仅移动端独有偏好写入 esc.settings（每日目标已改用桌面端 dailyWordGoal 键）
+    // 主题配色（60-25-15）也必须持久化，否则 getSettings 读回恒为 null，
+    // applyPrefs→applyColors 无法生效（选色后界面不变色、刷新即重置）。
     const local = {
       parseMode: next.parseMode,
       autoPronounce: next.autoPronounce,
       autoCollect: next.autoCollect,
       fontSize: next.fontSize,
       profileName: next.profileName,
-      profileEmail: next.profileEmail
+      profileEmail: next.profileEmail,
+      themeNeutral: next.themeNeutral,
+      themePrimary: next.themePrimary,
+      themeAccent: next.themeAccent
     };
     _writeJSON(KEYS.settings, local);
     emit('settings', next);

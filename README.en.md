@@ -7,7 +7,7 @@ Paste any real English article — AI parses parts of speech (POS), grammar stru
 > 🌐 **Language**: English | [简体中文 README](README.md)
 
 <p align="center">
-  <img src="assets/screenshot_demo.png" alt="English Study Club UI preview" width="90%" />
+  <img src="assets/screens/desktop-home.png" alt="English Study Club UI preview" width="90%" />
 </p>
 
 <p align="center">

@@ -10,7 +10,7 @@
 > **Keywords / 关键词**: english learning · grammar · vocabulary · language points · deep reading · article-driven · AI · LLM · flashcards · spaced repetition · GitHub Pages · static site
 
 <p align="center">
-  <img src="assets/screenshot_demo.png" alt="英研社界面预览 English Study Club UI preview" width="90%" />
+  <img src="assets/screens/desktop-home.png" alt="英研社界面预览 English Study Club UI preview" width="90%" />
 </p>
 
 <p align="center">
@@ -35,6 +35,29 @@
 
 **阅读是第一优先级，学习功能融入阅读而非打断它。**
 *Reading comes first — learning features blend into reading instead of interrupting it.*
+
+---
+
+## 界面预览 / Screenshots
+
+#### 桌面端 Desktop
+
+<p align="center">
+  <img src="assets/screens/desktop-home.png" alt="桌面端 · 深度解析 Desktop deep-parse" width="88%" />
+  <img src="assets/screens/desktop-memory.png" alt="桌面端 · 记忆模式 Desktop memory modes" width="48%" />
+  <img src="assets/screens/desktop-vocab.png" alt="桌面端 · 生词本 Desktop vocabulary" width="48%" />
+  <img src="assets/screens/desktop-history.png" alt="桌面端 · 历史记录 Desktop history" width="48%" />
+  <img src="assets/screens/desktop-settings.png" alt="桌面端 · 设置 Desktop settings" width="48%" />
+</p>
+
+#### 移动端 Mobile
+
+<p align="center">
+  <img src="assets/screens/mobile/mobile-home.png" alt="移动端 · 深度解析 Mobile deep-parse" width="24%" />
+  <img src="assets/screens/mobile/mobile-memory.png" alt="移动端 · 记忆模式 Mobile memory modes" width="24%" />
+  <img src="assets/screens/mobile/mobile-vocab.png" alt="移动端 · 生词本 Mobile vocabulary" width="24%" />
+  <img src="assets/screens/mobile/mobile-history.png" alt="移动端 · 历史记录 Mobile history" width="24%" />
+</p>
 
 ---
 
@@ -142,7 +165,11 @@ english-study-club/
 │   ├── main_button.js         # 主按钮（深度解析/生词本/历史）
 │   ├── event_delegation.js    # 事件委托 event delegation
 │   └── settings/              # 设置面板（API/主题/导出/存储）settings panel
-└── assets/                    # 样式与静态资源（CSS 变量主题体系）styles & assets
+├── mobile/                    # 移动端应用（响应式 PWA，与桌面端共享数据）
+│   ├── index.html             # 移动端入口（<769px 自动跳转）mobile entry
+│   ├── css/theme.css          # 移动端主题样式 mobile theme
+│   └── js/                    # Store / API / UI + views（home·memory·vocab·history·settings）
+└── assets/                    # 样式与静态资源（CSS 变量主题体系 + 截图）styles, assets & screenshots
 ```
 
 ### 模块注册示例
