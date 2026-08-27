@@ -13,3 +13,9 @@ desktop.ini
 English-Reading-Lab/
 worker-edgeone.js
 edgeone-proxy.zip
+# 实验性 / 未发布功能与草稿
+_smoke/
+community/
+shared/
+rss-test/
+*.zip
