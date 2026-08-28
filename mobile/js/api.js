@@ -394,6 +394,9 @@
         return { knowledge: await doRequestKnowledge(en) };
       }
       case 'translation': {
+        // 本地高频词快路径：基础词直接返回，省 token；未命中才走 AI
+        const local = Mobile.LocalLexicon && Mobile.LocalLexicon.translateText(en);
+        if (local) return { zh: local, local: true };
         return { zh: await doRequestTranslation(en) };
       }
       default:

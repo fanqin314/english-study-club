@@ -1491,6 +1491,127 @@
     container.appendChild(frag);
   }
 
+  // 导出当前回顾文章为 Obsidian 风格 Markdown：文章 + 生词 [^n] 注解 + 中文翻译
+  // vocabMap: { lowerKey: meaning }；每个在文中出现的生词标注 [^n]，文末汇总音标与释义
+  function buildExportMarkdown(text, vocabMap, translation) {
+    const meta = {};
+    Object.keys(vocabMap || {}).forEach(function (k) {
+      const lex = Mobile.LocalLexicon && Mobile.LocalLexicon.lookup(k);
+      meta[k] = { meaning: vocabMap[k] || '', phonetic: (lex && lex.ph) || '' };
+    });
+    const seen = {};
+    let n = 0;
+    const footnotes = [];
+    const annotated = (text || '').replace(/\b[A-Za-z][A-Za-z'’-]*\b/g, function (m) {
+      const lower = m.toLowerCase();
+      if (meta[lower] && !seen[lower]) {
+        seen[lower] = true;
+        n++;
+        const lexSurf = Mobile.LocalLexicon && Mobile.LocalLexicon.lookup(m);
+        const ph = (lexSurf && lexSurf.ph) || meta[lower].phonetic;
+        footnotes.push({ n: n, surface: m, phonetic: ph || '', meaning: meta[lower].meaning });
+        return m + '[^' + n + ']';
+      }
+      return m;
+    });
+    let md = annotated;
+    if (translation) {
+      md += '\n\n> [!翻译]-\n' + translation.split('\n').map(function (l) { return '> ' + l; }).join('\n');
+    }
+    if (footnotes.length) {
+      md += '\n\n' + footnotes.map(function (f) {
+        const ph = f.phonetic ? ' /' + f.phonetic + '/ ' : ' ';
+        const meaningPart = f.meaning ? '→ ' + f.meaning : '';
+        return '[^' + f.n + ']: ' + f.surface + ph + meaningPart;
+      }).join('\n');
+    }
+    return { md: md.trim(), annotated: annotated, footnotes: footnotes };
+  }
+
+  function renderExportPreview(annotated, translation, footnotes) {
+    let html = '<p class="exp-article">' + esc(annotated || '').replace(/\[\^(\d+)\]/g, '<sup class="exp-fn">[^$1]</sup>') + '</p>';
+    if (translation) {
+      html += '<div class="exp-tr-block"><div class="exp-tr-label">中文翻译</div><div class="exp-tr">' + esc(translation).replace(/\n/g, '<br>') + '</div></div>';
+    }
+    if (footnotes && footnotes.length) {
+      html += '<div class="exp-fn-list"><div class="exp-tr-label">生词注解</div>';
+      html += footnotes.map(function (f) {
+        const ph = f.phonetic ? ' <span class="exp-ph">/' + esc(f.phonetic) + '/</span>' : '';
+        const meaning = f.meaning ? ' <span class="exp-arrow">→</span> ' + esc(f.meaning) : '';
+        return '<div class="exp-fn-item"><span class="exp-fn-num">[' + f.n + ']</span> <b>' + esc(f.surface) + '</b>' + ph + meaning + '</div>';
+      }).join('');
+      html += '</div>';
+    }
+    return html;
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+  }
+
+  // 导出弹层：先展示「预览 / 代码」，再提供复制与下载 .md
+  function openExportSheet(text, vocabMap, translation, title) {
+    const data = buildExportMarkdown(text, vocabMap, translation);
+    if (!data.md) { UI.toast('没有可导出的内容'); return; }
+    const previewHtml = renderExportPreview(data.annotated, translation, data.footnotes);
+    const safeName = ((title || 'english-review').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60)) || 'english-review';
+    const html =
+      '<div class="exp-ov">' +
+        '<div class="esc-overlay-head">' +
+          '<button class="exp-ov-close" data-act="close" aria-label="关闭"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>' +
+          '<span class="esc-overlay-title">导出 Markdown</span>' +
+          '<span style="width:34px"></span>' +
+        '</div>' +
+        '<div class="exp-seg">' +
+          '<button class="exp-seg-btn is-on" data-tab="preview">预览</button>' +
+          '<button class="exp-seg-btn" data-tab="code">代码</button>' +
+        '</div>' +
+        '<div class="esc-overlay-body exp-ov-body">' +
+          '<div class="exp-preview" data-pane="preview">' + previewHtml + '</div>' +
+          '<pre class="exp-code" data-pane="code" hidden><code>' + esc(data.md) + '</code></pre>' +
+        '</div>' +
+        '<div class="exp-actions">' +
+          '<button class="esc-btn esc-btn-ghost" data-act="copy">复制</button>' +
+          '<button class="esc-btn esc-btn-primary" data-act="download">下载 .md</button>' +
+        '</div>' +
+      '</div>';
+    UI.overlay(html, {
+      onOpen: function (wrap, close) {
+        wrap.querySelector('[data-act="close"]').addEventListener('click', close);
+        const segBtns = wrap.querySelectorAll('.exp-seg-btn');
+        const panes = wrap.querySelectorAll('[data-pane]');
+        segBtns.forEach(function (b) {
+          b.addEventListener('click', function () {
+            const tab = b.dataset.tab;
+            segBtns.forEach(function (x) { x.classList.toggle('is-on', x === b); });
+            panes.forEach(function (p) { p.hidden = (p.dataset.pane !== tab); });
+          });
+        });
+        wrap.querySelector('[data-act="copy"]').addEventListener('click', function () {
+          const done = function () { UI.toast('已复制 Markdown'); };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(data.md).then(done, function () { fallbackCopy(data.md); done(); });
+          } else { fallbackCopy(data.md); done(); }
+        });
+        wrap.querySelector('[data-act="download"]').addEventListener('click', function () {
+          try {
+            const blob = new Blob([data.md], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = safeName + '.md';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            UI.toast('已导出 ' + safeName + '.md');
+          } catch (e) { UI.toast('导出失败：' + (e && e.message || e)); }
+        });
+      }
+    });
+  }
+
   function renderArticleReview(body, item) {
     // 生词图：遍历全部生词本，word -> meaning（本机生词无练习统计，mastery 记 0）
     const reviewVocabMap = {};
@@ -1536,9 +1657,9 @@
           <span class="info-item">WORDS ${wordCount}</span><span class="info-sep"></span>
           <span class="info-item">VOCAB ${vocabCount}</span><span class="info-sep"></span>
           <span class="info-item review-timer" id="reviewTimer">00:00</span>
-          <button class="filter-btn" title="仅看含生词的段落">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-            <span>仅看生词</span>
+          <button class="filter-btn exp-export-btn" title="导出 Markdown">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>导出</span>
           </button>
         </div>
         <div class="rv-mag-content review-content-fill"></div>
@@ -1621,14 +1742,11 @@
     });
     reviewCleanups.push(() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); });
 
-    // 筛选：仅看含生词的段落
-    const filterBtn = body.querySelector('.filter-btn');
-    let filterMode = false;
-    filterBtn.addEventListener('click', (e) => {
+    // 导出：当前文章 + 生词 [^n] 注解 + 中文翻译，生成 Obsidian 风格 Markdown
+    const exportBtn = body.querySelector('.exp-export-btn');
+    if (exportBtn) exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      filterMode = !filterMode;
-      contentEl.classList.toggle('filter-vocab-only', filterMode);
-      filterBtn.classList.toggle('active', filterMode);
+      openExportSheet(originalText, reviewVocabMap, item.fullTranslation, item.title);
     });
 
     // 完成：取消朗读并关闭
@@ -1811,10 +1929,7 @@
       return 0;
     }
     function updateScore() {
-      const n = document.getElementById('quizScoreNum');
-      if (n) n.textContent = quizScore;
-      const badge = document.getElementById('quizScoreBadge');
-      if (badge) { badge.classList.remove('score-pop'); void badge.offsetWidth; badge.classList.add('score-pop'); }
+      // 实时分数徽章已移除，分数仍由 quizScore 累计并在结算页展示
     }
     function updateStreak() {
       const sEl = document.getElementById('quizStreak');
@@ -1941,14 +2056,9 @@
     body.innerHTML = `
       <div class="quiz-container">
         <div class="quiz-header">
-          <button class="quiz-back-btn" aria-label="返回">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
+          <button class="esc-icon-btn" data-act="close" aria-label="关闭"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" class="lucide lucide-x esc-ico"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
           <h3>生词填空 · ${quizTotal} 个空格</h3>
-          <span class="quiz-score-badge" id="quizScoreBadge">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-            <span id="quizScoreNum">0</span>
-          </span>
+          <span class="quiz-header-spacer" aria-hidden="true" style="width:36px;flex-shrink:0"></span>
         </div>
         <div class="quiz-progress-wrap">
           <div class="quiz-progress-track"><div class="quiz-progress-fill" id="quizProgressFill" style="width:0%"></div></div>
@@ -1971,9 +2081,9 @@
         </div>
       </div>`;
 
-    // 返回
-    const backBtn = body.querySelector('.quiz-back-btn');
-    backBtn.addEventListener('click', (e) => { e.stopPropagation(); closeOverlay(); });
+    // 关闭（复用 .esc-icon-btn 规范控件）
+    const closeBtn = body.querySelector('.esc-icon-btn[data-act="close"]');
+    if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeOverlay(); });
     const escHandler = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeOverlay(); } };
     document.addEventListener('keydown', escHandler);
     quizCleanups.push(() => document.removeEventListener('keydown', escHandler));

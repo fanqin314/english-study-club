@@ -122,10 +122,56 @@
     applyColors(s);
   }
 
+  // index.html 内含一份「冻结的旧版」静态预渲染快照（生词本 51 张卡、历史、记忆、设置等）。
+  // 运行时所有视图都由 JS 重建/填充，这份静态快照只在 paint 尚未执行或偶发失败时闪现，
+  // 导致「已删除的旧界面/功能」复现。启动阶段先清空这些挂载点，让 JS 成为唯一真相源。
+  function clearStalePrerender() {
+    ['m-nb-tabs', 'm-vocab-stats', 'm-vocab-list', 'm-hist-stats', 'm-hist-list'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    // memory / settings 由 render(container) 整体重建，清空其静态内容以防回退时闪现旧 UI
+    document.querySelectorAll('.esc-view[data-view="memory"], .esc-view[data-view="settings"]')
+      .forEach((s) => { if (!s.dataset.rendered) s.innerHTML = ''; });
+  }
+
+  // 软键盘感知：依据 visualViewport 计算键盘高度写入 --esc-kb，并给 <html> 加 .is-kb-open。
+  // 练习界面的固定底栏与卡片内容据此自动上移、避开占据屏幕下半部的软键盘。
+  function setupKeyboardAware() {
+    const root = document.documentElement;
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    let ticking = false;
+    const update = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        // 键盘 = 布局视口底部 与 可视视口底部 之间的间隙；
+        // 部分安卓键盘会直接收缩布局视口（此时 vv.height≈innerHeight，间隙为 0，
+        // 固定底栏本就落在可视区内，无需上移）。
+        const kb = Math.max(0, window.innerHeight - (vv.offsetTop + vv.height));
+        root.style.setProperty('--esc-kb', kb + 'px');
+        root.classList.toggle('is-kb-open', kb > 50);
+      });
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    update();
+  }
+
   function boot() {
     applyPrefs();
     Store.on('settings', applyPrefs);
+    clearStalePrerender();
+    setupKeyboardAware();
     Mobile.Router.init();
+    // 本地文件夹持久化（Obsidian 式）：进入软件即同步一次，并订阅数据变更自动落盘
+    if (Mobile.FolderSync) {
+      Mobile.FolderSync.bindStore();
+      Mobile.FolderSync.syncOnStartup();
+    }
   }
 
   if (document.readyState === 'loading') {

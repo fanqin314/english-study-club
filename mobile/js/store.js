@@ -224,11 +224,13 @@
     // 兼容两种字段命名：移动端旧式 { zh } 与首页 { meaning }
     const zh = w.zh != null ? w.zh : (w.meaning != null ? w.meaning : '');
     const example = w.example != null ? w.example : (w.context != null ? w.context : '');
+    const ph = w.phonetic != null ? w.phonetic : (w.ph != null ? w.ph : '');
     const lower = word.toLowerCase();
     const exists = (nb.words || []).find((x) => (x.word || '').toLowerCase() === lower);
     if (exists) {
       if (example && !exists.context) exists.context = example;
       if (zh && !exists.meaning) exists.meaning = zh;
+      if (ph && !exists.phonetic) exists.phonetic = ph;
       _saveVocabData(d);
       emit('vocab', getVocab());
       return exists;
@@ -238,6 +240,7 @@
       meaning: zh,
       pos: w.pos || '',
       context: example,
+      phonetic: ph,
       timestamp: Date.now()
     };
     nb.words.unshift(item);
@@ -321,16 +324,18 @@
     if (!word) return { success: false, error: '单词为空' };
     const zh = w.meaning != null ? w.meaning : (w.zh != null ? w.zh : '');
     const example = w.example != null ? w.example : (w.context != null ? w.context : '');
+    const ph = w.phonetic != null ? w.phonetic : (w.ph != null ? w.ph : '');
     const lower = word.toLowerCase();
     const exists = (nb.words || []).find((x) => (x.word || '').toLowerCase() === lower);
     if (exists) {
       if (example && !exists.context) exists.context = example;
       if (zh && !exists.meaning) exists.meaning = zh;
+      if (ph && !exists.phonetic) exists.phonetic = ph;
       _saveVocabData(d);
       emit('vocab', getVocab());
       return { success: true, added: false, exists: true };
     }
-    nb.words.unshift({ word, meaning: zh, pos: w.pos || '', context: example, timestamp: Date.now() });
+    nb.words.unshift({ word, meaning: zh, pos: w.pos || '', context: example, phonetic: ph, timestamp: Date.now() });
     _saveVocabData(d);
     emit('vocab', getVocab());
     return { success: true, added: true };

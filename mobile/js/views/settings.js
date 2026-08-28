@@ -12,7 +12,7 @@
 (function (global) {
   'use strict';
   const Mobile = global.Mobile;
-  const UI = Mobile.UI, Store = Mobile.Store, API = Mobile.API;
+  const UI = Mobile.UI, Store = Mobile.Store, API = Mobile.API, FolderSync = Mobile.FolderSync || {};
   const esc = UI.esc, icon = UI.icon;
 
   function applyTheme(dark) { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); }
@@ -158,6 +158,7 @@
 
         <div class="esc-group-title">数据管理</div>
         <div class="esc-list">
+          <div class="esc-row esc-clickable" data-act="folder"><div class="esc-row-left">${icon('folder-open')}<span class="esc-row-label">设定数据文件夹</span></div><span class="esc-row-right" id="m-folder-state">${FolderSync.hasFolder && FolderSync.hasFolder() ? esc(FolderSync.getFolderName()) : '未设置'}</span></div>
           <div class="esc-row esc-clickable" data-act="export"><div class="esc-row-left">${icon('download')}<span class="esc-row-label">导出学习数据</span></div>${icon('chevron-right')}</div>
           <div class="esc-row esc-clickable" data-act="clear"><div class="esc-row-left">${icon('trash-2')}<span class="esc-row-label">清除缓存</span></div>${icon('chevron-right')}</div>
           <div class="esc-row esc-clickable" data-act="reset"><div class="esc-row-left">${icon('alert-triangle')}<span class="esc-row-label esc-danger">重置所有数据</span></div>${icon('chevron-right')}</div>
@@ -305,7 +306,51 @@
     });
 
     // 数据管理
-    root.querySelector('[data-act="export"]').addEventListener('click', exportData);
+    root.querySelector('[data-act="folder"]').addEventListener('click', async () => {
+      const stateEl = root.querySelector('#m-folder-state');
+      if (!FolderSync.isSupported || !FolderSync.isSupported()) {
+        UI.toast('当前浏览器不支持文件夹同步（仅桌面版 Chrome / Edge 可用），已为你保留「导出学习数据」');
+        return;
+      }
+      if (!FolderSync.hasFolder()) {
+        const r = await FolderSync.pickFolder();
+        if (r.ok) {
+          await FolderSync.saveAllNow();
+          if (stateEl) stateEl.textContent = r.name;
+          UI.toast('已绑定文件夹「' + r.name + '」，数据将自动同步');
+        } else if (r.error === 'permission') {
+          UI.toast('未获得文件夹的写入权限');
+        }
+        return;
+      }
+      // 已绑定：操作表（重新选择 / 解除绑定）
+      const name = FolderSync.getFolderName();
+      const sheetHTML = `
+        <div class="esc-bsheet-title">数据文件夹</div>
+        <div class="esc-bsheet-sub">已绑定到「${esc(name)}」，数据变更与每次进入软件都会自动写入该文件夹。</div>
+        <button class="esc-bsheet-row" data-act="rebind">${icon('folder-open')}<span>重新选择文件夹</span></button>
+        <button class="esc-bsheet-row esc-danger" data-act="unbind">${icon('unlink')}<span>解除绑定（停止自动保存）</span></button>
+        <button class="esc-bsheet-row" data-act="cancel">${icon('x')}<span>取消</span></button>`;
+      const close = UI.bottomSheet(sheetHTML, {
+        onOpen(sheet) {
+          UI.refreshIcons(sheet);
+          sheet.querySelector('[data-act="rebind"]').addEventListener('click', async () => {
+            close();
+            const r = await FolderSync.pickFolder();
+            if (r.ok) { await FolderSync.saveAllNow(); if (stateEl) stateEl.textContent = r.name; UI.toast('已重新绑定「' + r.name + '」'); }
+            else if (r.error === 'permission') UI.toast('未获得文件夹的写入权限');
+          });
+          sheet.querySelector('[data-act="unbind"]').addEventListener('click', async () => {
+            await FolderSync.clearFolder();
+            if (stateEl) stateEl.textContent = '未设置';
+            UI.toast('已解除文件夹绑定');
+            close();
+          });
+          sheet.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        }
+      });
+    });
+    root.querySelector('[data-act="export"]').addEventListener('click', previewExport);
     root.querySelector('[data-act="clear"]').addEventListener('click', () => {
       if (UI.confirmDialog('确定清除生词本与历史记录缓存？（设置会保留）')) { Store.clearCache(); UI.toast('缓存已清除'); }
     });
@@ -327,15 +372,219 @@
     });
   }
 
-  function exportData() {
-    const data = Store.exportAll();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  /* ---------- 导出：多格式生成（对齐网页版「保存设置」） ---------- */
+  const SAVE_NOTE_TXT =
+`英研社 · 学习数据保存说明
+
+本说明由「英研社」移动端导出，记录你的生词本与历史解析数据。
+
+【导出格式】
+· JSON：完整结构化数据，适合备份（桌面端可导入恢复）。
+· TXT：纯文本，便于快速阅读与检索。
+· MD（Markdown）：带标题与表格，适合在 Obsidian / 笔记软件中查看。
+
+【数据范围】
+· 生词本：收藏的单词、音标、释义与例句。
+· 历史记录：解析过的文章原文与 AI 译文。
+
+【自动同步】
+在「设定数据文件夹」中绑定桌面版 Chrome / Edge 的本地文件夹后，
+数据会随改动自动写入该目录（移动端浏览器出于安全限制不支持此功能）。`;
+
+  // 导出内容投影：剥离仅内部使用的冗余字段（id / notebookId / 时间戳 / 别名 zh / 空 exampleZh），
+  // 让导出文件与预览都干净可读、体积更小，同时保留恢复所需的全部信息。
+  function cleanVocab(list) {
+    return list.map((w) => ({
+      word: w.word,
+      pos: w.pos || '',
+      phonetic: w.phonetic || '',
+      meaning: w.meaning || w.zh || '',
+      example: w.example || ''
+    }));
+  }
+  function cleanHistory(list) {
+    return list.map((h) => ({
+      id: h.id,
+      title: h.title || '',
+      date: h.date || '',
+      text: h.text || '',
+      fullTranslation: h.fullTranslation || '',
+      sentenceData: h.sentenceData || {}
+    }));
+  }
+  function exportNote(kind, n) {
+    const unit = kind === 'vocab' ? '个单词' : '篇文章';
+    return '\n\n… 共 ' + n + ' ' + unit + '，点「展开」查看全部';
+  }
+
+  // full=false 时只生成示例片段（预览用），避免一次性倾倒全部数据。
+  function buildVocabExport(fmt, full) {
+    const list = cleanVocab(Store.getVocab());
+    if (fmt === 'json') {
+      const arr = full ? list : list.slice(0, 2);
+      let s = JSON.stringify(arr, null, 2);
+      if (!full && list.length > 2) s += exportNote('vocab', list.length);
+      return s;
+    }
+    const lines = list.map((w) => {
+      const ph = w.phonetic ? '/' + w.phonetic + '/ ' : '';
+      const ex = w.example ? '\n  例：' + w.example : '';
+      return w.word + '  ' + ph + (w.pos ? w.pos + '. ' : '') + (w.meaning || '') + ex;
+    });
+    if (fmt === 'txt') {
+      if (full || lines.length <= 3) return lines.join('\n') || '（生词本为空）';
+      return lines.slice(0, 3).join('\n') + exportNote('vocab', list.length);
+    }
+    if (!list.length) return '_（生词本为空）_';
+    const head = '| 单词 | 音标 | 词性 | 释义 | 例句 |\n|---|---|---|---|---|\n';
+    const rows = list.map((w) => '| ' + [w.word, w.phonetic, w.pos, w.meaning, (w.example || '').replace(/\n/g, ' ')].join(' | ') + ' |');
+    if (full || rows.length <= 3) return head + rows.join('\n');
+    return head + rows.slice(0, 3).join('\n') + exportNote('vocab', list.length);
+  }
+
+  function buildHistoryExport(fmt, full) {
+    const list = cleanHistory(Store.getHistory());
+    if (fmt === 'json') {
+      const arr = full ? list : list.slice(0, 1);
+      let s = JSON.stringify(arr, null, 2);
+      if (!full && list.length > 1) s += exportNote('history', list.length);
+      return s;
+    }
+    const block = (h) => '【' + h.date + '】' + h.title + '\n' + (h.text || '').trim() + (h.fullTranslation ? '\n\n译文：\n' + h.fullTranslation : '');
+    if (fmt === 'txt') {
+      if (full || list.length <= 1) return list.map(block).join('\n\n----------\n\n') || '（暂无历史记录）';
+      return block(list[0]) + exportNote('history', list.length);
+    }
+    if (!list.length) return '_（暂无历史记录）_';
+    const sec = (h) => '## ' + h.title + '\n\n> 日期：' + h.date + '\n\n' + (h.text || '').trim() + (h.fullTranslation ? '\n\n### 译文\n\n' + h.fullTranslation : '');
+    if (full || list.length <= 1) return list.map(sec).join('\n\n---\n\n');
+    return sec(list[0]) + exportNote('history', list.length);
+  }
+
+  function downloadText(filename, text, mime) {
+    const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'yingyanshe-data.json';
+    a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    UI.toast('已导出学习数据');
+  }
+
+  // 导出前预览：数据概览 + 格式选择（生词本/历史记录 JSON·TXT·MD）+ 实时示例预览 + 复制/导出
+  function previewExport() {
+    const vocabCount = Store.getVocab().length;
+    const historyCount = Store.getHistory().length;
+    const estSize = (new Blob([
+      JSON.stringify(cleanVocab(Store.getVocab())),
+      JSON.stringify(cleanHistory(Store.getHistory()))
+    ]).size / 1024).toFixed(1);
+    const folderBound = FolderSync.hasFolder && FolderSync.hasFolder();
+    const folderNote = folderBound
+      ? `<div class="esc-export-note">已绑定文件夹「${esc(FolderSync.getFolderName())}」，数据会随改动自动同步到该目录。</div>`
+      : '';
+    const state = { vocab: 'json', history: 'json', note: true, expandedVocab: false, expandedHistory: false };
+
+    const html = `
+      <div class="esc-bsheet-title"><span class="esc-bsheet-tit-ico">${icon('download')}</span>导出学习数据</div>
+      <div class="esc-export-summary">
+        <div class="esc-export-stat"><span class="esc-export-num">${vocabCount}</span><span class="esc-export-lab">生词</span></div>
+        <div class="esc-export-stat"><span class="esc-export-num">${historyCount}</span><span class="esc-export-lab">历史文章</span></div>
+        <div class="esc-export-stat"><span class="esc-export-num">${estSize}<small>KB</small></span><span class="esc-export-lab">数据体积</span></div>
+      </div>
+      ${folderNote}
+      <div class="esc-export-fmt">
+        <div class="esc-export-fmt-row">
+          <span class="esc-export-fmt-lab">导出生词本</span>
+          <div class="esc-seg is-square" data-seg="vocab">
+            <button data-v="json" class="is-active">JSON</button>
+            <button data-v="txt">TXT</button>
+            <button data-v="md">MD</button>
+          </div>
+        </div>
+        <div class="esc-export-fmt-row">
+          <span class="esc-export-fmt-lab">导出历史记录</span>
+          <div class="esc-seg is-square" data-seg="history">
+            <button data-v="json" class="is-active">JSON</button>
+            <button data-v="txt">TXT</button>
+            <button data-v="md">MD</button>
+          </div>
+        </div>
+        <label class="esc-export-inc"><input type="checkbox" id="m-inc-note" checked> 包含保存说明 (TXT)</label>
+      </div>
+      <div class="esc-export-hint">选择格式后下方实时预览示例，点「展开」查看全部内容</div>
+      <div class="esc-export-preview">
+        <div class="esc-export-preview-head">
+          <span>生词本预览 · <i data-fmt-lab="vocab">JSON</i></span>
+          <button class="esc-export-toggle" data-act="toggle" data-target="vocab">展开</button>
+        </div>
+        <pre class="esc-export-json" data-collapsed="1" data-prev="vocab"></pre>
+      </div>
+      <div class="esc-export-preview">
+        <div class="esc-export-preview-head">
+          <span>历史记录预览 · <i data-fmt-lab="history">JSON</i></span>
+          <button class="esc-export-toggle" data-act="toggle" data-target="history">展开</button>
+        </div>
+        <pre class="esc-export-json" data-collapsed="1" data-prev="history"></pre>
+      </div>
+      <div class="esc-btn-row">
+        <button class="esc-btn esc-btn-ghost" data-act="copy">复制全部</button>
+        <button class="esc-btn esc-btn-primary" data-act="download">确认导出</button>
+      </div>`;
+
+    const close = UI.bottomSheet(html, {
+      onOpen(sheet) {
+        UI.refreshIcons(sheet);
+        const renderPreview = () => {
+          sheet.querySelector('[data-prev="vocab"]').textContent = buildVocabExport(state.vocab, state.expandedVocab);
+          sheet.querySelector('[data-prev="history"]').textContent = buildHistoryExport(state.history, state.expandedHistory);
+          sheet.querySelector('[data-fmt-lab="vocab"]').textContent = state.vocab.toUpperCase();
+          sheet.querySelector('[data-fmt-lab="history"]').textContent = state.history.toUpperCase();
+        };
+        renderPreview();
+
+        sheet.querySelectorAll('.esc-seg[data-seg] button').forEach((b) => {
+          b.addEventListener('click', () => {
+            const seg = b.closest('.esc-seg').getAttribute('data-seg');
+            b.parentElement.querySelectorAll('button').forEach((x) => x.classList.remove('is-active'));
+            b.classList.add('is-active');
+            state[seg] = b.getAttribute('data-v');
+            renderPreview();
+          });
+        });
+        sheet.querySelector('#m-inc-note').addEventListener('change', (e) => { state.note = e.target.checked; });
+
+        sheet.querySelectorAll('[data-act="toggle"]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const t = btn.getAttribute('data-target');
+            const pre = sheet.querySelector('[data-prev="' + t + '"]');
+            const collapsed = pre.getAttribute('data-collapsed') === '1';
+            pre.setAttribute('data-collapsed', collapsed ? '0' : '1');
+            btn.textContent = collapsed ? '收起' : '展开';
+            state['expanded' + (t === 'vocab' ? 'Vocab' : 'History')] = !collapsed;
+            renderPreview();
+          });
+        });
+
+        sheet.querySelector('[data-act="copy"]').addEventListener('click', async () => {
+          const all = '【生词本 · ' + state.vocab.toUpperCase() + '】\n' + buildVocabExport(state.vocab, true) +
+            '\n\n【历史记录 · ' + state.history.toUpperCase() + '】\n' + buildHistoryExport(state.history, true);
+          try { await navigator.clipboard.writeText(all); UI.toast('已复制全部内容'); }
+          catch (e) { UI.toast('复制失败，请手动选择'); }
+        });
+
+        sheet.querySelector('[data-act="download"]').addEventListener('click', () => {
+          const ext = { json: 'json', txt: 'txt', md: 'md' };
+          const mime = { json: 'application/json', txt: 'text/plain;charset=utf-8', md: 'text/markdown;charset=utf-8' };
+          downloadText('生词本.' + ext[state.vocab], buildVocabExport(state.vocab, true), mime[state.vocab]);
+          downloadText('历史记录.' + ext[state.history], buildHistoryExport(state.history, true), mime[state.history]);
+          if (state.note) downloadText('保存说明.txt', SAVE_NOTE_TXT, 'text/plain;charset=utf-8');
+          const parts = ['生词本(' + state.vocab.toUpperCase() + ')', '历史记录(' + state.history.toUpperCase() + ')'];
+          if (state.note) parts.push('保存说明');
+          UI.toast('已导出：' + parts.join('、'));
+          close();
+        });
+      }
+    });
   }
 
   Mobile.Views = Mobile.Views || {};

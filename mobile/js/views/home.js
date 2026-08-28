@@ -269,7 +269,7 @@
         if (!word || seen[word.toLowerCase()]) return;
         seen[word.toLowerCase()] = true;
         total++;
-        const r = Store.addWordToNotebook(targetId, { word, pos: w.pos, meaning: w.zh || w.meaning });
+        const r = Store.addWordToNotebook(targetId, { word, pos: w.pos, meaning: w.zh || w.meaning, phonetic: w.phonetic || w.ph || '' });
         if (r.success && r.added) added++;
       }));
       if (!total) { UI.toast('当前解析结果中没有匹配词性的单词'); return; }
@@ -510,7 +510,7 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const id = btn.dataset.id, name = btn.dataset.name;
-        const r = Store.addWordToNotebook(id, { word: word0, pos: pos, meaning: meaning });
+        const r = Store.addWordToNotebook(id, { word: word0, pos: pos, meaning: meaning, phonetic: phon });
         if (r.success) {
           UI.toast(r.added ? `已添加到「${name}」` : `「${name}」中已有该词`);
           setTimeout(closeWordSheet, 600);
@@ -534,7 +534,7 @@
       if (!name) { errDiv.textContent = '请输入生词本名称'; errDiv.hidden = false; return; }
       const c = Store.createNotebook(name);
       if (!c.success) { errDiv.textContent = c.error; errDiv.hidden = false; return; }
-      const r = Store.addWordToNotebook(c.id, { word: word0, pos: pos, meaning: meaning });
+      const r = Store.addWordToNotebook(c.id, { word: word0, pos: pos, meaning: meaning, phonetic: phon });
       UI.toast(r.success ? `已创建「${name}」并添加` : (r.error || '添加失败'));
       setTimeout(closeWordSheet, 600);
     });
@@ -545,7 +545,8 @@
   function quickCollect(word, pos, meaning) {
     const word0 = (word || '').trim();
     if (!word0) return;
-    const r = Store.addWord({ word: word0, pos, meaning });
+    const qPh = (Mobile.LocalLexicon && Mobile.LocalLexicon.lookup(word0) || {}).ph || '';
+    const r = Store.addWord({ word: word0, pos, meaning, phonetic: qPh });
     if (r) {
       const existed = Store.getNotebooks().some((nb) => Store.isWordInNotebook(nb.id, word0));
       UI.toast(existed ? '该词已在生词本中' : '已加入生词本');
@@ -846,7 +847,9 @@
         cancelLp();
         pulseEl(sp);
         pulseLinked(el, word, '.esc-pos-badge'); // 联动：对应词性徽章一起提示
-        openWordPopover(word, sp, pos, meaning);
+        // 点词：若 AI 未给出释义，回退到本地词表（基础词免 AI）
+        const localHit = Mobile.LocalLexicon && Mobile.LocalLexicon.lookup(word);
+        openWordPopover(word, sp, pos, meaning || (localHit && localHit.zh) || '', localHit && localHit.ph);
       });
     });
     // 中文翻译：点击折叠头展开/收起（grid 行高过渡动效）
@@ -1179,7 +1182,7 @@
     const s = sMode;
     if (s.autoCollect && res.sentences) {
       res.sentences.forEach((st) => (st.words || []).forEach((w) =>
-        Store.addWord({ word: w.word, pos: w.pos, meaning: w.zh })));
+        Store.addWord({ word: w.word, pos: w.pos, meaning: w.zh, phonetic: w.phonetic || w.ph || '' })));
     }
 
     // 写入历史（按文本去重）
