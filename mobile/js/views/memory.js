@@ -595,6 +595,11 @@
 
   function closeOverlay() {
     if (!overlay) return;
+    // 模式清理：回顾计时/speech / 生词检验计时与事件，防止关闭后残留
+    reviewCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    reviewCleanups.length = 0;
+    quizCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    quizCleanups.length = 0;
     stopGyro();
     const el = overlay;
     overlay = null; session = null;
@@ -618,11 +623,6 @@
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
       queue = buildArticleClozeQueue(item);
       if (!queue.length) { UI.toast('该文章没有可用句子'); return; }
-    } else if (mode === 'vocabQuiz') {
-      const item = getArticle(ctx.articleId);
-      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
-      queue = buildArticleVocabQueue(item);
-      if (!queue.length) { UI.toast('该文章没有匹配生词'); return; }
     } else if (mode === 'sentence') {
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
@@ -632,6 +632,14 @@
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
       session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      openOverlay();
+      step();
+      return;
+    } else if (mode === 'vocabQuiz') {
+      const item = getArticle(ctx.articleId);
+      if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
+      // 生词检验：整篇文章挖空 + 词库拖拽选词（对齐网页端），全屏渲染
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: true };
       openOverlay();
       step();
       return;
@@ -678,10 +686,11 @@
     if (session.mode === 'flashcard') return renderFlash(body, item);
     if (session.mode === 'fill') return renderCloze(body, { example: item.example, word: item.word });
     if (session.mode === 'spelling') return renderDictation(body, item);
-    if (session.mode === 'choice' || session.mode === 'vocabQuiz') return renderChoice(body, item);
+    if (session.mode === 'choice') return renderChoice(body, item);
     if (session.mode === 'cloze') return renderCloze(body, { example: item.example, word: item.word });
     if (session.mode === 'sentence') return renderArticleSentence(body, item);
     if (session.mode === 'review') return renderArticleReview(body, item);
+    if (session.mode === 'vocabQuiz') return renderVocabQuiz(body, item);
   }
 
   function next() {
@@ -703,12 +712,31 @@
         correctRate: acc || p.correctRate,
         reviewDue: Math.max(0, p.reviewDue - session.correct)
       });
+      // 闪卡：展示评级分布（已掌握/模糊/不认识），对齐网页版本轮总结
+      const lv = session.levels || {};
+      const lvMeta = [
+        ['已掌握', lv.known || 0, 'var(--study-success)'],
+        ['模糊', lv.vague || 0, 'var(--study-warning)'],
+        ['不认识', lv.unknown || 0, 'var(--study-error)']
+      ];
+      const lvHTML = session.mode === 'flashcard'
+        ? `<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;width:100%;max-width:280px">
+            ${lvMeta.map(([label, val, color]) => `<div style="flex:1;text-align:center;padding:8px 4px;border-radius:12px;background:color-mix(in srgb,${color} 12%,transparent)">
+              <div style="font-size:22px;font-weight:700;color:${color};line-height:1.1">${val}</div>
+              <div style="font-size:12px;color:var(--study-text-dim);margin-top:4px">${label}</div>
+            </div>`).join('')}
+          </div>`
+        : '';
       body.innerHTML = `
-        <div class="esc-empty" style="padding:32px 0">
-          ${icon('check-circle', 'esc-ico')}
+        <div class="esc-empty" style="padding:28px 4px">
+          ${session.mode === 'flashcard' ? icon('award', 'esc-ico') : icon('check-circle', 'esc-ico')}
           <p class="esc-empty-title" style="margin-top:16px">本轮完成！</p>
           <p class="esc-empty-desc">答对 ${session.correct} / ${session.total}（正确率 ${acc}%）</p>
-          <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px;max-width:240px" data-act="done">完成</button>
+          ${lvHTML}
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;width:100%;max-width:260px">
+            <button class="esc-btn esc-btn-block" data-act="again" style="flex:1">再练一轮</button>
+            <button class="esc-btn esc-btn-primary esc-btn-block" data-act="done" style="flex:1">完成</button>
+          </div>
         </div>`;
     } else {
       body.innerHTML = `
@@ -724,6 +752,12 @@
     }
     UI.refreshIcons(body);
     body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
+    // 再练一轮：关闭当前覆盖层后用同一模式重新开始（自动重新洗牌队列）
+    body.querySelector('[data-act="again"]')?.addEventListener('click', () => {
+      const mode = session.mode;
+      closeOverlay();
+      openExercise(mode);
+    });
   }
 
   // 闪卡：网页版 3D 卡片风格（光晕 + 倾斜 + 评级），适配移动端主题
@@ -815,15 +849,35 @@
     body.querySelector('#prevBtn').addEventListener('click', goPrev);
     body.querySelector('#nextBtn').addEventListener('click', goNext);
 
-    // 例句生成：无例句时补一个默认例句
+    // 例句生成：无例句时调用 AI 生成并回写生词本（复用 Store.updateWord + api.generateExample）
     const exEn = body.querySelector('#exampleEn');
     const exZh = body.querySelector('#exampleZh');
-    body.querySelector('#flashcardGenExampleBtn').addEventListener('click', () => {
-      if (!ex.en) {
-        ex.en = `"${w.word}" is a great word.`;
-        ex.zh = '';
+    const genBtn = body.querySelector('#flashcardGenExampleBtn');
+    genBtn.addEventListener('click', async () => {
+      if (genBtn.dataset.busy) return;
+      // 已有例句：直接展示
+      if (ex.en) {
         exEn.textContent = ex.en;
-        exZh.textContent = '';
+        if (ex.zh) exZh.textContent = ex.zh;
+        return;
+      }
+      if (!Mobile.API.hasKey()) { UI.toast('请先在设置中配置 API Key'); return; }
+      genBtn.dataset.busy = '1';
+      genBtn.innerHTML = icon('loader') + '';
+      body.querySelector('#flashcardGenExampleBtn svg')?.classList.add('is-spin');
+      exEn.textContent = '生成例句中…';
+      const r = await Mobile.API.generateExample(w.word, w.meaning || w.meaning || w.zh || '');
+      delete genBtn.dataset.busy;
+      genBtn.innerHTML = FC_STAR;
+      if (r && r.en) {
+        ex.en = String(r.en).trim();
+        ex.zh = String(r.zh || '').trim();
+        exEn.textContent = ex.en;
+        exZh.textContent = ex.zh;
+        if (w.id) Store.updateWord(w.id, { context: ex.en, contextZh: ex.zh });
+      } else {
+        exEn.textContent = '例句生成失败，点星星重试';
+        UI.toast('例句生成失败，请稍后重试');
       }
     });
 
@@ -851,6 +905,8 @@
         const rating = btn.getAttribute('data-rating');
         session.total++;
         if (rating === 'known') session.correct++;
+        // 累计评级分布（用于结束总结卡分项展示，对齐网页版）
+        (session.levels = session.levels || { known: 0, vague: 0, unknown: 0 })[rating]++;
         // 即时反馈
         const map = {
           known: ['✓', '已掌握', 'var(--study-success)'],
@@ -875,26 +931,73 @@
 
   // 选词：选词填空卡（网页版 choice-card 结构，统一到 --study 主题）
   const CHOICE_VOL_SVG = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+  // 选词练习：整合 5 个子模式（释义选词/听音选词/选词填空/看词选义/听音选义），对齐网页版
+  // 子模式状态挂在 session.choiceMode，切换时对当前词重新渲染、不推进进度
+  const CHOICE_SUBMODES = [
+    ['meaning', 'book', '释义选词'],
+    ['listen', 'volume-2', '听音选词'],
+    ['fillblank', 'align-left', '选词填空'],
+    ['wordzh', 'eye', '看词选义'],
+    ['listenzh', 'ear', '听音选义']
+  ];
+
   function renderChoice(body, w) {
+    const sub = (session.choiceMode = session.choiceMode || 'meaning');
     const word = String(w.word || '');
-    const correct = w.meaning || w.mean || '(无释义)';
-    const all = (Store.getVocab().length ? Store.getVocab() : FALLBACK).map((x) => x.meaning || x.mean).filter(Boolean);
-    const opts = shuffle([correct, ...pickRandom(all, correct, 3)]).slice(0, 4);
+    const meaning = w.meaning || w.mean || '(无释义)';
+    const phon = w.phonetic ? `/${esc(w.phonetic)}/` : '';
+    const poolAll = Store.getVocab().length ? Store.getVocab() : FALLBACK;
     const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
 
+    // 装配题目：「提示区 HTML + 正确文本 + 候选池」
+    let promptHtml, correct, optPool;
+    const isZhOpt = sub === 'wordzh' || sub === 'listenzh'; // 候选是中文释义
+    if (isZhOpt) {
+      correct = meaning;
+      optPool = poolAll.map((x) => x.meaning || x.mean).filter(Boolean);
+      promptHtml = sub === 'wordzh'
+        ? `<span class="choice-mode-tag">看单词，选中文释义</span><span class="choice-word" data-role="word">${esc(word)}</span>${phon ? `<div class="choice-phon">${phon}</div>` : ''}`
+        : `<span class="choice-mode-tag">听发音，选中文释义</span>`;
+    } else {
+      correct = word;
+      optPool = poolAll.map((x) => String(x.word || '')).filter((x) => x && x.toLowerCase() !== word.toLowerCase());
+      if (sub === 'fillblank') {
+        const exTxt = (w.example && typeof w.example === 'object') ? (w.example.en || '') : (w.example || '');
+        const sentenceHtml = exTxt
+          ? esc(exTxt.replace(new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '␀')).split('␀').join('<span class="fill-blank">______</span>')
+          : '';
+        promptHtml = sentenceHtml
+          ? `<span class="choice-mode-tag">选择单词，完成句子</span><div class="choice-sentence">${sentenceHtml}</div>`
+          : `<span class="choice-mode-tag">选词填空</span><div class="choice-meaning">${esc(meaning)}</div>`;
+      } else if (sub === 'listen') {
+        promptHtml = `<span class="choice-mode-tag">听发音，选正确单词</span>`;
+      } else {
+        promptHtml = `<span class="choice-mode-tag">看释义，选英文单词</span><div class="choice-meaning">${esc(meaning)}</div>`;
+      }
+    }
+    // 去重后取 4 个候选（大小写无关比对）
+    const opts = shuffle([correct, ...pickRandom(optPool, correct, 3)])
+      .filter((v, i, a) => a.findIndex((x) => String(x).toLowerCase() === String(v).toLowerCase()) === i)
+      .slice(0, 4);
+    const playable = sub === 'listen' || sub === 'listenzh';
+
     body.innerHTML = `
-      <div class="esc-fill">
+      <div class="esc-fill" data-mode="choice">
         <div class="fill-top">
           <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
+          <div class="esc-fill-progress-num"><span data-role="idx">${session.idx + 1}</span>/<span data-role="total">${session.queue.length}</span></div>
+        </div>
+        <div class="esc-submode-bar" data-role="submode">
+          ${CHOICE_SUBMODES.map(([m, ico, label]) => `<button class="esc-submode-btn${m === sub ? ' active' : ''}" data-m="${m}">${icon(ico)}<span>${label}</span></button>`).join('')}
         </div>
         <div class="fill-card" data-role="card">
           <div class="choice-prompt">
-            <span class="choice-word" data-role="word">${esc(word)}</span>
+            ${promptHtml}
             <button class="sq-play-btn" data-act="play" title="播放发音">${CHOICE_VOL_SVG}</button>
           </div>
           <div class="fill-letter-hint" data-role="hint"></div>
           <div class="choice-option-grid" data-role="opts">
-            ${opts.map((o, i) => `<button class="choice-opt" data-i="${i}" data-correct="${o === correct ? '1' : '0'}">${esc(o)}</button>`).join('')}
+            ${opts.map((o) => `<button class="choice-opt" data-correct="${String(o).toLowerCase() === String(correct).toLowerCase() ? '1' : '0'}">${esc(o)}</button>`).join('')}
           </div>
           <div class="fill-result" data-role="result"></div>
         </div>
@@ -912,7 +1015,21 @@
     const wordEl = body.querySelector('[data-role="word"]');
     let answered = false, hintUsed = false;
 
-    body.querySelector('[data-act="play"]').addEventListener('click', (e) => { e.stopPropagation(); Speech.speak(w.word || word); });
+    // 子模式切换条：切模式对当前词重渲染
+    body.querySelectorAll('.esc-submode-btn').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const m = b.dataset.m;
+        if (m === sub || answered) return;
+        session.choiceMode = m;
+        renderChoice(body, w);
+      });
+    });
+
+    const speakCur = () => Speech.speak(word);
+    body.querySelector('[data-act="play"]').addEventListener('click', (e) => { e.stopPropagation(); speakCur(); });
+    if (playable) setTimeout(speakCur, 260);
+
     body.querySelectorAll('.choice-opt').forEach((b) => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -933,12 +1050,13 @@
         setTimeout(next, ok ? 800 : 1200);
       });
     });
+
     const hint = () => {
-      if (answered || hintUsed) return;
+      if (answered || hintUsed || sub === 'listenzh') return; // 听音选义无可提示首字母
       hintUsed = true;
       const first = word.charAt(0) || '_';
       const rest = word.length > 1 ? '·'.repeat(word.length - 1) : '';
-      wordEl.innerHTML = `${esc(first)}<span class="choice-mask">${esc(rest)}</span>`;
+      if (wordEl) wordEl.innerHTML = `${esc(first)}<span class="choice-mask">${esc(rest)}</span>`;
       hintEl.innerHTML = `<span class="fill-letter-box revealed">${esc(first)}</span><span class="fill-letter-box">${esc('_'.repeat(Math.max(word.length - 1, 1)))}</span>`;
       hintEl.classList.add('show');
       hintBtn.disabled = true;
@@ -968,7 +1086,7 @@
     const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
 
     body.innerHTML = `
-      <div class="esc-fill">
+      <div class="esc-fill" data-mode="fill">
         <div class="fill-top">
           <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
         </div>
@@ -1142,7 +1260,7 @@
     const pct = session.queue.length ? (((session.idx + 1) / session.queue.length) * 100).toFixed(1) : 0;
 
     body.innerHTML = `
-      <div class="esc-fill">
+      <div class="esc-fill" data-mode="dictation">
         <div class="fill-top">
           <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
         </div>
@@ -1314,40 +1432,675 @@
     if (prev) prev.addEventListener('click', () => { if (session.idx > 0) { session.idx--; step(); } });
   }
 
-  // 全文回顾：展示整篇文章（只读，不评分）+ 7 种阅读风格切换
-  const READING_STYLES = [
-    { key: 'book', name: '书本' },
-    { key: 'magazine', name: '杂志' },
-    { key: 'newspaper', name: '报纸' },
-    { key: 'cute', name: '可爱' },
-    { key: 'pixel', name: '像素' },
-    { key: 'minimal', name: '极简' },
-    { key: 'classic', name: '典籍' }
-  ];
+  /* ================= 全文回顾 · 杂志风格（THE ENGLISH READER） =================
+     只保留杂志版式，移除其它阅读风格。全屏沉浸：隐藏弹层通用头部，杂志铺满。 */
+  let reviewCleanups = [];
+
+  // 生词释义气泡（移动端轻量固定弹层）
+  function showReviewBubble(word, meaning, practiceText) {
+    const old = document.querySelector('.rv-mag-bubble');
+    if (old) old.remove();
+    const b = document.createElement('div');
+    b.className = 'rv-mag-bubble';
+    b.innerHTML = `<span class="bubble-word">${esc(word)}</span>` +
+      `<span class="bubble-meaning">${esc(meaning)}</span>` +
+      (practiceText ? `<span class="bubble-practice-info">${esc(practiceText)}</span>` : '');
+    document.body.appendChild(b);
+    const dismiss = (ev) => {
+      if (!b.contains(ev.target)) { b.remove(); document.removeEventListener('click', dismiss); }
+    };
+    setTimeout(() => document.addEventListener('click', dismiss), 0);
+  }
+
+  // 杂志正文渲染：按空行分段，高亮生词（唯一风格，无风格切换条）
+  function buildMagazineParagraphs(container, originalText, vocabMap, onVocabClick) {
+    const paras = String(originalText || '').split(/\n\s*\n/);
+    const frag = document.createDocumentFragment();
+    paras.forEach((paraStr) => {
+      const p = document.createElement('div');
+      p.className = 'review-paragraph';
+      const regex = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
+      let m;
+      let hasVocab = false;
+      while ((m = regex.exec(paraStr)) !== null) {
+        if (m[1]) {
+          const word = m[1];
+          const lower = word.toLowerCase();
+          if (vocabMap[lower]) {
+            hasVocab = true;
+            const span = document.createElement('span');
+            span.className = 'rv-mag-vocab mastery-0';
+            span.textContent = word;
+            span.dataset.word = lower;
+            span.dataset.meaning = vocabMap[lower] || '';
+            span.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (onVocabClick) onVocabClick(lower, span);
+            });
+            p.appendChild(span);
+          } else {
+            p.appendChild(document.createTextNode(word));
+          }
+        } else if (m[2]) {
+          p.appendChild(document.createTextNode(m[2]));
+        }
+      }
+      if (!hasVocab) p.classList.add('no-vocab');
+      frag.appendChild(p);
+    });
+    container.appendChild(frag);
+  }
+
   function renderArticleReview(body, item) {
-    const current = Store.getReadingStyle();
-    const styleBar = READING_STYLES.map((s) =>
-      `<button class="esc-reading-style${s.key === current ? ' is-active' : ''}" data-style="${esc(s.key)}">${esc(s.name)}</button>`
-    ).join('');
+    // 生词图：遍历全部生词本，word -> meaning（本机生词无练习统计，mastery 记 0）
+    const reviewVocabMap = {};
+    const masteryMap = {};
+    Store.getVocab().forEach((w) => {
+      const key = String(w.word || '').toLowerCase().trim();
+      if (!key) return;
+      reviewVocabMap[key] = w.meaning || w.zh || '';
+      masteryMap[key] = { reviewCount: w.reviewCount || 0, lastReviewed: w.lastReviewed || null };
+    });
+
+    const originalText = item.originalText || item.text || '';
+    const wordCount = (originalText.match(/[A-Za-z][A-Za-z'-]*/g) || []).length;
+    const vocabCount = Object.keys(reviewVocabMap).length;
+    const reviewedVocabSet = new Set();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    // 标记为全屏杂志弹层：隐藏通用头部、去掉内边距（见 theme.css .esc-overlay-review）
+    if (overlay) overlay.classList.add('esc-overlay-review');
+
+    body.className = '';
     body.innerHTML = `
-      <p class="esc-quiz-q">${esc((item.title || (item.text || '').split('\n')[0] || '文章回顾').slice(0, 40))}</p>
-      <p class="esc-quiz-ex">${esc(item.date || '')}</p>
-      <div class="esc-reading-style-bar">${styleBar}</div>
-      <div class="esc-review-text"><div class="esc-rs-${esc(current)}">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div></div>
-      <button class="esc-btn esc-btn-primary esc-btn-block" style="margin-top:20px" data-act="done">完成</button>`;
-    UI.refreshIcons(body);
-    body.querySelector('[data-act="done"]').addEventListener('click', closeOverlay);
-    body.querySelectorAll('.esc-reading-style').forEach((b) => {
-      b.addEventListener('click', () => {
-        const style = b.getAttribute('data-style');
-        Store.setReadingStyle(style);
-        // 仅更新风格条高亮与文本容器 class，避免重建整段导致滚动跳动
-        body.querySelectorAll('.esc-reading-style').forEach((x) => x.classList.toggle('is-active', x === b));
-        const reviewText = body.querySelector('.esc-review-text');
-        reviewText.className = 'esc-review-text';
-        reviewText.innerHTML = `<div class="esc-rs-${esc(style)}">${esc(item.text || '去深度解析一篇英文文章，这里就能回顾全文。')}</div>`;
+      <div class="rv-mag-wrapper">
+        <div class="rv-mag-topbar">
+          <button class="rv-mag-back-btn" title="返回">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button class="rv-mag-tts-btn" title="朗读全文">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+          </button>
+        </div>
+        <div class="rv-mag-masthead">
+          <div class="rv-mag-masthead-title">THE ENGLISH READER</div>
+          <div class="rv-mag-masthead-issue">VOL. I · ISSUE ${esc(item.id || '1')}</div>
+        </div>
+        <div class="rv-mag-thick-thin-rule"></div>
+        <div class="rv-mag-kicker">FEATURE · FULL REVIEW</div>
+        <h1 class="rv-mag-headline">${esc(item.title || 'Full Review')}</h1>
+        <div class="rv-mag-deck">A comprehensive review of vocabulary and expressions in context.</div>
+        <div class="rv-mag-byline">By English Study Club <span class="rv-mag-byline-sep">·</span> ${esc(dateStr)}</div>
+        <div class="rv-mag-info review-info-bar">
+          <span class="info-item">WORDS ${wordCount}</span><span class="info-sep"></span>
+          <span class="info-item">VOCAB ${vocabCount}</span><span class="info-sep"></span>
+          <span class="info-item review-timer" id="reviewTimer">00:00</span>
+          <button class="filter-btn" title="仅看含生词的段落">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+          </button>
+        </div>
+        <div class="rv-mag-content review-content-fill"></div>
+        ${item.fullTranslation
+          ? `<div class="rv-mag-editor-note"><span class="note-label">Editor's Note · 中文翻译</span><br>${esc(item.fullTranslation).replace(/\n/g, '<br>')}</div>`
+          : ''}
+        <div class="rv-mag-progress review-progress-wrap">
+          <div class="fill-progress-track" style="height:4px;background:color-mix(in srgb, currentColor 12%, transparent);border-radius:2px;">
+            <div class="fill-progress-fill" style="width:0%;height:100%;background:var(--study-primary);border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <span class="fill-progress-text" style="display:block;margin-top:8px;font-size:10px;color:var(--study-muted-foreground);text-transform:uppercase;letter-spacing:1px;">Reviewed 0/${vocabCount}</span>
+        </div>
+        <button class="rv-mag-complete review-fill-bottom" title="完成阅读">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </button>
+        <div class="rv-mag-folio"><div class="rv-mag-folio-rule"></div>THE ENGLISH READER · PAGE 1 · ${esc(dateStr)}</div>
+      </div>`;
+
+    const contentEl = body.querySelector('.rv-mag-content');
+    const progressWrap = body.querySelector('.review-progress-wrap');
+    const fillEl = progressWrap.querySelector('.fill-progress-fill');
+    const txtEl = progressWrap.querySelector('.fill-progress-text');
+
+    // 生词点击：标记已回顾 + 更新进度 + 释义气泡
+    const onVocabClick = (word, span) => {
+      reviewedVocabSet.add(word);
+      span.classList.add('reviewed');
+      const pct = vocabCount ? Math.round((reviewedVocabSet.size / vocabCount) * 100) : 0;
+      fillEl.style.width = pct + '%';
+      txtEl.textContent = `Reviewed ${reviewedVocabSet.size}/${vocabCount}`;
+      const mm = masteryMap[word];
+      const practiceText = mm && mm.reviewCount > 0 ? `已练习 ${mm.reviewCount} 次` : '';
+      showReviewBubble(word, span.dataset.meaning || '', practiceText);
+    };
+    buildMagazineParagraphs(contentEl, originalText, reviewVocabMap, onVocabClick);
+
+    // 计时器
+    const timerStart = Date.now();
+    const timerId = setInterval(() => {
+      const el = document.getElementById('reviewTimer');
+      if (!el) return;
+      const t = Math.floor((Date.now() - timerStart) / 1000);
+      el.textContent = String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+    }, 1000);
+    reviewCleanups.push(() => clearInterval(timerId));
+
+    // 返回：取消朗读并关闭
+    body.querySelector('.rv-mag-back-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeOverlay();
+    });
+
+    // 朗读全文（切换 播放/暂停 图标）
+    const tts = body.querySelector('.rv-mag-tts-btn');
+    const speakerSVG = tts.innerHTML;
+    const pauseSVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    let isSpeaking = false;
+    tts.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isSpeaking) {
+        window.speechSynthesis.cancel(); isSpeaking = false; tts.innerHTML = speakerSVG;
+      } else {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(originalText);
+          u.lang = 'en-US'; u.rate = 0.85;
+          u.onend = () => { isSpeaking = false; tts.innerHTML = speakerSVG; };
+          window.speechSynthesis.speak(u);
+          isSpeaking = true; tts.innerHTML = pauseSVG;
+        }
+      }
+    });
+    reviewCleanups.push(() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); });
+
+    // 筛选：仅看含生词的段落
+    const filterBtn = body.querySelector('.filter-btn');
+    let filterMode = false;
+    filterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      filterMode = !filterMode;
+      contentEl.classList.toggle('filter-vocab-only', filterMode);
+      filterBtn.classList.toggle('active', filterMode);
+    });
+
+    // 完成：取消朗读并关闭
+    body.querySelector('.rv-mag-complete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeOverlay();
+    });
+  }
+
+  /* ===== 生词检验 · 文章完形填空（对齐网页端 vocab_quiz_ui） ===== */
+  let quizCleanups = [];
+
+  // 词形还原：把变形词映射回原词，以便命中生词本（与网页端一致）
+  function quizLemmatize(w, vocabMap) {
+    const irregular = {
+      'ran':'run','runs':'run','running':'run','runned':'run',
+      'ate':'eat','eats':'eat','eating':'eat','eaten':'eat',
+      'went':'go','goes':'go','going':'go','gone':'go',
+      'came':'come','comes':'come','coming':'come',
+      'took':'take','takes':'take','taking':'take','taken':'take',
+      'saw':'see','sees':'see','seeing':'see','seen':'see',
+      'gave':'give','gives':'give','giving':'give','given':'give',
+      'made':'make','makes':'make','making':'make',
+      'wrote':'write','writes':'write','writing':'write','written':'write',
+      'spoke':'speak','speaks':'speak','speaking':'speak','spoken':'speak',
+      'broke':'break','breaks':'break','breaking':'break','broken':'break',
+      'drove':'drive','drives':'drive','driving':'drive','driven':'drive',
+      'began':'begin','begins':'begin','beginning':'begin','begun':'begin',
+      'drank':'drink','drinks':'drink','drinking':'drink','drunk':'drink',
+      'sang':'sing','sings':'sing','singing':'sing','sung':'sing',
+      'swam':'swim','swims':'swim','swimming':'swim','swum':'swim',
+      'knew':'know','knows':'know','knowing':'know','known':'know',
+      'grew':'grow','grows':'grow','growing':'grow','grown':'grow',
+      'threw':'throw','throws':'throw','throwing':'throw','thrown':'throw',
+      'drew':'draw','draws':'draw','drawing':'draw','drawn':'draw',
+      'stole':'steal','steals':'steal','stealing':'steal','stolen':'steal',
+      'woke':'wake','wakes':'wake','waking':'wake','woken':'wake',
+      'froze':'freeze','freezes':'freeze','freezing':'freeze','frozen':'freeze',
+      'forgot':'forget','forgets':'forget','forgetting':'forget','forgotten':'forget',
+      'chose':'choose','chooses':'choose','choosing':'choose','chosen':'choose',
+      'hid':'hide','hides':'hide','hiding':'hide','hidden':'hide',
+      'bit':'bite','bites':'bite','biting':'bite','bitten':'bite',
+      'fell':'fall','falls':'fall','falling':'fall','fallen':'fall',
+      'flew':'fly','flies':'fly','flying':'fly','flown':'fly',
+      'blew':'blow','blows':'blow','blowing':'blow','blown':'blow',
+      'shook':'shake','shakes':'shake','shaking':'shake','shaken':'shake',
+      'met':'meet','meets':'meet','meeting':'meet',
+      'kept':'keep','keeps':'keep','keeping':'keep',
+      'slept':'sleep','sleeps':'sleep','sleeping':'sleep',
+      'left':'leave','leaves':'leave','leaving':'leave',
+      'spent':'spend','spends':'spend','spending':'spend',
+      'built':'build','builds':'build','building':'build',
+      'said':'say','says':'say','saying':'say',
+      'held':'hold','holds':'hold','holding':'hold',
+      'taught':'teach','teaches':'teach','teaching':'teach',
+      'thought':'think','thinks':'think','thinking':'think',
+      'bought':'buy','buys':'buy','buying':'buy',
+      'sent':'send','sends':'send','sending':'send',
+      'found':'find','finds':'find','finding':'find',
+      'felt':'feel','feels':'feel','feeling':'feel',
+      'won':'win','wins':'win','winning':'win',
+      'told':'tell','tells':'tell','telling':'tell',
+      'sold':'sell','sells':'sell','selling':'sell',
+      'lost':'lose','loses':'lose','losing':'lose',
+      'lay':'lie','lies':'lie','lying':'lie','lain':'lie',
+      'sat':'sit','sits':'sit','sitting':'sit',
+      'became':'become','becomes':'become','becoming':'become',
+      'led':'lead','leads':'lead','leading':'lead',
+      'rose':'rise','rises':'rise','rising':'rise','risen':'rise',
+      'better':'good','best':'good','worse':'bad','worst':'bad'
+    };
+    if (irregular[w]) return irregular[w];
+    if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+    if (w.endsWith('ves') && w.length > 4) return w.slice(0, -3) + 'f';
+    if (w.endsWith('es') && w.length > 4 && /sses|ches|shes|xes|zzes|oes$/.test(w)) return w.slice(0, -2);
+    if (w.endsWith('ing')) {
+      const base = w.slice(0, -3);
+      const doubled = base.replace(/(.)\1$/, '$1');
+      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
+      if (vocabMap[base] || vocabMap[base + 'e']) return base;
+      return doubled;
+    }
+    if (w.endsWith('ed')) {
+      const base = w.slice(0, -2);
+      const doubled = base.replace(/(.)\1$/, '$1');
+      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
+      if (vocabMap[base] || vocabMap[base + 'e']) return base;
+      return doubled;
+    }
+    if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) return w.slice(0, -1);
+    return w;
+  }
+
+  function quizBuildArticleHTML(tokens, blankEntries) {
+    let html = '';
+    let bi = 0;
+    tokens.forEach((token) => {
+      if (token.type === 'word') {
+        const entry = blankEntries[bi];
+        if (entry) {
+          html += `<span class="quiz-blank" data-blank-id="${esc(entry.id)}" data-target-word="${esc(entry.word)}">____</span>`;
+          bi++;
+        } else {
+          html += esc(token.value);
+        }
+      } else {
+        html += token.value.replace(/\n/g, '<br>');
+      }
+    });
+    return html;
+  }
+
+  function renderVocabQuiz(body, item) {
+    // 重启时清理上一轮残留绑定
+    quizCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    quizCleanups.length = 0;
+
+    // 生词图：当前选中生词本（词形还原后命中），对齐网页端
+    const vocabMap = {};
+    getSelectedVocab().forEach((w) => {
+      const key = String(w.word || '').toLowerCase().trim();
+      if (key) vocabMap[key] = w.meaning || '';
+    });
+
+    const articleText = item.originalText || item.text || '';
+    // 分词
+    const tokens = [];
+    const re = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
+    let mm;
+    while ((mm = re.exec(articleText)) !== null) {
+      if (mm[1]) tokens.push({ type: 'word', value: mm[1] });
+      else tokens.push({ type: 'nonword', value: mm[2] });
+    }
+
+    // 挖空条目
+    const blankEntries = [];
+    tokens.forEach((token) => {
+      if (token.type !== 'word') return;
+      const lower = token.value.toLowerCase();
+      const lemma = quizLemmatize(lower, vocabMap);
+      const matchedKey = vocabMap[lower] ? lower : (vocabMap[lemma] ? lemma : null);
+      if (matchedKey) {
+        blankEntries.push({
+          id: 'blank-' + blankEntries.length,
+          word: token.value,
+          targetWord: token.value,
+          matchedKey,
+          meaning: vocabMap[matchedKey],
+          filled: false,
+          filledWord: null
+        });
+      }
+    });
+
+    if (blankEntries.length === 0) { UI.toast('该文章中没有找到生词本中的单词'); closeOverlay(); return; }
+    if (blankEntries.length < 4) { UI.toast('生词太少，至少需要 4 个生词才能开始测验'); closeOverlay(); return; }
+
+    overlay && overlay.classList.add('esc-overlay-quiz');
+    body.className = '';
+
+    // 状态
+    let quizScore = 0;
+    let quizStreakCount = 0;
+    let quizMaxStreak = 0;
+    let quizCorrectCount = 0;
+    let quizWrongCount = 0;
+    const quizTotal = blankEntries.length;
+    let quizFilled = 0;
+    let quizCompleted = false;
+    let cachedTranslation = item.fullTranslation || null;
+    let translationLoading = false;
+    const checkedKeys = new Set();
+
+    function getComboBonus(streak) {
+      if (streak >= 20) return 10;
+      if (streak >= 10) return 5;
+      if (streak >= 5) return 3;
+      if (streak >= 3) return 2;
+      return 0;
+    }
+    function updateScore() {
+      const n = document.getElementById('quizScoreNum');
+      if (n) n.textContent = quizScore;
+      const badge = document.getElementById('quizScoreBadge');
+      if (badge) { badge.classList.remove('score-pop'); void badge.offsetWidth; badge.classList.add('score-pop'); }
+    }
+    function updateStreak() {
+      const sEl = document.getElementById('quizStreak');
+      if (!sEl) return;
+      if (quizStreakCount >= 10) { sEl.innerHTML = '🔥 ' + quizStreakCount + ' 连击！'; sEl.className = 'quiz-streak streak-10'; }
+      else if (quizStreakCount >= 5) { sEl.innerHTML = '🔥 ' + quizStreakCount + ' 连击！'; sEl.className = 'quiz-streak streak-5'; }
+      else if (quizStreakCount >= 3) { sEl.innerHTML = '🔥 ' + quizStreakCount + ' 连击！'; sEl.className = 'quiz-streak streak-3'; }
+      else { sEl.innerHTML = ''; sEl.className = 'quiz-streak'; }
+    }
+    function updateProgress() {
+      const fillEl = document.getElementById('quizProgressFill');
+      const textEl = document.getElementById('quizProgressText');
+      const pct = quizTotal ? (quizFilled / quizTotal * 100) : 0;
+      if (fillEl) fillEl.style.width = pct + '%';
+      if (textEl) textEl.textContent = quizFilled + ' / ' + quizTotal + ' 个空格';
+    }
+    function checkCompletion() {
+      if (quizFilled >= quizTotal && !quizCompleted) {
+        quizCompleted = true;
+        setTimeout(() => showSummary(), 420);
+      }
+    }
+    function findChipFor(word) {
+      const chips = document.querySelectorAll('.quiz-word-chip:not(.used)');
+      for (const c of chips) if (c.dataset.word === word) return c;
+      return null;
+    }
+    function fillBlank(blankEl, chipEl) {
+      const blankId = blankEl.dataset.blankId;
+      const targetWord = blankEl.dataset.targetWord;
+      const word = chipEl.dataset.word;
+      blankEl.textContent = word;
+      blankEl.classList.add('filled');
+      if (word === targetWord) {
+        blankEl.classList.add('correct');
+        blankEl.dataset.filledWord = word;
+        chipEl.classList.add('used');
+        const entry = blankEntries.find((e) => e.id === blankId);
+        if (entry) { entry.filled = true; entry.filledWord = word; }
+        quizStreakCount++;
+        if (quizStreakCount > quizMaxStreak) quizMaxStreak = quizStreakCount;
+        quizScore += 10 + getComboBonus(quizStreakCount);
+        quizCorrectCount++;
+        quizFilled++;
+        updateScore(); updateStreak(); updateProgress();
+        if (blankEl.scrollIntoView) blankEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        checkCompletion();
+      } else {
+        blankEl.classList.add('incorrect', 'shake');
+        quizStreakCount = 0;
+        quizWrongCount++;
+        updateStreak();
+        setTimeout(() => {
+          blankEl.classList.remove('incorrect', 'shake', 'filled');
+          blankEl.textContent = '____';
+        }, 650);
+      }
+    }
+    function removeFill(blankEl) {
+      const filledWord = blankEl.dataset.filledWord;
+      if (!filledWord) return;
+      blankEl.textContent = '____';
+      blankEl.classList.remove('filled', 'correct', 'incorrect', 'shake');
+      blankEl.dataset.filledWord = '';
+      const entry = blankEntries.find((e) => e.id === blankEl.dataset.blankId);
+      if (entry) { entry.filled = false; entry.filledWord = null; }
+      const usedChip = document.querySelector('.quiz-word-chip.used[data-word="' + CSS.escape(filledWord) + '"]');
+      if (usedChip) usedChip.classList.remove('used');
+      quizFilled = Math.max(0, quizFilled - 1);
+      updateProgress();
+    }
+
+    function showSummary() {
+      if (document.querySelector('.quiz-summary')) return;
+      const bank = document.getElementById('quizWordBank');
+      if (bank) bank.style.display = 'none';
+      const wrap = document.querySelector('.quiz-article-wrap');
+      if (wrap) wrap.style.maxHeight = '46vh';
+      const rate = quizTotal ? Math.round(quizCorrectCount / quizTotal * 100) : 0;
+      const isPerfect = quizWrongCount === 0 && quizCorrectCount === quizTotal;
+      if (isPerfect) quizScore += 20;
+      // 计分与统计对齐
+      if (session) { session.correct = quizCorrectCount; session.total = quizTotal; }
+      Store.recordWordsLearned(quizTotal);
+      Store.recordWordsMastered(quizCorrectCount);
+      Store.recordModuleActivity(MODULE_MAP.vocabQuiz || 'vocabQuiz', quizTotal);
+      const p = Store.getProgress();
+      Store.updateProgress({ correctRate: rate || p.correctRate });
+
+      let titleText = '太棒了，完成啦！';
+      let titleClass = '';
+      if (isPerfect) { titleText = '完美通关！'; titleClass = 'perfect'; }
+      else if (rate >= 90) titleText = '非常出色！';
+      else if (rate >= 70) titleText = '做得不错！';
+      else if (rate >= 50) titleText = '继续加油！';
+
+      const summary = document.createElement('div');
+      summary.className = 'quiz-summary';
+      summary.innerHTML = ''
+        + '<div class="quiz-summary-icon"><svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>'
+        + '<div class="quiz-summary-title ' + titleClass + '">' + titleText + '</div>'
+        + '<div class="quiz-summary-stats">'
+        +   '<div class="quiz-summary-stat"><span class="quiz-summary-val correct">' + quizCorrectCount + '</span><span class="quiz-summary-lbl">正确</span></div>'
+        +   '<div class="quiz-summary-stat"><span class="quiz-summary-val wrong">' + quizWrongCount + '</span><span class="quiz-summary-lbl">错误</span></div>'
+        +   '<div class="quiz-summary-stat"><span class="quiz-summary-val rate">' + rate + '%</span><span class="quiz-summary-lbl">正确率</span></div>'
+        +   '<div class="quiz-summary-stat"><span class="quiz-summary-val streak">' + quizMaxStreak + '</span><span class="quiz-summary-lbl">最高连击</span></div>'
+        +   '<div class="quiz-summary-stat"><span class="quiz-summary-val score">' + quizScore + '</span><span class="quiz-summary-lbl">得分</span></div>'
+        + '</div>'
+        + (isPerfect ? '<div class="quiz-perfect-badge">完美通关！零错误，奖励 +20 分</div>' : '')
+        + '<div class="quiz-summary-actions"><button class="quiz-summary-restart">再来一轮</button><button class="quiz-summary-back">返回</button></div>';
+      const containerEl = document.querySelector('.quiz-container');
+      if (containerEl) containerEl.appendChild(summary);
+      summary.querySelector('.quiz-summary-restart').addEventListener('click', (e) => {
+        e.stopPropagation();
+        renderVocabQuiz(body, item);
+      });
+      summary.querySelector('.quiz-summary-back').addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeOverlay();
+      });
+    }
+
+    // 搭建骨架
+    body.innerHTML = `
+      <div class="quiz-container">
+        <div class="quiz-header">
+          <button class="quiz-back-btn" aria-label="返回">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <h3>生词填空 · ${quizTotal} 个空格</h3>
+          <span class="quiz-score-badge" id="quizScoreBadge">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+            <span id="quizScoreNum">0</span>
+          </span>
+        </div>
+        <div class="quiz-progress-wrap">
+          <div class="quiz-progress-track"><div class="quiz-progress-fill" id="quizProgressFill" style="width:0%"></div></div>
+          <span class="quiz-progress-text" id="quizProgressText">0 / ${quizTotal} 个空格</span>
+        </div>
+        <div class="quiz-streak" id="quizStreak"></div>
+        <div class="quiz-article-wrap">
+          <div class="quiz-article">${quizBuildArticleHTML(tokens, blankEntries)}</div>
+          <div class="quiz-translation-area">
+            <button class="quiz-translation-toggle">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l3 8"/><path d="M9 8l-3 8"/><path d="M19 8l-3 8"/><path d="M15 8l3 8"/><line x1="4" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="20" y2="12"/></svg>
+              查看译文
+            </button>
+            <div class="quiz-translation" id="quizTranslation"></div>
+          </div>
+        </div>
+        <div class="quiz-word-bank" id="quizWordBank">
+          <div class="quiz-word-bank-label">词库（点选单词 → 点空格填入，或拖拽）</div>
+          <div class="quiz-word-chips"></div>
+        </div>
+      </div>`;
+
+    // 返回
+    const backBtn = body.querySelector('.quiz-back-btn');
+    backBtn.addEventListener('click', (e) => { e.stopPropagation(); closeOverlay(); });
+    const escHandler = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeOverlay(); } };
+    document.addEventListener('keydown', escHandler);
+    quizCleanups.push(() => document.removeEventListener('keydown', escHandler));
+
+    // 译文切换（保留 SVG 图标，与网页端一致）
+    const transBtn = body.querySelector('.quiz-translation-toggle');
+    const transEl = document.getElementById('quizTranslation');
+    const TRANS_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l3 8"/><path d="M9 8l-3 8"/><path d="M19 8l-3 8"/><path d="M15 8l3 8"/><line x1="4" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="20" y2="12"/></svg>';
+    const setTransText = (label) => { transBtn.innerHTML = TRANS_ICON + label; };
+    transBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (transEl.classList.contains('show')) {
+        transEl.classList.remove('show');
+        setTransText('查看译文');
+      } else if (cachedTranslation) {
+        transEl.textContent = cachedTranslation;
+        transEl.classList.add('show');
+        setTransText('隐藏译文');
+      } else {
+        transEl.textContent = '暂无译文';
+        transEl.classList.add('show');
+        setTransText('隐藏译文');
+      }
+    });
+
+    // 空格槽位：点选词填入 / 点击已填空取消
+    const blankEls = Array.from(body.querySelectorAll('.quiz-blank'));
+    let selectedChip = null;
+    blankEls.forEach((blankEl) => {
+      const onBlankClick = (e) => {
+        e.stopPropagation();
+        if (blankEl.classList.contains('filled')) { removeFill(blankEl); return; }
+        if (selectedChip && !selectedChip.classList.contains('used')) {
+          fillBlank(blankEl, selectedChip);
+          selectedChip.classList.remove('selected');
+          selectedChip = null;
+        }
+      };
+      blankEl.addEventListener('click', onBlankClick);
+      quizCleanups.push(() => blankEl.removeEventListener('click', onBlankClick));
+    });
+
+    // 词库 chips
+    const chipsWrap = body.querySelector('.quiz-word-chips');
+    const shuffled = blankEntries.slice().sort(() => Math.random() - 0.5);
+    shuffled.forEach((entry, index) => {
+      const chip = document.createElement('span');
+      chip.className = 'quiz-word-chip';
+      chip.textContent = entry.word;
+      chip.dataset.word = entry.word;
+      chip.dataset.blankId = entry.id;
+      chip.style.animationDelay = (index * 0.05) + 's';
+      chipsWrap.appendChild(chip);
+
+      // 点选（移动端无拖拽时的可靠填入方式）
+      const onChipClick = (e) => {
+        e.stopPropagation();
+        if (chip.classList.contains('used')) return;
+        if (selectedChip === chip) { selectedChip.classList.remove('selected'); selectedChip = null; return; }
+        if (selectedChip) selectedChip.classList.remove('selected');
+        selectedChip = chip;
+        chip.classList.add('selected');
+        const lower = entry.word.toLowerCase();
+        const lemma = quizLemmatize(lower, vocabMap);
+        const mk = vocabMap[lower] ? lower : (vocabMap[lemma] ? lemma : null);
+        const c = document.querySelector('.quiz-word-bubble');
+        if (c) c.remove();
+        const bubble = document.createElement('div');
+        bubble.className = 'quiz-word-bubble';
+        bubble.textContent = mk ? vocabMap[mk] : '(无释义)';
+        const rect = chip.getBoundingClientRect();
+        bubble.style.left = '16px';
+        bubble.style.right = '16px';
+        bubble.style.bottom = (window.innerHeight - rect.bottom + 52) + 'px';
+        document.body.appendChild(bubble);
+        setTimeout(() => { const b = document.querySelector('.quiz-word-bubble'); if (b) b.remove(); }, 2200);
+      };
+      chip.addEventListener('click', onChipClick);
+      quizCleanups.push(() => chip.removeEventListener('click', onChipClick));
+
+      // 拖拽（移动端触摸拖拽填入）
+      let touchGhost = null, sx = 0, sy = 0, dragging = false, ox = 0, oy = 0;
+      const ts = (e) => {
+        if (e.touches.length !== 1 || chip.classList.contains('used')) return;
+        const t = e.touches[0]; const r = chip.getBoundingClientRect();
+        sx = t.clientX; sy = t.clientY; ox = t.clientX - r.left; oy = t.clientY - r.top; dragging = false;
+      };
+      const tm = (e) => {
+        if (e.touches.length !== 1 || chip.classList.contains('used')) return;
+        const t = e.touches[0];
+        if (!dragging && (Math.abs(t.clientX - sx) > 8 || Math.abs(t.clientY - sy) > 8)) {
+          dragging = true;
+          const r = chip.getBoundingClientRect();
+          touchGhost = chip.cloneNode(true);
+          touchGhost.className = 'quiz-word-chip dragging-ghost';
+          touchGhost.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;pointer-events:none;opacity:.85;z-index:1000;';
+          document.body.appendChild(touchGhost);
+        }
+        if (dragging) {
+          e.preventDefault();
+          if (touchGhost) { touchGhost.style.left = (t.clientX - ox) + 'px'; touchGhost.style.top = (t.clientY - oy) + 'px'; }
+          const el = document.elementFromPoint(t.clientX, t.clientY);
+          body.querySelectorAll('.quiz-blank').forEach((b) => b.classList.remove('drag-over'));
+          if (el) { const bl = el.closest && el.closest('.quiz-blank'); if (bl && !bl.classList.contains('filled')) bl.classList.add('drag-over'); }
+        }
+      };
+      const te = (e) => {
+        if (touchGhost) { touchGhost.remove(); touchGhost = null; }
+        body.querySelectorAll('.quiz-blank').forEach((b) => b.classList.remove('drag-over'));
+        if (dragging) {
+          const t = e.changedTouches && e.changedTouches[0];
+          if (t) {
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+            if (el) {
+              const bl = el.closest && el.closest('.quiz-blank');
+              if (bl && !bl.classList.contains('filled')) fillBlank(bl, chip);
+            }
+          }
+        }
+        dragging = false;
+      };
+      const tc = () => { if (touchGhost) { touchGhost.remove(); touchGhost = null; } dragging = false; body.querySelectorAll('.quiz-blank').forEach((b) => b.classList.remove('drag-over')); };
+      chip.addEventListener('touchstart', ts, { passive: true });
+      chip.addEventListener('touchmove', tm, { passive: false });
+      chip.addEventListener('touchend', te);
+      chip.addEventListener('touchcancel', tc);
+      quizCleanups.push(() => {
+        chip.removeEventListener('touchstart', ts);
+        chip.removeEventListener('touchmove', tm);
+        chip.removeEventListener('touchend', te);
+        chip.removeEventListener('touchcancel', tc);
       });
     });
+
+    updateScore(); updateStreak(); updateProgress();
   }
 
   /* ================= 学习统计 / 学习计划（对齐桌面端 stats_detail / plan_detail） ================= */
