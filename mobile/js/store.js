@@ -170,8 +170,17 @@
   // 桌面端生词 shape：{ word, meaning, pos, context, timestamp }
   // 移动端视图 shape：{ id, notebookId, word, pos, zh, meaning, addedAt, createdAt, example }
   // 注意：不再包含 status（桌面端无按单词的掌握状态）；meaning 为 zh 的别名，供各视图按桌面端字段名直接使用
+  // context 兼容两种形状：字符串（移动端）或 { en, zh }（网页版/部分路径），统一规范化为字符串，避免 [object Object]
+  function _normExample(ctx) {
+    if (!ctx) return '';
+    if (typeof ctx === 'string') return ctx;
+    if (typeof ctx === 'object') return ctx.en || ctx.zh || ctx.text || '';
+    return '';
+  }
   function _wordToVM(nbId, w) {
-    const ts = w.timestamp || Date.now();
+    // 注意：raw 无 timestamp 时保持 undefined（与改动前 raw 行为一致，避免误判"今日新增/新学"）
+    const ts = w.timestamp;
+    const exObj = (w.context && typeof w.context === 'object') ? w.context : null;
     return {
       id: nbId + '::' + (w.word || '').toLowerCase(),
       notebookId: nbId,
@@ -181,7 +190,8 @@
       meaning: w.meaning || '',
       addedAt: ts,
       createdAt: ts,
-      example: w.context || ''
+      example: _normExample(w.context),
+      exampleZh: exObj ? (exObj.zh || '') : (w.contextZh || '')
     };
   }
   function _parseId(id) {
@@ -280,10 +290,13 @@
     const first = Object.keys(d.notebooks)[0];
     return first || null;
   }
-  // 当前生词本的完整单词数组（含 word/pos/meaning/createdAt 等，供移动端列表与掌握度计算）
+  // 当前生词本的完整单词数组（经 _wordToVM 规范化，example/exampleZh 均为字符串，
+  // 避免对象形状的 context/example 被渲染成 [object Object]）
   function getNotebookWords(id) {
     const d = _getVocabData();
-    return (d.notebooks[id] && d.notebooks[id].words || []).slice();
+    const nb = d.notebooks[id];
+    if (!nb) return [];
+    return (nb.words || []).map((w) => _wordToVM(id, w));
   }
   // 新建生词本（对齐桌面端 VocabData.createNotebook）：重名报错，成功后返回 {success,id}
   function createNotebook(name) {

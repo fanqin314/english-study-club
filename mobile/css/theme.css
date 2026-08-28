@@ -437,6 +437,51 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   to { opacity: 1; transform: none; }
 }
 .esc-spanel[hidden] { display: none; }
+/* 面板加载态：旋转环 + 跳动点 + 阶段进程文字（Apple HIG 风格） */
+.esc-panel-loading {
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+  padding: 4px 2px; color: var(--study-muted-foreground);
+}
+.esc-pl-row { display: flex; align-items: center; gap: 10px; }
+.esc-pl-spin {
+  position: relative; width: 26px; height: 26px; flex: 0 0 auto;
+  border-radius: 999px;
+  border: 2.5px solid color-mix(in srgb, var(--study-primary) 22%, transparent);
+  border-top-color: var(--study-primary);
+  animation: esc-spin .8s linear infinite;
+}
+.esc-pl-spin::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 999px;
+  border: 2px solid transparent; border-bottom-color: var(--study-accent);
+  animation: esc-spin 1.2s cubic-bezier(.5,.1,.5,.9) infinite reverse;
+}
+.esc-pl-dots { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; }
+.esc-pl-dots i {
+  width: 5px; height: 5px; border-radius: 999px; background: var(--study-primary);
+  display: inline-block; animation: esc-dot-jump 1.1s var(--study-ease) infinite;
+}
+.esc-pl-dots i:nth-child(2) { animation-delay: .15s; background: var(--study-accent); }
+.esc-pl-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes esc-dot-jump {
+  0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+.esc-pl-step {
+  font-size: 12px; line-height: 1.5; color: var(--study-muted-foreground);
+  min-height: 18px; transition: opacity .25s var(--study-ease);
+}
+.esc-pl-step b { color: var(--study-foreground); font-weight: 600; }
+.esc-pl-bar { width: 100%; height: 4px; border-radius: 3px; background: var(--study-muted); overflow: hidden; }
+.esc-pl-bar > span {
+  display: block; height: 100%; width: 30%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--study-primary), var(--study-accent));
+  animation: esc-pl-indet 1.4s var(--study-ease) infinite;
+}
+@keyframes esc-pl-indet {
+  0% { transform: translateX(-110%); } 100% { transform: translateX(360%); }
+}
+.esc-panel-loading.is-error { color: var(--study-danger, #EF4444); }
+.esc-panel-loading.is-error .esc-pl-spin { display: none; }
 .esc-spanel-empty { color: var(--study-muted-foreground); font-size: 12px; }
 
 /* 词性面板 */
@@ -532,6 +577,35 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 @keyframes esc-fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .esc-ft-item.is-tapped .esc-ft-text { color: var(--study-accent); }
 .esc-ft-item.is-tapped { animation: esc-pop .26s ease; }
+/* 全文翻译：流动进度条 + 进行中脉冲 + 骨架占位 */
+.esc-ft.is-loading .esc-ft-caret { display: none; }
+.esc-ft-loading-ico {
+  width: 14px; height: 14px; margin-left: auto; color: var(--study-accent);
+  border: 2px solid color-mix(in srgb, var(--study-accent) 30%, transparent);
+  border-top-color: var(--study-accent); border-radius: 999px;
+  animation: esc-spin .8s linear infinite;
+}
+.esc-ft-progress-bar {
+  background: linear-gradient(90deg, var(--study-accent), color-mix(in srgb, var(--study-accent) 60%, #fff));
+  background-size: 200% 100%;
+  animation: esc-ft-flow 1.2s linear infinite;
+}
+@keyframes esc-ft-flow { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.esc-ft-skeleton {
+  display: flex; gap: 10px; align-items: center; padding: 9px 4px;
+  border-bottom: 1px dashed var(--study-border);
+}
+.esc-ft-skeleton .sk-seq {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 999px;
+  background: var(--study-muted);
+}
+.esc-ft-skeleton .sk-line {
+  flex: 1 1 auto; height: 11px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--study-muted) 25%, color-mix(in srgb, var(--study-muted) 60%, var(--study-card)) 37%, var(--study-muted) 63%);
+  background-size: 400% 100%;
+  animation: esc-ft-shimmer 1.3s ease infinite;
+}
+@keyframes esc-ft-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* 句子内可点按单词（对齐桌面端点单词加入生词本） */
 .esc-sw {
@@ -776,11 +850,15 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   width: 100%; height: 100%; border-radius: var(--study-radius-lg);
 }
 #m-vocab-list .esc-word.is-collapsed .esc-word-body {
-  grid-template-rows: 0fr; opacity: 0; padding: 0;
+  grid-template-rows: 0fr;
+}
+#m-vocab-list .esc-word.is-collapsed .esc-word-bwrap {
+  opacity: 0; transform: translateY(-4px);
 }
 @media (prefers-reduced-motion: reduce) {
   .esc-word-row > .esc-word { transition: background-color .15s ease, box-shadow .15s ease; }
-  .esc-word-body { transition: opacity .15s ease; }
+  .esc-word-body { transition: grid-template-rows .15s ease; }
+  .esc-word-bwrap { transition: none; }
   .esc-nav-item, .esc-nav-item::before, .esc-nav-item .esc-ico { transition: none; }
   .esc-nav-item.is-active .esc-ico { transform: none; }
 }
@@ -794,15 +872,25 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word-inner { display: flex; }
 .esc-word-accent { width: 4px; background: var(--study-primary); flex: 0 0 auto; border-radius: var(--study-radius-lg) 0 0 var(--study-radius-lg); }
 .esc-word-body {
-  flex: 1 1 auto; padding: 16px; min-width: 0;
-  /* 用 grid 0fr→1fr 让内容高度平滑展开/收起（配合 bwrap 裁剪），避免 display:none 恢复瞬间
-     在窄宽度下换行撑高把整行向下弹；opacity 同步淡入淡出 */
+  flex: 1 1 auto; min-width: 0;
+  /* 高度只由 grid 行轨道承担；padding 恒定放在内层 bwrap，不参与过渡，
+     避免高度与内边距双重动画造成的"上下颤抖" */
   display: grid; grid-template-rows: 1fr;
-  transition: grid-template-rows .34s cubic-bezier(0.16, 1, 0.3, 1),
-              padding .34s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity .22s ease;
+  transition: grid-template-rows .34s cubic-bezier(0.16, 1, 0.3, 1);
+  /* 隔离重排/重绘，长列表多次展开收起不污染外部布局 */
+  contain: layout style paint;
 }
-.esc-word-bwrap { min-height: 0; overflow: hidden; }
+.esc-word-bwrap {
+  min-height: 0; overflow: hidden;
+  padding: 16px; box-sizing: border-box;
+  /* 内容淡入淡出与高度收放同步同源曲线；轻微位移让展开不生硬、收起不空伸 */
+  opacity: 1; transform: translateY(0);
+  transition: opacity .26s cubic-bezier(0.16, 1, 0.3, 1),
+              transform .34s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* 仅展开态提前建立合成层，收起态（列表中占多数）不常驻，避免长列表开销 */
+.esc-word.is-expanded .esc-word-body { will-change: grid-template-rows; }
+.esc-word.is-expanded .esc-word-bwrap { will-change: opacity, transform; }
 .esc-word-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .esc-word-name { font-size: 18px; font-weight: 700; font-family: var(--study-font-serif); color: var(--study-foreground); margin: 0; }
 .esc-word-phon { font-size: 12px; color: var(--study-muted-foreground); }
@@ -824,9 +912,10 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word-pron .esc-ico { width: 14px; height: 14px; }
 .esc-dot { width: 4px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--study-muted-foreground) 30%, transparent); }
 .esc-word-date { font-size: 12px; color: var(--study-muted-foreground); }
-/* 编辑/删除图标按钮：默认隐藏，仅展开时显示在标题行右侧 */
-.esc-word-actions { display: none; gap: 8px; flex: 0 0 auto; align-self: flex-start; }
-.esc-word.is-expanded .esc-word-actions { display: flex; }
+/* 操作按钮组：常驻显示在标题行右侧；发音按钮始终显示，example/edit/delete 仅展开时显示（排在发音左侧） */
+.esc-word-actions { display: flex; gap: 8px; flex: 0 0 auto; align-self: flex-start; }
+.esc-word-actions > .esc-word-act:not([data-act="pron"]) { display: none; }
+.esc-word.is-expanded .esc-word-actions > .esc-word-act:not([data-act="pron"]) { display: inline-flex; }
 .esc-word-act {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; padding: 0; border-radius: 999px;
@@ -1315,8 +1404,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 /* ---------- 16. Modal / Overlay（练习、详情） ---------- */
 .esc-overlay {
   position: absolute; inset: 0; z-index: 50;
-  background: color-mix(in srgb, var(--study-background) 96%, transparent);
-  backdrop-filter: blur(4px);
+  background: var(--study-background);
   display: flex; flex-direction: column;
   animation: esc-fade .15s ease;
 }
@@ -1328,6 +1416,8 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   position: fixed; top: 0; bottom: 0; left: 0; right: 0;
   max-width: 448px; margin: 0 auto;
   height: 100%; height: 100dvh;
+  /* 关键：建立纵向 flex，让 .esc-overlay-body 的 flex:1 + overflow-y:auto 生效，内容超长时可滚动 */
+  display: flex; flex-direction: column;
 }
 .esc-overlay-title { font-size: 16px; font-weight: 600; }
 
@@ -2208,7 +2298,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word.is-selected .esc-word-accent { background: var(--study-primary); }
 /* 批量模式下隐藏编辑/删除/发音，整卡可点选 */
 #m-vocab-list.is-batch-mode .esc-word-actions,
-#m-vocab-list.is-batch-mode .esc-word-pron { display: none; }
+#m-vocab-list.is-batch-mode .esc-word-foot .esc-word-act { display: none; }
 #m-vocab-list.is-batch-mode .esc-word { cursor: pointer; }
 #m-vocab-list.is-batch-mode .esc-word:active { background: color-mix(in srgb, var(--study-primary) 6%, var(--study-card)); }
 /* 顶部垃圾桶：进入批量模式的高亮态 */

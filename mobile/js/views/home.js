@@ -212,8 +212,11 @@
     backdrop.appendChild(sheet);
     document.body.appendChild(backdrop);
     currentSheet = backdrop;
+    // 长按在手指仍按下时打开弹层，抬起瞬间合成的 click 会命中 backdrop 导致立刻关闭；
+    // 用极短开门限忽略打开后 ~400ms 内的误触（用户主动点遮罩关闭不受影响）
+    const openedAt = Date.now();
 
-    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeHlSheet(); });
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop && Date.now() - openedAt > 400) closeHlSheet(); });
     sheet.querySelector('[data-act="close"]').addEventListener('click', closeHlSheet);
 
     // 应用高亮（仅保存勾选状态）
@@ -356,6 +359,32 @@
     const zh = s.zh || '';
     if (!zh) return '<div class="esc-spanel-empty">暂无翻译</div>';
     return `<div class="esc-translation">${esc(zh)}</div>`;
+  }
+
+  // 面板加载态（带进程感）：旋转环 + 跳动点 + 阶段文字 + 不确定进度条
+  // steps 为各阶段提示文案；若调用方传入 onStep 回调，可随真实进展推进（此处仅按时间循环展示进程感）
+  const PANEL_STEPS = ['正在分析句子结构…', '提取关键语法成分…', '归纳句法功能…', '生成解析结果…'];
+  function panelLoadingHTML() {
+    return `<div class="esc-panel-loading">
+      <div class="esc-pl-row">
+        <span class="esc-pl-spin"></span>
+        <span class="esc-pl-dots"><i></i><i></i><i></i></span>
+      </div>
+      <div class="esc-pl-step" data-pl-step>正在分析句子结构…</div>
+      <div class="esc-pl-bar"><span></span></div>
+    </div>`;
+  }
+  // 让面板加载态的阶段文字循环推进，营造「结果进程」观感；返回清理函数
+  function startPanelSteps(panel) {
+    const stepEl = panel.querySelector('[data-pl-step]');
+    if (!stepEl) return () => {};
+    let i = 0;
+    const t = setInterval(() => {
+      i = (i + 1) % PANEL_STEPS.length;
+      stepEl.style.opacity = '0';
+      setTimeout(() => { stepEl.innerHTML = '<b>' + PANEL_STEPS[i] + '</b>'; stepEl.style.opacity = '1'; }, 180);
+    }, 1100);
+    return () => clearInterval(t);
   }
 
   // 英文句子拆成可点按单词（对齐桌面端「点单词加入生词本」）
@@ -870,7 +899,8 @@
     const arr = state.last && state.last.sentences;
     if (!en || !arr || Number.isNaN(idx) || !arr[idx]) return;
     btn.dataset.loading = '1';
-    panel.innerHTML = '<div class="esc-spanel-empty">AI 解析中...</div>';
+    panel.innerHTML = panelLoadingHTML();
+    const stopSteps = startPanelSteps(panel);
     try {
       const upd = await API.refetch(en, act);
       const merged = Object.assign({}, arr[idx], upd);
@@ -889,8 +919,9 @@
       }
       if (panel.querySelector('.esc-spanel-empty')) UI.toast('该句此项暂未获取到，请稍后重试');
     } catch (e) {
-      panel.innerHTML = '<div class="esc-spanel-empty">获取失败，请点击重试</div>';
+      panel.innerHTML = '<div class="esc-panel-loading is-error"><div class="esc-pl-step" style="opacity:1"><b>获取失败，请点击重试</b></div></div>';
     } finally {
+      stopSteps();
       delete btn.dataset.loading;
     }
   }
@@ -912,18 +943,22 @@
   }
 
   // 渲染全文翻译区（传入按 idx 排列的句子数组；逐句解析中实时调用，随完成累计追加）
-  function renderFullTranslationFromArr(root, arr) {
+  // opts.loading=true 时：自动展开并显示流动进度 + 骨架占位，营造「翻译进行中」动画
+  function renderFullTranslationFromArr(root, arr, opts) {
+    opts = opts || {};
     const el = root.querySelector('#m-fulltrans');
     if (!el) return;
     const list = arr || [];
+    const total = list.length;
     const done = list.reduce((acc, st) => acc + (((st && (st.zh || st.translation || '')) ? 1 : 0)), 0);
+    const loading = !!opts.loading && done < total;
 
     let cache = _ftCache.get(el);
     if (!cache) {
       el.innerHTML =
         `<div class="esc-ft">
           <button type="button" class="esc-ft-head" aria-expanded="false">
-            ${icon('languages')}<span>全文翻译</span>${icon('chevron-down', 'esc-ft-caret')}
+            ${icon('languages')}<span>全文翻译</span><span class="esc-ft-loading-ico" hidden></span>${icon('chevron-down', 'esc-ft-caret')}
           </button>
           <div class="esc-ft-body" hidden>
             <div class="esc-ft-note">点击任一条目跳转到对应句子并展开翻译</div>
@@ -935,9 +970,13 @@
         wrap: el.querySelector('.esc-ft-progress-wrap'),
         listEl: el.querySelector('.esc-ft-list'),
         items: new Map(),
+        skeletons: [],
         ft: el.querySelector('.esc-ft'),
         head: el.querySelector('.esc-ft-head'),
-        body: el.querySelector('.esc-ft-body')
+        body: el.querySelector('.esc-ft-body'),
+        caret: el.querySelector('.esc-ft-caret'),
+        loadIco: el.querySelector('.esc-ft-loading-ico'),
+        autoOpened: false
       };
       _ftCache.set(el, cache);
       // 折叠头：点击展开/收起（仅绑定一次）
@@ -947,11 +986,32 @@
         cache.head.setAttribute('aria-expanded', open ? 'true' : 'false');
         cache.head.classList.toggle('is-open', !cache.body.hidden);
         cache.ft.classList.toggle('is-open', !cache.body.hidden);
+        if (!cache.body.hidden) cache.autoOpened = true; // 用户手动展开，完成后不再自动收起
       });
     }
 
+    // loading 态：展开 body + 旋转图标 + 流动进度；完成时收起并复位
+    if (loading) {
+      if (cache.body.hidden) { cache.body.hidden = false; cache.autoOpened = false; }
+      cache.ft.classList.add('is-loading', 'is-open');
+      cache.head.classList.add('is-open');
+      cache.head.setAttribute('aria-expanded', 'true');
+      if (cache.caret) cache.caret.hidden = true;
+      if (cache.loadIco) cache.loadIco.hidden = false;
+    } else {
+      cache.ft.classList.remove('is-loading');
+      if (cache.caret) cache.caret.hidden = false;
+      if (cache.loadIco) cache.loadIco.hidden = true;
+      if (!cache.autoOpened) { // 非用户手动展开 → 解析完成自动收起
+        cache.body.hidden = true;
+        cache.head.classList.remove('is-open');
+        cache.head.setAttribute('aria-expanded', 'false');
+        cache.ft.classList.remove('is-open');
+      }
+    }
+
     // 进度条
-    cache.wrap.innerHTML = done ? ftProgressHTML(list.length, done) : '';
+    cache.wrap.innerHTML = ftProgressHTML(total, done);
 
     // 增量：仅补新出现的条目；已存在条目原位保留，不重绘不闪
     list.forEach((st, idx) => {
@@ -992,6 +1052,20 @@
         pulseEl(card);
       });
     });
+
+    // 骨架占位：loading 时补齐至 pending 个，完成后清空
+    const pending = loading ? (total - done) : 0;
+    while (cache.skeletons.length > pending) {
+      const sk = cache.skeletons.pop();
+      if (sk && sk.parentNode) sk.parentNode.removeChild(sk);
+    }
+    while (cache.skeletons.length < pending) {
+      const sk = document.createElement('div');
+      sk.className = 'esc-ft-skeleton';
+      sk.innerHTML = '<span class="sk-seq"></span><span class="sk-line"></span>';
+      cache.listEl.appendChild(sk);
+      cache.skeletons.push(sk);
+    }
 
     UI.refreshIcons(el);
   }
@@ -1046,6 +1120,9 @@
 
     // 无 Key 或整篇解析：沿用一次性渲染
     if (noKey || !usePerSentence) {
+      // 解析期间先显示全文翻译加载骨架（用本地分句数量占位，营造进程感）
+      const preScaffold = API.scaffold(text);
+      renderFullTranslationFromArr(root, new Array(preScaffold.length).fill(null), { loading: true });
       const res = await API.parse(text);
       state.parsing = false;
       parseBtn.disabled = false;
@@ -1073,11 +1150,13 @@
     const cardsEl = $('#m-cards');
     cardsEl.innerHTML = scaffold.map(sentenceCard).join('');
     bindSentenceCards(root);
+    // 全文翻译区进入加载态：展开 + 流动进度 + 骨架占位
+    renderFullTranslationFromArr(root, new Array(scaffold.length).fill(null), { loading: true });
 
     const fullArr = new Array(scaffold.length).fill(null);
     const count = await API.parseStream(text, fast, (idx, full) => {
       fullArr[idx] = full;
-      renderFullTranslationFromArr(root, fullArr); // 每完成一句翻译 → 全文翻译区实时累计
+      renderFullTranslationFromArr(root, fullArr, { loading: true }); // 每完成一句翻译 → 全文翻译区实时累计 + 保持加载态
       const els = cardsEl.querySelectorAll('.esc-sentence');
       if (els && els[idx]) {
         const tmp = document.createElement('div');
