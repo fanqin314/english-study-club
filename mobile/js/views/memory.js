@@ -654,7 +654,7 @@
 
   function openOverlay() {
     overlay = document.createElement('div');
-    overlay.className = 'esc-overlay';
+    overlay.className = 'esc-overlay esc-overlay-fill';
     overlay.innerHTML = `
       <div class="esc-overlay-head">
         <button class="esc-icon-btn" data-act="close" aria-label="关闭">${icon('x')}</button>
@@ -1538,6 +1538,7 @@
           <span class="info-item review-timer" id="reviewTimer">00:00</span>
           <button class="filter-btn" title="仅看含生词的段落">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <span>仅看生词</span>
           </button>
         </div>
         <div class="rv-mag-content review-content-fill"></div>
@@ -1552,6 +1553,7 @@
         </div>
         <button class="rv-mag-complete review-fill-bottom" title="完成阅读">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span class="rv-mag-complete-label">完成阅读</span>
         </button>
         <div class="rv-mag-folio"><div class="rv-mag-folio-rule"></div>THE ENGLISH READER · PAGE 1 · ${esc(dateStr)}</div>
       </div>`;
@@ -1568,6 +1570,12 @@
       const pct = vocabCount ? Math.round((reviewedVocabSet.size / vocabCount) * 100) : 0;
       fillEl.style.width = pct + '%';
       txtEl.textContent = `Reviewed ${reviewedVocabSet.size}/${vocabCount}`;
+      const completeBtn = body.querySelector('.rv-mag-complete');
+      const completeLabel = completeBtn.querySelector('.rv-mag-complete-label');
+      if (reviewedVocabSet.size >= vocabCount && vocabCount > 0) {
+        completeBtn.classList.add('done');
+        if (completeLabel) completeLabel.textContent = '全部回顾完成';
+      }
       const mm = masteryMap[word];
       const practiceText = mm && mm.reviewCount > 0 ? `已练习 ${mm.reviewCount} 次` : '';
       showReviewBubble(word, span.dataset.meaning || '', practiceText);
