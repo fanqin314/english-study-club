@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light" data-fontsize="medium"><head>
+<html lang="zh-CN" data-theme="light" data-fontsize="medium" style="--esc-kb: 0px;"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>英研社 · 移动端</title>
@@ -30,7 +30,7 @@
   <!-- 图标（lucide CDN；离线时图标不显示但布局不受影响） -->
   <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
   <!-- 自包含主题与组件样式（还原「深度解析 等 5 个设计」稿） -->
-  <link rel="stylesheet" href="css/theme.css?v=20260828d">
+  <link rel="stylesheet" href="css/theme.css?v=20260829c">
 </head>
 <body>
   <div class="esc-app">
@@ -68,13 +68,87 @@
           <button id="m-save" class="esc-pill"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="save" aria-hidden="true" class="lucide lucide-save esc-ico"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7"></path></svg><span>保存分析</span></button>
         </div>
 
-        <div id="m-stats"></div>
+        <div id="m-stats">
+      <div class="esc-grid-3">
+        <div class="esc-stat"><div class="esc-num is-foreground">41</div><div class="esc-label">单词数</div></div>
+        <div class="esc-stat"><div class="esc-num is-foreground">3</div><div class="esc-label">句子数</div></div>
+        <div class="esc-stat"><div class="esc-num is-foreground">1<span style="font-size:12px"> min</span></div><div class="esc-label">阅读时间</div></div>
+      </div></div>
 
-        <div class="esc-section-title" id="m-ft-title" style="margin-top:16px" hidden=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="align-left" aria-hidden="true" class="lucide lucide-align-left esc-ico"><path d="M21 5H3"></path><path d="M15 12H3"></path><path d="M17 19H3"></path></svg><span>全文翻译</span></div>
-        <div id="m-fulltrans"></div>
+        <div class="esc-section-title" id="m-ft-title" style="margin-top:16px"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="align-left" aria-hidden="true" class="lucide lucide-align-left esc-ico"><path d="M21 5H3"></path><path d="M15 12H3"></path><path d="M17 19H3"></path></svg><span>全文翻译</span></div>
+        <div id="m-fulltrans"><div class="esc-ft">
+          <button type="button" class="esc-ft-head" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="languages" aria-hidden="true" class="lucide lucide-languages esc-ico"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>全文翻译</span><span class="esc-ft-loading-ico" hidden=""></span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-ft-caret" hidden=""><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="esc-ft-body" hidden="">
+            <div class="esc-ft-note">点击任一条目跳转到对应句子并展开翻译</div>
+            <div class="esc-ft-progress-wrap"><div class="esc-ft-progress">
+      <div class="esc-ft-progress-track"><div class="esc-ft-progress-bar" style="width:0%"></div></div>
+      <span class="esc-ft-progress-text">0/3</span>
+    </div></div>
+            <div class="esc-ft-list"></div>
+          </div>
+        </div></div>
 
-        <div class="esc-section-title" id="m-cards-title" style="margin-top:16px" hidden=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="align-left" aria-hidden="true" class="lucide lucide-align-left esc-ico"><path d="M21 5H3"></path><path d="M15 12H3"></path><path d="M17 19H3"></path></svg><span>逐句解析</span></div>
-        <div id="m-cards"></div>
+        <div class="esc-section-title" id="m-cards-title" style="margin-top:16px"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="align-left" aria-hidden="true" class="lucide lucide-align-left esc-ico"><path d="M21 5H3"></path><path d="M15 12H3"></path><path d="M17 19H3"></path></svg><span>逐句解析</span></div>
+        <div id="m-cards">
+      <div class="esc-sentence" data-idx="0" data-example="The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance.">
+        <div class="esc-sentence-head">
+          <span class="esc-sentence-idx">1</span>
+          <span class="esc-sentence-type">简单句</span>
+        </div>
+        <p class="esc-sentence-en"><span class="esc-sw" data-word="The" data-pos="" data-meaning="">The</span> <span class="esc-sw" data-word="rapid" data-pos="" data-meaning="">rapid</span> <span class="esc-sw" data-word="advancement" data-pos="" data-meaning="">advancement</span> <span class="esc-sw" data-word="of" data-pos="" data-meaning="">of</span> <span class="esc-sw" data-word="artificial" data-pos="" data-meaning="">artificial</span> <span class="esc-sw" data-word="intelligence" data-pos="" data-meaning="">intelligence</span> <span class="esc-sw" data-word="has" data-pos="" data-meaning="">has</span> <span class="esc-sw" data-word="transformed" data-pos="" data-meaning="">transformed</span> <span class="esc-sw" data-word="numerous" data-pos="" data-meaning="">numerous</span> <span class="esc-sw" data-word="industries" data-pos="" data-meaning="">industries</span>, <span class="esc-sw" data-word="from" data-pos="" data-meaning="">from</span> <span class="esc-sw" data-word="healthcare" data-pos="" data-meaning="">healthcare</span> <span class="esc-sw" data-word="to" data-pos="" data-meaning="">to</span> <span class="esc-sw" data-word="finance" data-pos="" data-meaning="">finance</span>.</p>
+        <div class="esc-zh" data-panel="translation">
+          <button type="button" class="esc-zh-toggle" aria-expanded="false">
+            <span>中文翻译</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-zh-caret"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="esc-collapse is-collapsed"><div class="esc-collapse-inner"><div class="esc-zh-body"><div class="esc-spanel-empty">暂无翻译</div></div></div></div>
+        </div>
+        <div class="esc-extra">
+          <button type="button" class="esc-extra-trig" data-act="syntax"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="git-branch" aria-hidden="true" class="lucide lucide-git-branch esc-ico"><path d="M15 6a9 9 0 0 0-9 9V3"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg><span>语法</span></button>
+          <button type="button" class="esc-extra-trig is-active" data-act="knowledge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lightbulb" aria-hidden="true" class="lucide lucide-lightbulb esc-ico"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg><span>知识点</span></button>
+        </div>
+        <div class="esc-spanel" data-panel="syntax" hidden=""><div class="esc-syntax"><div class="esc-spanel-empty">暂无语法结构</div></div></div>
+        <div class="esc-spanel" data-panel="knowledge"><div class="esc-spanel-empty">暂无知识点</div></div>
+      </div>
+      <div class="esc-sentence" data-idx="1" data-example="Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy.">
+        <div class="esc-sentence-head">
+          <span class="esc-sentence-idx">2</span>
+          <span class="esc-sentence-type">简单句</span>
+        </div>
+        <p class="esc-sentence-en"><span class="esc-sw" data-word="Despite" data-pos="" data-meaning="">Despite</span> <span class="esc-sw" data-word="its" data-pos="" data-meaning="">its</span> <span class="esc-sw" data-word="obvious" data-pos="" data-meaning="">obvious</span> <span class="esc-sw" data-word="benefits" data-pos="" data-meaning="">benefits</span>, <span class="esc-sw" data-word="the" data-pos="" data-meaning="">the</span> <span class="esc-sw" data-word="technology" data-pos="" data-meaning="">technology</span> <span class="esc-sw" data-word="also" data-pos="" data-meaning="">also</span> <span class="esc-sw" data-word="raises" data-pos="" data-meaning="">raises</span> <span class="esc-sw" data-word="important" data-pos="" data-meaning="">important</span> <span class="esc-sw" data-word="ethical" data-pos="" data-meaning="">ethical</span> <span class="esc-sw" data-word="questions" data-pos="" data-meaning="">questions</span> <span class="esc-sw" data-word="about" data-pos="" data-meaning="">about</span> <span class="esc-sw" data-word="privacy" data-pos="" data-meaning="">privacy</span> <span class="esc-sw" data-word="and" data-pos="" data-meaning="">and</span> <span class="esc-sw" data-word="autonomy" data-pos="" data-meaning="">autonomy</span>.</p>
+        <div class="esc-zh" data-panel="translation">
+          <button type="button" class="esc-zh-toggle is-open" aria-expanded="true">
+            <span>中文翻译</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-zh-caret"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="esc-collapse is-collapsed"><div class="esc-collapse-inner"><div class="esc-zh-body"><div class="esc-spanel-empty">暂无翻译</div></div></div></div>
+        </div>
+        <div class="esc-extra">
+          <button type="button" class="esc-extra-trig" data-act="syntax"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="git-branch" aria-hidden="true" class="lucide lucide-git-branch esc-ico"><path d="M15 6a9 9 0 0 0-9 9V3"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg><span>语法</span></button>
+          <button type="button" class="esc-extra-trig" data-act="knowledge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lightbulb" aria-hidden="true" class="lucide lucide-lightbulb esc-ico"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg><span>知识点</span></button>
+        </div>
+        <div class="esc-spanel" data-panel="syntax" hidden=""><div class="esc-syntax"><div class="esc-spanel-empty">暂无语法结构</div></div></div>
+        <div class="esc-spanel" data-panel="knowledge" hidden=""><div class="esc-spanel-empty">暂无知识点</div></div>
+      </div>
+      <div class="esc-sentence" data-idx="2" data-example="Researchers are now focusing on developing more transparent and explainable AI systems.">
+        <div class="esc-sentence-head">
+          <span class="esc-sentence-idx">3</span>
+          <span class="esc-sentence-type">简单句</span>
+        </div>
+        <p class="esc-sentence-en"><span class="esc-sw" data-word="Researchers" data-pos="" data-meaning="">Researchers</span> <span class="esc-sw" data-word="are" data-pos="" data-meaning="">are</span> <span class="esc-sw" data-word="now" data-pos="" data-meaning="">now</span> <span class="esc-sw" data-word="focusing" data-pos="" data-meaning="">focusing</span> <span class="esc-sw" data-word="on" data-pos="" data-meaning="">on</span> <span class="esc-sw" data-word="developing" data-pos="" data-meaning="">developing</span> <span class="esc-sw" data-word="more" data-pos="" data-meaning="">more</span> <span class="esc-sw" data-word="transparent" data-pos="" data-meaning="">transparent</span> <span class="esc-sw" data-word="and" data-pos="" data-meaning="">and</span> <span class="esc-sw" data-word="explainable" data-pos="" data-meaning="">explainable</span> <span class="esc-sw" data-word="AI" data-pos="" data-meaning="">AI</span> <span class="esc-sw" data-word="systems" data-pos="" data-meaning="">systems</span>.</p>
+        <div class="esc-zh" data-panel="translation">
+          <button type="button" class="esc-zh-toggle is-open" aria-expanded="true">
+            <span>中文翻译</span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-zh-caret"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="esc-collapse is-collapsed"><div class="esc-collapse-inner"><div class="esc-zh-body"><div class="esc-spanel-empty">暂无翻译</div></div></div></div>
+        </div>
+        <div class="esc-extra">
+          <button type="button" class="esc-extra-trig" data-act="syntax"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="git-branch" aria-hidden="true" class="lucide lucide-git-branch esc-ico"><path d="M15 6a9 9 0 0 0-9 9V3"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg><span>语法</span></button>
+          <button type="button" class="esc-extra-trig" data-act="knowledge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lightbulb" aria-hidden="true" class="lucide lucide-lightbulb esc-ico"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg><span>知识点</span></button>
+        </div>
+        <div class="esc-spanel" data-panel="syntax" hidden=""><div class="esc-syntax"><div class="esc-spanel-empty">暂无语法结构</div></div></div>
+        <div class="esc-spanel" data-panel="knowledge" hidden=""><div class="esc-spanel-empty">暂无知识点</div></div>
+      </div></div>
       </div></section>
       <section class="esc-view" data-view="vocab" hidden="">
       <div class="esc-page">
@@ -87,12 +161,12 @@
           </div>
         </header>
 
-        <div id="m-nb-tabs" class="esc-nb-tabs"><button class="esc-nb-tab is-active" data-nb="1786463707670" data-color="#F59E0B" style="--nb:#F59E0B;--nb-fg:#202020"><span class="esc-nb-tab-name">默认生词本</span><span class="esc-nb-tab-count">39</span></button><button class="esc-nb-tab" data-nb="1787475406737" data-color="#EC4899" style="--nb:#EC4899;--nb-fg:#ffffff"><span class="esc-nb-tab-name">001</span><span class="esc-nb-tab-count">0</span></button><button class="esc-nb-tab esc-add" data-act="new-nb"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus esc-ico"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div>
+        <div id="m-nb-tabs" class="esc-nb-tabs"><button class="esc-nb-tab is-active" data-nb="1784822416623" data-color="#7ed321" style="--nb:#7ed321;--nb-fg:#202020"><span class="esc-nb-tab-name">默认生词本</span><span class="esc-nb-tab-count">4</span></button><button class="esc-nb-tab" data-nb="1787971161498" data-color="#506080" style="--nb:#506080;--nb-fg:#ffffff"><span class="esc-nb-tab-name">22</span><span class="esc-nb-tab-count">0</span></button><button class="esc-nb-tab esc-add" data-act="new-nb"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus esc-ico"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div>
 
         <div id="m-vocab-stats" class="esc-card" style="margin-bottom:20px">
       <div class="esc-grid-3" style="grid-template-columns:repeat(3,1fr)">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-primary);font-family:var(--study-font-serif)">0</span><span style="font-size:12px;color:var(--study-muted-foreground)">今日新增</span></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;border-left:1px solid var(--study-border);border-right:1px solid var(--study-border)"><span style="font-size:22px;font-weight:700;color:var(--study-warning);font-family:var(--study-font-serif)">39</span><span style="font-size:12px;color:var(--study-muted-foreground)">生词总数</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;border-left:1px solid var(--study-border);border-right:1px solid var(--study-border)"><span style="font-size:22px;font-weight:700;color:var(--study-warning);font-family:var(--study-font-serif)">4</span><span style="font-size:12px;color:var(--study-muted-foreground)">生词总数</span></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:22px;font-weight:700;color:var(--study-success);font-family:var(--study-font-serif)">0</span><span style="font-size:12px;color:var(--study-muted-foreground)">累计掌握</span></div>
       </div>
       <div class="esc-progress" style="margin-top:12px"><i style="width:0%"></i></div>
@@ -100,13 +174,13 @@
       
       <div class="esc-mastery">
         <div class="esc-mastery-bar">
-          <div class="esc-mastery-seg esc-m-new" style="width:100%"></div>
-          <div class="esc-mastery-seg esc-m-learning" style="width:0%"></div>
+          <div class="esc-mastery-seg esc-m-new" style="width:50%"></div>
+          <div class="esc-mastery-seg esc-m-learning" style="width:50%"></div>
           <div class="esc-mastery-seg esc-m-mastered" style="width:0%"></div>
         </div>
         <div class="esc-mastery-legend">
-          <span><i class="esc-m-new"></i>新学 39</span>
-          <span><i class="esc-m-learning"></i>学习中 0</span>
+          <span><i class="esc-m-new"></i>新学 2</span>
+          <span><i class="esc-m-learning"></i>学习中 2</span>
           <span><i class="esc-m-mastered"></i>已掌握 0</span>
         </div>
       </div></div>
@@ -121,883 +195,9 @@
           <button class="esc-tab" data-f="alpha">按字母</button>
         </div>
 
-        <div id="m-vocab-list"><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="systems" data-id="1786463707670::systems" style="">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body" style="">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">systems</h3>
-                  
-                  <p class="esc-word-mean">n. 系统</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="AI" data-id="1786463707670::ai" style="">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body" style="">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">AI</h3>
-                  
-                  <p class="esc-word-mean">n. 人工智能</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="explainable" data-id="1786463707670::explainable">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">explainable</h3>
-                  
-                  <p class="esc-word-mean">adj. 可解释的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="transparent" data-id="1786463707670::transparent">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">transparent</h3>
-                  
-                  <p class="esc-word-mean">adj. 透明的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="more" data-id="1786463707670::more">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">more</h3>
-                  
-                  <p class="esc-word-mean">adj. 更多的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="developing" data-id="1786463707670::developing">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">developing</h3>
-                  
-                  <p class="esc-word-mean">v. 开发</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="on" data-id="1786463707670::on">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">on</h3>
-                  
-                  <p class="esc-word-mean">prep. 在...方面</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="focusing" data-id="1786463707670::focusing">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">focusing</h3>
-                  
-                  <p class="esc-word-mean">v. 集中注意力于</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="now" data-id="1786463707670::now">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">now</h3>
-                  
-                  <p class="esc-word-mean">adv. 现在</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="are" data-id="1786463707670::are">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">are</h3>
-                  
-                  <p class="esc-word-mean">v. 是（be动词复数形式）</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="Researchers" data-id="1786463707670::researchers">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">Researchers</h3>
-                  
-                  <p class="esc-word-mean">n. 研究人员</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Researchers are now focusing on developing more transparent and explainable AI systems."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="autonomy" data-id="1786463707670::autonomy">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">autonomy</h3>
-                  
-                  <p class="esc-word-mean">n. 自主权</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="and" data-id="1786463707670::and">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">and</h3>
-                  
-                  <p class="esc-word-mean">conj. 和</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="privacy" data-id="1786463707670::privacy">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">privacy</h3>
-                  
-                  <p class="esc-word-mean">n. 隐私</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="about" data-id="1786463707670::about">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">about</h3>
-                  
-                  <p class="esc-word-mean">prep. 关于</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="questions" data-id="1786463707670::questions">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">questions</h3>
-                  
-                  <p class="esc-word-mean">n. 问题</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="ethical" data-id="1786463707670::ethical">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">ethical</h3>
-                  
-                  <p class="esc-word-mean">adj. 伦理的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="important" data-id="1786463707670::important">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">important</h3>
-                  
-                  <p class="esc-word-mean">adj. 重要的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="raises" data-id="1786463707670::raises">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">raises</h3>
-                  
-                  <p class="esc-word-mean">v. 提出；引起</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="also" data-id="1786463707670::also">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">also</h3>
-                  
-                  <p class="esc-word-mean">adv. 也</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="technology" data-id="1786463707670::technology">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">technology</h3>
-                  
-                  <p class="esc-word-mean">n. 技术</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="benefits" data-id="1786463707670::benefits">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">benefits</h3>
-                  
-                  <p class="esc-word-mean">n. 利益；好处</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="obvious" data-id="1786463707670::obvious">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">obvious</h3>
-                  
-                  <p class="esc-word-mean">adj. 明显的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="its" data-id="1786463707670::its">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">its</h3>
-                  
-                  <p class="esc-word-mean">pron. 它的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="Despite" data-id="1786463707670::despite">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">Despite</h3>
-                  
-                  <p class="esc-word-mean">prep. 尽管；虽然</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"Despite its obvious benefits, the technology also raises important ethical questions about privacy and autonomy."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="finance" data-id="1786463707670::finance">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">finance</h3>
-                  
-                  <p class="esc-word-mean">n. 金融</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="to" data-id="1786463707670::to">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">to</h3>
-                  
-                  <p class="esc-word-mean">prep. 到；向</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="healthcare" data-id="1786463707670::healthcare">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">healthcare</h3>
-                  
-                  <p class="esc-word-mean">n. 医疗保健</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="from" data-id="1786463707670::from">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">from</h3>
-                  
-                  <p class="esc-word-mean">prep. 从；来自</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="industries" data-id="1786463707670::industries">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">industries</h3>
-                  
-                  <p class="esc-word-mean">n. 工业；行业</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="numerous" data-id="1786463707670::numerous">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">numerous</h3>
-                  
-                  <p class="esc-word-mean">adj. 许多的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="transformed" data-id="1786463707670::transformed">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">transformed</h3>
-                  
-                  <p class="esc-word-mean">v. 改变；使改观</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="has" data-id="1786463707670::has">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">has</h3>
-                  
-                  <p class="esc-word-mean">v. 有（助动词）</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="intelligence" data-id="1786463707670::intelligence">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">intelligence</h3>
-                  
-                  <p class="esc-word-mean">n. 智力；智慧</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="artificial" data-id="1786463707670::artificial">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">artificial</h3>
-                  
-                  <p class="esc-word-mean">adj. 人工的</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-word" data-word="of" data-id="1786463707670::of">
+        <div id="m-vocab-list"><div class="esc-word-row">
+      <div class="esc-word" data-word="of" data-id="1784822416623::of">
+        <span class="esc-word-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span>
         <div class="esc-word-inner">
           <div class="esc-word-accent"></div>
           <div class="esc-word-body">
@@ -1006,48 +206,25 @@
                 <div style="min-width:0">
                   <h3 class="esc-word-name">of</h3>
                   
-                  <p class="esc-word-mean">prep. ……的</p>
+                  <p class="esc-word-mean"></p>
                 </div>
                 <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="pron" aria-label="发音" title="发音"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg></button>
+                  <button class="esc-word-act" data-act="example" aria-label="AI例句" title="AI 生成例句"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sparkles" aria-hidden="true" class="lucide lucide-sparkles esc-ico"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></button>
                   <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
                   <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
               </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
+              
               <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div></div><div class="esc-word-row" style="">
-      <div class="esc-word" data-word="advancement" data-id="1786463707670::advancement">
-        <div class="esc-word-inner">
-          <div class="esc-word-accent"></div>
-          <div class="esc-word-body">
-            <div class="esc-word-bwrap">
-              <div class="esc-word-top">
-                <div style="min-width:0">
-                  <h3 class="esc-word-name">advancement</h3>
-                  
-                  <p class="esc-word-mean">n. 进步；发展</p>
-                </div>
-                <div class="esc-word-actions">
-                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-              </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
-              <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
+                <span class="esc-word-date">6天前</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="esc-word" data-word="rapid" data-id="1786463707670::rapid">
+      <div class="esc-word" data-word="rapid" data-id="1784822416623::rapid">
+        <span class="esc-word-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span>
         <div class="esc-word-inner">
           <div class="esc-word-accent"></div>
           <div class="esc-word-body">
@@ -1056,23 +233,25 @@
                 <div style="min-width:0">
                   <h3 class="esc-word-name">rapid</h3>
                   
-                  <p class="esc-word-mean">adj. 快速的</p>
+                  <p class="esc-word-mean"></p>
                 </div>
                 <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="pron" aria-label="发音" title="发音"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg></button>
+                  <button class="esc-word-act" data-act="example" aria-label="AI例句" title="AI 生成例句"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sparkles" aria-hidden="true" class="lucide lucide-sparkles esc-ico"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></button>
                   <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
                   <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
               </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
+              
               <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
+                <span class="esc-word-date">6天前</span>
               </div>
             </div>
           </div>
         </div>
-      </div></div><div class="esc-word-row is-alone" style="">
-      <div class="esc-word" data-word="The" data-id="1786463707670::the">
+      </div></div><div class="esc-word-row">
+      <div class="esc-word" data-word="The" data-id="1784822416623::the">
+        <span class="esc-word-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span>
         <div class="esc-word-inner">
           <div class="esc-word-accent"></div>
           <div class="esc-word-body">
@@ -1084,14 +263,42 @@
                   <p class="esc-word-mean">art. 这；那</p>
                 </div>
                 <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="pron" aria-label="发音" title="发音"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg></button>
+                  <button class="esc-word-act" data-act="example" aria-label="AI例句" title="AI 生成例句"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sparkles" aria-hidden="true" class="lucide lucide-sparkles esc-ico"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></button>
                   <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
                   <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
               </div>
-              <div class="esc-word-ex"><p class="esc-word-ex-en">"The rapid advancement of artificial intelligence has transformed numerous industries, from healthcare to finance."</p></div>
+              
               <div class="esc-word-foot">
-                <button class="esc-word-pron" data-act="pron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span>发音</span></button>
-                <span class="esc-word-date"></span>
+                <span class="esc-word-date">12天前</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="esc-word" data-word="Fox" data-id="1784822416623::fox">
+        <span class="esc-word-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span>
+        <div class="esc-word-inner">
+          <div class="esc-word-accent"></div>
+          <div class="esc-word-body">
+            <div class="esc-word-bwrap">
+              <div class="esc-word-top">
+                <div style="min-width:0">
+                  <h3 class="esc-word-name">Fox</h3>
+                  
+                  <p class="esc-word-mean">n. 狐狸</p>
+                </div>
+                <div class="esc-word-actions">
+                  <button class="esc-word-act" data-act="pron" aria-label="发音" title="发音"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg></button>
+                  <button class="esc-word-act" data-act="example" aria-label="AI例句" title="AI 生成例句"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sparkles" aria-hidden="true" class="lucide lucide-sparkles esc-ico"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></button>
+                  <button class="esc-word-act" data-act="edit" aria-label="编辑"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="pencil" aria-hidden="true" class="lucide lucide-pencil esc-ico"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
+                  <button class="esc-word-act is-del" data-act="delete" aria-label="删除"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+              </div>
+              
+              <div class="esc-word-foot">
+                <span class="esc-word-date">12天前</span>
               </div>
             </div>
           </div>
@@ -1108,30 +315,11 @@
         </header>
 
         <section style="margin-top:16px">
-          <div id="m-hist-stats">
-      <div class="esc-grid-3">
-        <div class="esc-stat"><div class="esc-num">1</div><div class="esc-label">共解析</div></div>
-        <div class="esc-stat"><div class="esc-num">1</div><div class="esc-label">本周</div></div>
-        <div class="esc-stat"><div class="esc-num">41</div><div class="esc-label">总词数</div></div>
-      </div></div>
+          <div id="m-hist-stats"></div>
         </section>
 
         <div style="margin:16px 4px 8px"><h2 style="font-size:12px;font-weight:600;color:var(--study-muted-foreground);text-transform:uppercase;letter-spacing:.05em">最近解析</h2></div>
-        <div id="m-hist-list">
-      <div class="esc-history esc-tap" data-id="1787473113608">
-        <div class="esc-history-body">
-          <div class="esc-history-top">
-            <h3 class="esc-history-title">The rapid advancement of artificial inte</h3>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg>
-          </div>
-          <div class="esc-history-meta">
-            <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar" aria-hidden="true" class="lucide lucide-calendar esc-ico"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>2026-08-23</span>
-            <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="file-text" aria-hidden="true" class="lucide lucide-file-text esc-ico"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>41 词</span>
-            <span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bar-chart-2" aria-hidden="true" class="lucide lucide-bar-chart-2 esc-ico"><path d="M5 21v-6"></path><path d="M12 21V3"></path><path d="M19 21V9"></path></svg>3 句</span>
-          </div>
-          <p class="esc-history-snip">The rapid advancement of artificial intelligence has transformed numerous indust</p>
-        </div>
-      </div></div>
+        <div id="m-hist-list"></div>
       </div>
       <div id="m-sel-bar" class="esc-sel-bar" hidden="">
       <button type="button" class="esc-mini-btn" data-act="sel-all"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="list-checks" aria-hidden="true" class="lucide lucide-list-checks esc-ico"><path d="M13 5h8"></path><path d="M13 12h8"></path><path d="M13 19h8"></path><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path></svg><span>全选</span></button>
@@ -1144,7 +332,7 @@
       <div class="esc-page">
         <header class="esc-header">
           <div class="esc-title-row"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="flame" aria-hidden="true" class="lucide lucide-flame esc-logo"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"></path></svg><h1>记忆模式</h1></div>
-          <div class="esc-badge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="flame" aria-hidden="true" class="lucide lucide-flame esc-ico"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"></path></svg><span>连续学习 <b style="color:var(--study-warning)">3</b> 天</span></div>
+          <div class="esc-badge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="flame" aria-hidden="true" class="lucide lucide-flame esc-ico"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"></path></svg><span>连续学习 <b style="color:var(--study-warning)">2</b> 天</span></div>
         </header>
 
         <!-- 学习统计 / 学习计划 入口（对齐桌面端记忆模式 header 按钮） -->
@@ -1185,13 +373,13 @@
 
         <!-- 单词标签内容 -->
         <div id="m-word" class="esc-mmtab-content">
-          <div class="esc-nbcard">
-            <div class="esc-nb-ico"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="book-open" aria-hidden="true" class="lucide lucide-book-open esc-ico"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg></div>
+          <div class="esc-nbcard" role="button" tabindex="0" data-act="select-nb" aria-label="切换生词本">
+            <div class="esc-nb-ico" style="--nb:#506080"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="book-open" aria-hidden="true" class="lucide lucide-book-open esc-ico"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg></div>
             <div class="esc-nb-info">
-              <div class="esc-nb-name">默认生词本</div>
-              <div class="esc-nb-sub">39 个生词</div>
+              <div class="esc-nb-name">22</div>
+              <div class="esc-nb-sub">0 个生词</div>
             </div>
-            <div class="esc-nb-count">39 词</div>
+            <div class="esc-nb-count">0 词<span class="esc-nb-caret"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-ico"><path d="m6 9 6 6 6-6"></path></svg></span></div>
           </div>
           <div class="esc-mtitle">选择记忆模式</div>
           <div class="esc-mode-grid">
@@ -1219,8 +407,26 @@
         <div id="m-article" class="esc-mmtab-content" hidden="">
           <div class="esc-field">
             <label class="esc-field-label">选择文章</label>
-            <div class="esc-select-wrap">
-              <select id="m-art" class="esc-select"><option value="1787473113608">The rapid advancement of · 2026-08-23</option></select>
+            <div class="esc-art-row">
+              <div class="esc-nbwheel" id="m-nbwheel" role="menu" aria-label="选择生词本">
+                <button type="button" class="esc-nbwheel-btn" data-act="nbwheel" aria-label="选择生词本" aria-haspopup="menu"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="book-open" aria-hidden="true" class="lucide lucide-book-open esc-ico"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg></button>
+                <!-- 展开时的透明捕捉面：覆盖整个风扇区（含芯片空隙），让上下拖动随处可旋转轮盘 -->
+                <div class="esc-nbwheel-area" data-act="nbwheel-drag" aria-hidden="true"></div>
+                <ul class="esc-nbwheel-items"><li class="esc-nbwheel-item" data-id="1784822416623" data-base="-180" style="--nb: #7ed321;"><span class="esc-nbwheel-dot"></span>
+        <span class="esc-nbwheel-name">默认生词本</span>
+        <span class="esc-nbwheel-count">4</span>
+        <span class="esc-nbwheel-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span></li><li class="esc-nbwheel-item" data-id="1787971161498" data-base="0" style="--nb: #506080;"><span class="esc-nbwheel-dot"></span>
+        <span class="esc-nbwheel-name">22</span>
+        <span class="esc-nbwheel-count">0</span>
+        <span class="esc-nbwheel-check"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check esc-ico"><path d="M20 6 9 17l-5-5"></path></svg></span></li></ul>
+              </div>
+              <div class="esc-select-wrap">
+                <button type="button" id="m-art" class="esc-art-trigger" data-act="art-pick" aria-haspopup="listbox">
+                  <span class="esc-art-ico"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="file-text" aria-hidden="true" class="lucide lucide-file-text esc-ico"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></span>
+                  <span class="esc-art-label">The rapid advancement of · 2026-08-29</span>
+                  <span class="esc-art-caret"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-down" aria-hidden="true" class="lucide lucide-chevron-down esc-ico"><path d="m6 9 6 6 6-6"></path></svg></span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="esc-mtitle">选择记忆模式</div>
@@ -1245,177 +451,7 @@
           </div>
         </div>
       </div></section>
-      <section class="esc-view" data-view="settings" hidden="">
-      <div class="esc-page">
-        <header class="esc-header">
-          <div class="esc-title-row"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="settings" aria-hidden="true" class="lucide lucide-settings esc-logo"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg><h1>设置</h1></div>
-        </header>
-
-        <div style="margin-top:20px">
-          <div class="esc-card">
-            <div class="esc-profile">
-              <div class="esc-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user" aria-hidden="true" class="lucide lucide-user esc-ico"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
-              <div style="flex:1;min-width:0">
-                <div class="esc-profile-name">英语学习者</div>
-                <div class="esc-profile-mail">learner@example.com</div>
-              </div>
-              <button id="m-set-edit" class="esc-pill esc-tap">编辑资料</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="esc-group-title">学习偏好</div>
-        <div class="esc-list">
-          <div class="esc-row">
-            <span class="esc-row-label">每日学习目标</span>
-            <div class="esc-stepper">
-              <button class="esc-step-btn" data-act="goal-minus"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="minus" aria-hidden="true" class="lucide lucide-minus esc-ico"><path d="M5 12h14"></path></svg></button>
-              <span class="esc-step-val" id="m-set-goal">20 词/天</span>
-              <button class="esc-step-btn" data-act="goal-plus"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus esc-ico"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button>
-            </div>
-          </div>
-          <div class="esc-row">
-            <span class="esc-row-label">默认解析模式</span>
-            <div class="esc-seg" id="m-set-mode">
-              <button data-v="deep" class="is-active">深度模式</button>
-              <button data-v="fast" class="">快速模式</button>
-            </div>
-          </div>
-          <div class="esc-row">
-            <span class="esc-row-label">AI 调用方式</span>
-            <div class="esc-seg" id="m-set-method">
-              <button data-v="perSentence" class="is-active">逐句解析</button>
-              <button data-v="fullText" class="">整篇解析</button>
-            </div>
-          </div>
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="volume-2" aria-hidden="true" class="lucide lucide-volume-2 esc-ico"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"></path><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.364 18.364a9 9 0 0 0 0-12.728"></path></svg><span class="esc-row-label">自动发音</span></div>
-            <label class="esc-toggle"><input type="checkbox" id="m-set-pron" checked=""><span class="esc-slider"></span></label>
-          </div>
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bookmark" aria-hidden="true" class="lucide lucide-bookmark esc-ico"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"></path></svg><span class="esc-row-label">生词自动收藏</span></div>
-            <label class="esc-toggle"><input type="checkbox" id="m-set-collect"><span class="esc-slider"></span></label>
-          </div>
-        </div>
-
-        <div class="esc-group-title">AI 服务</div>
-        <div class="esc-list">
-          <div class="esc-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="link" aria-hidden="true" class="lucide lucide-link esc-ico"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="esc-row-label">Base URL</span></div>
-            <input id="m-set-base" class="esc-input" type="text" value="https://api-inference.modelscope.cn/v1" placeholder="https://api-inference.modelscope.cn/v1">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="key" aria-hidden="true" class="lucide lucide-key esc-ico"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"></path><path d="m21 2-9.6 9.6"></path><circle cx="7.5" cy="15.5" r="5.5"></circle></svg><span class="esc-row-label">API Key</span></div>
-            <input id="m-set-key" class="esc-input" type="password" placeholder="留空则保留当前 Key（内置默认魔搭 Key）" autocomplete="off">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="cpu" aria-hidden="true" class="lucide lucide-cpu esc-ico"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg><span class="esc-row-label">模型名称</span></div>
-            <input id="m-set-model" class="esc-input" type="text" value="Qwen/Qwen3.5-35B-A3B" placeholder="Qwen/Qwen3.5-35B-A3B">
-          </div>
-          <div class="esc-row" style="gap:8px;padding:12px">
-            <button class="esc-btn esc-btn-primary esc-tap" data-act="api-save" style="flex:1">保存配置</button>
-            <button class="esc-btn esc-btn-ghost esc-tap" data-act="api-test" style="flex:1">测试连接</button>
-          </div>
-        </div>
-
-        <div class="esc-group-title">显示设置</div>
-        <div class="esc-list">
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="moon" aria-hidden="true" class="lucide lucide-moon esc-ico"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path></svg><span class="esc-row-label">深色模式</span></div>
-            <label class="esc-toggle"><input type="checkbox" id="m-set-dark"><span class="esc-slider"></span></label>
-          </div>
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="type" aria-hidden="true" class="lucide lucide-type esc-ico"><path d="M12 4v16"></path><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"></path><path d="M9 20h6"></path></svg><span class="esc-row-label">字体大小</span></div>
-            <div class="esc-seg is-square" id="m-set-font">
-              <button data-v="small" class="">小</button>
-              <button data-v="medium" class="is-active">中</button>
-              <button data-v="large" class="">大</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="esc-group-title">词性高亮</div>
-        <div class="esc-list">
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="highlighter" aria-hidden="true" class="lucide lucide-highlighter esc-ico"><path d="m9 11-6 6v3h9l3-3"></path><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path></svg><span class="esc-row-label">启用词性高亮</span></div>
-            <label class="esc-toggle"><input type="checkbox" id="m-set-hl"><span class="esc-slider"></span></label>
-          </div>
-          <div class="esc-hl-grid" style="padding: 12px 12px 4px"><label class="esc-hl-item">
-         <input type="checkbox" data-pos="n" checked="">
-         <span class="esc-hl-swatch" style="background:#8B5A2B"></span>
-         名词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="v" checked="">
-         <span class="esc-hl-swatch" style="background:#EF4444"></span>
-         动词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="adj" checked="">
-         <span class="esc-hl-swatch" style="background:#F97316"></span>
-         形容词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="adv" checked="">
-         <span class="esc-hl-swatch" style="background:#EAB308"></span>
-         副词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="pron" checked="">
-         <span class="esc-hl-swatch" style="background:#22C55E"></span>
-         代词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="prep" checked="">
-         <span class="esc-hl-swatch" style="background:#3B82F6"></span>
-         介词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="conj" checked="">
-         <span class="esc-hl-swatch" style="background:#6366F1"></span>
-         连词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="interj" checked="">
-         <span class="esc-hl-swatch" style="background:#A855F7"></span>
-         感叹词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="art" checked="">
-         <span class="esc-hl-swatch" style="background:#EC4899"></span>
-         冠词
-       </label><label class="esc-hl-item">
-         <input type="checkbox" data-pos="num" checked="">
-         <span class="esc-hl-swatch" style="background:#6B7280"></span>
-         数词
-       </label></div>
-          <div class="esc-row" style="padding-top: 0">
-            <button class="esc-btn esc-btn-primary esc-tap" data-act="hl-apply" style="flex:1">应用高亮设置</button>
-          </div>
-        </div>
-
-        <div class="esc-group-title">主题配色</div>
-        <div class="esc-list">
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="square" aria-hidden="true" class="lucide lucide-square esc-ico"><rect width="18" height="18" x="3" y="3" rx="2"></rect></svg><span class="esc-row-label">中性色 <span style="color:var(--study-muted-foreground);font-size:12px">60%</span></span></div>
-            <label class="esc-color-swatch esc-tap" id="m-c-neutral" style="background:#FFFFFF"><input type="color" data-color="neutral" value="#FFFFFF"></label>
-          </div>
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="palette" aria-hidden="true" class="lucide lucide-palette esc-ico"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"></path><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle></svg><span class="esc-row-label">主品牌色 <span style="color:var(--study-muted-foreground);font-size:12px">25%</span></span></div>
-            <label class="esc-color-swatch esc-tap" id="m-c-primary" style="background:#506080"><input type="color" data-color="primary" value="#506080"></label>
-          </div>
-          <div class="esc-row">
-            <div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zap" aria-hidden="true" class="lucide lucide-zap esc-ico"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg><span class="esc-row-label">强调色 <span style="color:var(--study-muted-foreground);font-size:12px">15%</span></span></div>
-            <label class="esc-color-swatch esc-tap" id="m-c-accent" style="background:#E07B5A"><input type="color" data-color="accent" value="#E07B5A"></label>
-          </div>
-          <div class="esc-color-row-note">选色后即时生效；切换深色模式会按基调自动适配灰阶。</div>
-          <div class="esc-row esc-clickable" data-act="reset-colors"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="rotate-ccw" aria-hidden="true" class="lucide lucide-rotate-ccw esc-ico"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg><span class="esc-row-label">恢复默认配色</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-        </div>
-
-        <div class="esc-group-title">数据管理</div>
-        <div class="esc-list">
-          <div class="esc-row esc-clickable" data-act="export"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" aria-hidden="true" class="lucide lucide-download esc-ico"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg><span class="esc-row-label">导出学习数据</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-          <div class="esc-row esc-clickable" data-act="clear"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" class="lucide lucide-trash-2 esc-ico"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><span class="esc-row-label">清除缓存</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-          <div class="esc-row esc-clickable" data-act="reset"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="alert-triangle" aria-hidden="true" class="lucide lucide-alert-triangle esc-ico"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg><span class="esc-row-label esc-danger">重置所有数据</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-        </div>
-
-        <div class="esc-group-title">关于</div>
-        <div class="esc-list">
-          <div class="esc-row"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="info" aria-hidden="true" class="lucide lucide-info esc-ico"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg><span class="esc-row-label">版本</span></div><span class="esc-row-right">v1.0.0</span></div>
-          <div class="esc-row esc-clickable" data-act="about"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="file-text" aria-hidden="true" class="lucide lucide-file-text esc-ico"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg><span class="esc-row-label">用户协议</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-          <div class="esc-row esc-clickable" data-act="about"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield" aria-hidden="true" class="lucide lucide-shield esc-ico"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg><span class="esc-row-label">隐私政策</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-          <div class="esc-row esc-clickable" data-act="about-app"><div class="esc-row-left"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="book-open" aria-hidden="true" class="lucide lucide-book-open esc-ico"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg><span class="esc-row-label">关于英研社</span></div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right esc-ico"><path d="m9 18 6-6-6-6"></path></svg></div>
-        </div>
-        <div style="height:8px"></div>
-      </div></section>
+      <section class="esc-view" data-view="settings" hidden=""></section>
     </main>
 
     <!-- 底部全局导航 -->
@@ -1427,7 +463,7 @@
     </nav>
 
     <!-- 轻提示 -->
-    <div id="esc-toast" class="esc-toast">已创建「001」</div>
+    <div id="esc-toast" class="esc-toast">已创建「22」</div>
 
   <!-- 模块按依赖顺序加载：先基础，后视图，最后引导 -->
   <script src="js/ui.js"></script>
@@ -1444,8 +480,8 @@
   <script src="js/views/vocab.js?v=20260825p"></script>
   <script src="js/views/history.js"></script>
   <script src="js/views/history_detail.js"></script>
-  <script src="js/views/memory.js?v=20260828d"></script>
-  <script src="js/views/settings.js"></script>
+  <script src="js/views/memory.js?v=20260829a"></script>
+  <script src="js/views/settings.js?v=20260829a"></script>
   <script src="js/app.js"></script>
 
 
@@ -1461,4 +497,9 @@
       });
     });
   }
-</script></body></html>
+</script>
+</div><div class="esc-batch-bar" id="m-vocab-batchbar" hidden="">
+      <button class="esc-batch-all" data-act="all">全选</button>
+      <span class="esc-batch-count">已选 0 项</span>
+      <button class="esc-btn esc-btn-danger esc-batch-del" data-act="del">删除</button>
+      <button class="esc-btn esc-btn-ghost esc-batch-cancel" data-act="cancel">取消</button></div><div class="esc-sel-tip esc-clickable" hidden="">翻译</div></body></html>

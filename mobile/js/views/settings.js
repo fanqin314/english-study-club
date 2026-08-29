@@ -417,6 +417,32 @@
     return '\n\n… 共 ' + n + ' ' + unit + '，点「展开」查看全部';
   }
 
+  // JSON 预览语法高亮：逐 token 匹配，先安全转义再按类型着色（键/字符串/数字/布尔）
+  function hlJson(s) {
+    const re = /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(s))) {
+      out += esc(s.slice(last, m.index));
+      if (m[1] !== undefined) {
+        out += m[2]
+          ? '<span class="esj-k">' + esc(m[1]) + '</span>' + esc(m[2])
+          : '<span class="esj-s">' + esc(m[1]) + '</span>';
+      } else if (m[3]) {
+        out += '<span class="esj-b">' + m[3] + '</span>';
+      } else {
+        out += '<span class="esj-n">' + m[0] + '</span>';
+      }
+      last = m.index + m[0].length;
+    }
+    return out + esc(s.slice(last));
+  }
+
+  // 预览区输出：JSON 走语法高亮，TXT/MD 纯文本安全转义
+  function renderExport(kind, fmt, full) {
+    const raw = kind === 'vocab' ? buildVocabExport(fmt, full) : buildHistoryExport(fmt, full);
+    return fmt === 'json' ? hlJson(raw) : esc(raw);
+  }
+
   // full=false 时只生成示例片段（预览用），避免一次性倾倒全部数据。
   function buildVocabExport(fmt, full) {
     const list = cleanVocab(Store.getVocab());
@@ -535,8 +561,8 @@
       onOpen(sheet) {
         UI.refreshIcons(sheet);
         const renderPreview = () => {
-          sheet.querySelector('[data-prev="vocab"]').textContent = buildVocabExport(state.vocab, state.expandedVocab);
-          sheet.querySelector('[data-prev="history"]').textContent = buildHistoryExport(state.history, state.expandedHistory);
+          sheet.querySelector('[data-prev="vocab"]').innerHTML = renderExport('vocab', state.vocab, state.expandedVocab);
+          sheet.querySelector('[data-prev="history"]').innerHTML = renderExport('history', state.history, state.expandedHistory);
           sheet.querySelector('[data-fmt-lab="vocab"]').textContent = state.vocab.toUpperCase();
           sheet.querySelector('[data-fmt-lab="history"]').textContent = state.history.toUpperCase();
         };

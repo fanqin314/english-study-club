@@ -67,11 +67,14 @@
   let nbSel = null;
 
   // ---------- 数据辅助 ----------
-  // 轮盘选中的生词本集合 → 归一化生词（对齐桌面端 memory-nb-multi 的多选语义）
+  // 轮盘选中的生词本集合 → 归一化生词（对齐桌面端 memory-nb-multi 的多选语义）。
+  // 优先使用轮盘/选择器选中的集合；未选择时退化为「当前选定的生词本」，而非所有生词本。
   function getSelectedVocab() {
     const all = Store.getVocab();
     const ids = nbSel && nbSel.size ? nbSel : null;
-    return ids ? all.filter((w) => ids.has(w.notebookId)) : all;
+    if (ids) return all.filter((w) => ids.has(w.notebookId));
+    const curId = Store.getCurrentNotebookId();
+    return curId ? all.filter((w) => w.notebookId === curId) : all;
   }
   function getVocabSet() {
     return new Set(getSelectedVocab().map((w) => (w.word || '').toLowerCase()).filter(Boolean));
@@ -85,10 +88,10 @@
     if (!id) return null;
     return Store.getHistory().find((h) => h.id === id) || null;
   }
-  // 单词练习队列：取前 10（桌面端不区分「已掌握」，故不再按 status 排序）
+  // 单词练习队列：取当前选定生词本的前 10（桌面端不区分「已掌握」，故不再按 status 排序）
   function buildWordQueue() {
-    // 生词本为空时返回空队列，由调用方提示「先去收藏生词」，不再回退演示词
-    const vocab = Store.getVocab();
+    // 当前生词本为空时返回空队列，由调用方提示「先去收藏生词」，不再回退演示词
+    const vocab = Store.getNotebookWords(Store.getCurrentNotebookId()) || [];
     return vocab.slice(0, 10);
   }
   // 文章「语境填空」队列：取含生词的句子，挖空该生词
@@ -371,7 +374,11 @@
         });
         dlg.querySelector('[data-act="cancel"]').addEventListener('click', close);
         dlg.querySelector('[data-act="select"]').addEventListener('click', () => {
-          if (selId && selId !== curId) Store.setCurrentNotebook(selId);
+          if (selId && selId !== curId) {
+            Store.setCurrentNotebook(selId);
+            // 同步轮盘多选集合（保持同一引用，仅更新内容），让测验生词跟随当前选定的生词本
+            if (nbSel) { nbSel.clear(); nbSel.add(selId); }
+          }
           close();
         });
       }
@@ -1076,6 +1083,105 @@
   // 填空：例句/文章句挖空 → 网页版 fill-card 字母格（适配移动端主题）
   const FILL_HINT_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"></path><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="8" x2="12" y2="10"></line><line x1="12" y1="14" x2="12" y2="16"></line><line x1="8" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="16" y2="12"></line></svg>`;
   const FILL_SKIP_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>`;
+
+  // 字母格输入（填空/听写共用）：每个格子一个真实 <input>，
+  // 兼容手机虚拟键盘 input 事件；点格聚焦、只输入当前格、
+  // 删除当前格字母后回退上一格、后续字母不自动前移。
+  function setupLetterGrid(grid, length, onEnter) {
+    const slots = new Array(length).fill('');
+    const boxes = [], inputs = [];
+    let active = 0;
+
+    function render() {
+      boxes.forEach((box, i) => {
+        const inp = inputs[i];
+        if (document.activeElement !== inp) inp.value = slots[i] || '';
+        box.classList.toggle('filled', !!slots[i]);
+        box.classList.toggle('active-slot', i === active);
+      });
+    }
+
+    function focusAt(i) {
+      if (i < 0 || i >= length) { render(); return; }
+      active = i;
+      render();
+      inputs[i].focus();
+    }
+
+    function normalize(v) {
+      return String(v)
+        .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/[^a-zA-Z]/g, '')
+        .toLowerCase();
+    }
+
+    grid.innerHTML = '';
+    for (let i = 0; i < length; i++) {
+      const box = document.createElement('span');
+      box.className = 'letter-box';
+      box.dataset.index = i;
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'letter-input';
+      inp.maxLength = 1;
+      inp.autocomplete = 'off';
+      inp.spellcheck = false;
+      inp.dataset.index = i;
+      box.appendChild(inp);
+      boxes.push(box);
+      inputs.push(inp);
+
+      inp.addEventListener('focus', () => { active = i; render(); });
+      inp.addEventListener('click', (e) => e.stopPropagation());
+
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); onEnter && onEnter(); return; }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          if (slots[i]) slots[i] = '';
+          if (i > 0) focusAt(i - 1); else render();
+          return;
+        }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) focusAt(i - 1); return; }
+        if (e.key === 'ArrowRight') { e.preventDefault(); if (i < length - 1) focusAt(i + 1); return; }
+        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+          e.preventDefault();
+          slots[i] = normalize(e.key);
+          inp.value = slots[i];
+          render();
+          if (i < length - 1) focusAt(i + 1); else render();
+        }
+      });
+
+      // 手机虚拟键盘 / IME 回退：input 事件读取输入框值
+      inp.addEventListener('input', () => {
+        let val = normalize(inp.value);
+        if (val.length > 1) val = val.slice(-1);
+        inp.value = val;
+        const wasFilled = !!slots[i];
+        slots[i] = val;
+        if (val && i < length - 1) {
+          focusAt(i + 1);
+        } else if (!val && wasFilled && i > 0) {
+          // 移动端删除键常只触发 input 事件（不触发 keydown）：清空后回退上一格
+          focusAt(i - 1);
+        } else {
+          render();
+        }
+      });
+
+      box.addEventListener('click', (e) => { e.stopPropagation(); inp.focus(); });
+      grid.appendChild(box);
+    }
+    render();
+
+    return {
+      slots, inputs, boxes, render, focusAt,
+      setSlot(i, ch) { if (i >= 0 && i < length) { slots[i] = ch; render(); } },
+      focus() { if (inputs[active]) inputs[active].focus(); else if (inputs[0]) inputs[0].focus(); }
+    };
+  }
+
   function renderCloze(body, w) {
     const word = String(w.word || '').toLowerCase();
     const meaning = w.meaning || w.mean || '(无释义)';
@@ -1096,7 +1202,6 @@
           <div class="fill-letter-hint" data-role="hint"></div>
           <div class="fill-letter-grid" data-role="grid"></div>
           <button class="fill-check-btn" data-act="check">${icon('check')}<span>检查</span></button>
-          <input type="text" class="fill-hidden-input" data-role="ans" autocomplete="off" spellcheck="false" maxlength="50" />
           <div class="fill-result" data-role="result"></div>
         </div>
         <div class="fill-bottom">
@@ -1110,64 +1215,16 @@
     const grid = body.querySelector('[data-role="grid"]');
     const hintEl = body.querySelector('[data-role="hint"]');
     const resultEl = body.querySelector('[data-role="result"]');
-    const ans = body.querySelector('[data-role="ans"]');
     const checkBtn = body.querySelector('[data-act="check"]');
     const hintBtn = body.querySelector('[data-act="hint"]');
 
-    const slotChars = new Array(word.length).fill('');
-    let active = 0, checked = false;
+    let checked = false;
     const revealed = new Set();
-
-    function renderBoxes() {
-      grid.querySelectorAll('.letter-box').forEach((b, i) => {
-        b.textContent = slotChars[i] || '';
-        b.classList.toggle('filled', !!slotChars[i]);
-        b.classList.toggle('active-slot', i === active);
-      });
-    }
-
-    function buildGrid() {
-      grid.innerHTML = '';
-      for (let i = 0; i < word.length; i++) {
-        const box = document.createElement('span');
-        box.className = 'letter-box';
-        box.dataset.index = i;
-        box.addEventListener('click', (e) => { e.stopPropagation(); active = i; renderBoxes(); ans.focus(); });
-        grid.appendChild(box);
-      }
-      renderBoxes();
-    }
-
-    function renderHint() {
-      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
-      hintEl.innerHTML = word.split('').map((ch, i) =>
-        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
-      hintEl.classList.add('show');
-      hintBtn.disabled = revealed.size >= word.length;
-    }
-
-    function normalizeInput(val) {
-      return val
-        .replace(/[\uFF41-\uFF5A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/[\uFF21-\uFF3A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/[^a-zA-Z]/g, '');
-    }
-
-    // 错字按位标注 + 展示正确答案
-    function revealWrong() {
-      const boxes = grid.querySelectorAll('.letter-box');
-      boxes.forEach((b, i) => {
-        const ch = slotChars[i];
-        setTimeout(() => {
-          if (ch && ch === word[i]) b.classList.add('correct');
-          else { b.classList.add('wrong'); b.textContent = word[i]; }
-        }, i * 40);
-      });
-    }
+    let gridApi = null;
 
     const submit = () => {
       if (checked) return; checked = true;
-      const ok = slotChars.join('') === word;
+      const ok = gridApi.slots.join('') === word;
       session.total++;
       if (ok) session.correct++;
       resultEl.innerHTML = ok
@@ -1177,15 +1234,32 @@
       card.classList.toggle('fill-card-correct', ok);
       card.classList.toggle('fill-card-wrong', !ok);
       checkBtn.disabled = true;
-      ans.readOnly = true;
+      gridApi.inputs.forEach((inp) => { inp.disabled = true; });
       if (ok) {
-        grid.querySelectorAll('.letter-box').forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
+        gridApi.boxes.forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
         setTimeout(next, 900);
       } else {
-        revealWrong();
+        // 错字按位标注 + 展示正确答案
+        gridApi.slots.forEach((ch, i) => {
+          setTimeout(() => {
+            const box = gridApi.boxes[i], inp = gridApi.inputs[i];
+            if (ch && ch === word[i]) box.classList.add('correct');
+            else { box.classList.add('wrong'); if (inp) inp.value = word[i]; }
+          }, i * 40);
+        });
         setTimeout(next, 1500);
       }
     };
+
+    gridApi = setupLetterGrid(grid, word.length, submit);
+
+    function renderHint() {
+      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
+      hintEl.innerHTML = word.split('').map((ch, i) =>
+        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
+      hintEl.classList.add('show');
+      hintBtn.disabled = revealed.size >= word.length;
+    }
 
     const hint = () => {
       if (checked || revealed.size >= word.length) return;
@@ -1195,9 +1269,8 @@
         for (let i = 0; i < word.length; i++) if (!revealed.has(i)) { pos = i; break; }
       }
       revealed.add(pos);
-      slotChars[pos] = word[pos];
-      active = pos;
-      const box = grid.querySelector(`[data-index="${pos}"]`);
+      gridApi.setSlot(pos, word[pos]);
+      const box = gridApi.boxes[pos];
       if (box) {
         box.style.transition = 'none';
         box.style.transform = 'scale(.3) rotateX(90deg)';
@@ -1208,9 +1281,8 @@
           box.style.opacity = '';
         });
       }
-      renderBoxes();
       renderHint();
-      ans.focus();
+      gridApi.focusAt(pos);
     };
 
     const skip = () => {
@@ -1222,35 +1294,16 @@
       setTimeout(next, 500);
     };
 
-    ans.addEventListener('keydown', (e) => {
-      if (checked) { e.preventDefault(); return; }
-      if (e.key === 'Enter') { submit(); e.preventDefault(); return; }
-      if (e.key === 'Backspace') {
-        if (slotChars[active]) { slotChars[active] = ''; renderBoxes(); }
-        else if (active > 0) { active--; renderBoxes(); }
-        e.preventDefault(); return;
-      }
-      if (e.key === 'ArrowLeft') { active = Math.max(0, active - 1); renderBoxes(); e.preventDefault(); return; }
-      if (e.key === 'ArrowRight') { active = Math.min(word.length - 1, active + 1); renderBoxes(); e.preventDefault(); return; }
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-        slotChars[active] = normalizeInput(e.key);
-        renderBoxes();
-        if (active < word.length - 1) { active++; renderBoxes(); }
-        e.preventDefault();
-      }
-    });
-
     checkBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
     hintBtn.addEventListener('click', (e) => { e.stopPropagation(); hint(); });
     body.querySelector('[data-act="skip"]').addEventListener('click', (e) => { e.stopPropagation(); skip(); });
     card.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;
       e.stopPropagation();
-      ans.focus();
+      gridApi.focus();
     });
 
-    buildGrid();
-    ans.focus();
+    gridApi.focus();
   }
 
   // 听写：听音拼写字母格（网页版 spell-card 结构，统一到 --study 主题）
@@ -1271,7 +1324,6 @@
           <div class="fill-letter-hint" data-role="hint"></div>
           <div class="fill-letter-grid" data-role="grid"></div>
           <button class="fill-check-btn" data-act="check">${icon('check')}<span>检查</span></button>
-          <input type="text" class="fill-hidden-input" data-role="ans" autocomplete="off" spellcheck="false" maxlength="50" />
           <div class="fill-result" data-role="result"></div>
         </div>
         <div class="fill-bottom">
@@ -1285,50 +1337,16 @@
     const grid = body.querySelector('[data-role="grid"]');
     const hintEl = body.querySelector('[data-role="hint"]');
     const resultEl = body.querySelector('[data-role="result"]');
-    const ans = body.querySelector('[data-role="ans"]');
     const checkBtn = body.querySelector('[data-act="check"]');
     const hintBtn = body.querySelector('[data-act="hint"]');
 
-    const slotChars = new Array(word.length).fill('');
-    let active = 0, checked = false;
+    let checked = false;
     const revealed = new Set();
-
-    function renderBoxes() {
-      grid.querySelectorAll('.letter-box').forEach((b, i) => {
-        b.textContent = slotChars[i] || '';
-        b.classList.toggle('filled', !!slotChars[i]);
-        b.classList.toggle('active-slot', i === active);
-      });
-    }
-
-    grid.innerHTML = '';
-    for (let i = 0; i < word.length; i++) {
-      const box = document.createElement('span');
-      box.className = 'letter-box';
-      box.dataset.index = i;
-      box.addEventListener('click', (e) => { e.stopPropagation(); active = i; renderBoxes(); ans.focus(); });
-      grid.appendChild(box);
-    }
-    renderBoxes();
-
-    function renderHint() {
-      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
-      hintEl.innerHTML = word.split('').map((ch, i) =>
-        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
-      hintEl.classList.add('show');
-      hintBtn.disabled = revealed.size >= word.length;
-    }
-
-    function normalizeInput(val) {
-      return val
-        .replace(/[\uFF41-\uFF5A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/[\uFF21-\uFF3A]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/[^a-zA-Z]/g, '');
-    }
+    let gridApi = null;
 
     const submit = () => {
       if (checked) return; checked = true;
-      const ok = slotChars.join('') === word;
+      const ok = gridApi.slots.join('') === word;
       session.total++;
       if (ok) session.correct++;
       resultEl.innerHTML = ok
@@ -1338,21 +1356,31 @@
       card.classList.toggle('fill-card-correct', ok);
       card.classList.toggle('fill-card-wrong', !ok);
       checkBtn.disabled = true;
-      ans.readOnly = true;
+      gridApi.inputs.forEach((inp) => { inp.disabled = true; });
       if (ok) {
-        grid.querySelectorAll('.letter-box').forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
+        gridApi.boxes.forEach((b, i) => setTimeout(() => b.classList.add('correct'), i * 30));
         setTimeout(next, 900);
       } else {
-        grid.querySelectorAll('.letter-box').forEach((b, i) => {
-          const ch = slotChars[i];
+        gridApi.slots.forEach((ch, i) => {
           setTimeout(() => {
-            if (ch && ch === word[i]) b.classList.add('correct');
-            else { b.classList.add('wrong'); b.textContent = word[i]; }
+            const box = gridApi.boxes[i], inp = gridApi.inputs[i];
+            if (ch && ch === word[i]) box.classList.add('correct');
+            else { box.classList.add('wrong'); if (inp) inp.value = word[i]; }
           }, i * 40);
         });
         setTimeout(next, 1500);
       }
     };
+
+    gridApi = setupLetterGrid(grid, word.length, submit);
+
+    function renderHint() {
+      if (revealed.size === 0) { hintEl.classList.remove('show'); hintEl.innerHTML = ''; return; }
+      hintEl.innerHTML = word.split('').map((ch, i) =>
+        `<span class="fill-letter-box${revealed.has(i) ? ' revealed' : ''}">${revealed.has(i) ? esc(ch) : '_'}</span>`).join('');
+      hintEl.classList.add('show');
+      hintBtn.disabled = revealed.size >= word.length;
+    }
 
     const hint = () => {
       if (checked || revealed.size >= word.length) return;
@@ -1362,9 +1390,8 @@
         for (let i = 0; i < word.length; i++) if (!revealed.has(i)) { pos = i; break; }
       }
       revealed.add(pos);
-      slotChars[pos] = word[pos];
-      active = pos;
-      const box = grid.querySelector(`[data-index="${pos}"]`);
+      gridApi.setSlot(pos, word[pos]);
+      const box = gridApi.boxes[pos];
       if (box) {
         box.style.transition = 'none';
         box.style.transform = 'scale(.3) rotateX(90deg)';
@@ -1375,28 +1402,9 @@
           box.style.opacity = '';
         });
       }
-      renderBoxes();
       renderHint();
-      ans.focus();
+      gridApi.focusAt(pos);
     };
-
-    ans.addEventListener('keydown', (e) => {
-      if (checked) { e.preventDefault(); return; }
-      if (e.key === 'Enter') { submit(); e.preventDefault(); return; }
-      if (e.key === 'Backspace') {
-        if (slotChars[active]) { slotChars[active] = ''; renderBoxes(); }
-        else if (active > 0) { active--; renderBoxes(); }
-        e.preventDefault(); return;
-      }
-      if (e.key === 'ArrowLeft') { active = Math.max(0, active - 1); renderBoxes(); e.preventDefault(); return; }
-      if (e.key === 'ArrowRight') { active = Math.min(word.length - 1, active + 1); renderBoxes(); e.preventDefault(); return; }
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-        slotChars[active] = normalizeInput(e.key);
-        renderBoxes();
-        if (active < word.length - 1) { active++; renderBoxes(); }
-        e.preventDefault();
-      }
-    });
 
     checkBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
     hintBtn.addEventListener('click', (e) => { e.stopPropagation(); hint(); });
@@ -1412,7 +1420,7 @@
     body.querySelector('[data-act="play"]').addEventListener('click', (e) => { e.stopPropagation(); Speech.speak(w.word || word); });
 
     Speech.speak(w.word || word);
-    ans.focus();
+    gridApi.focus();
   }
 
   // 逐句精读：逐句展示（不评分）
