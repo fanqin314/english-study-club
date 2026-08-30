@@ -607,6 +607,10 @@
     reviewCleanups.length = 0;
     quizCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
     quizCleanups.length = 0;
+    clozeCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    clozeCleanups.length = 0;
+    sentCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    sentCleanups.length = 0;
     stopGyro();
     const el = overlay;
     overlay = null; session = null;
@@ -628,13 +632,19 @@
     } else if (mode === 'cloze') {
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
-      queue = buildArticleClozeQueue(item);
-      if (!queue.length) { UI.toast('该文章没有可用句子'); return; }
+      // 全文语境填空：整篇文章由 renderArticleCloze 自行分段落渲染与结算
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      openOverlay();
+      step();
+      return;
     } else if (mode === 'sentence') {
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
-      queue = splitSentences(item.text);
-      if (!queue.length) { UI.toast('该文章为空'); return; }
+      // 逐句精读：整篇文章由 renderArticleSentence 自行管理逐句导航
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      openOverlay();
+      step();
+      return;
     } else if (mode === 'review') {
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
@@ -683,7 +693,7 @@
     if (!session) return;
     const body = overlay.querySelector('[data-role="body"]');
     const counter = overlay.querySelector('[data-role="counter"]');
-    if (session.mode !== 'review') {
+    if (session.mode !== 'review' && session.mode !== 'cloze' && session.mode !== 'sentence' && session.mode !== 'vocabQuiz') {
       counter.textContent = `${session.idx + 1} / ${session.queue.length}`;
     } else {
       counter.textContent = '';
@@ -694,7 +704,7 @@
     if (session.mode === 'fill') return renderCloze(body, { example: item.example, word: item.word });
     if (session.mode === 'spelling') return renderDictation(body, item);
     if (session.mode === 'choice') return renderChoice(body, item);
-    if (session.mode === 'cloze') return renderCloze(body, { example: item.example, word: item.word });
+    if (session.mode === 'cloze') return renderArticleCloze(body, item);
     if (session.mode === 'sentence') return renderArticleSentence(body, item);
     if (session.mode === 'review') return renderArticleReview(body, item);
     if (session.mode === 'vocabQuiz') return renderVocabQuiz(body, item);
@@ -1084,10 +1094,11 @@
   const FILL_HINT_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"></path><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="8" x2="12" y2="10"></line><line x1="12" y1="14" x2="12" y2="16"></line><line x1="8" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="16" y2="12"></line></svg>`;
   const FILL_SKIP_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>`;
 
-  // 字母格输入（填空/听写共用）：每个格子一个真实 <input>，
+  // 字母格输入（填空/听写/语境填空共用）：每个格子一个真实 <input>，
   // 兼容手机虚拟键盘 input 事件；点格聚焦、只输入当前格、
   // 删除当前格字母后回退上一格、后续字母不自动前移。
-  function setupLetterGrid(grid, length, onEnter) {
+  // onEnter：按回车；onComplete：最后一个字母填完；onBackspaceFirst：在首格按删除（供跨单词跳转）
+  function setupLetterGrid(grid, length, onEnter, onComplete, onBackspaceFirst) {
     const slots = new Array(length).fill('');
     const boxes = [], inputs = [];
     let active = 0;
@@ -1139,7 +1150,11 @@
         if (e.key === 'Backspace') {
           e.preventDefault();
           if (slots[i]) slots[i] = '';
-          if (i > 0) focusAt(i - 1); else render();
+          if (i > 0) { focusAt(i - 1); }
+          else {
+            render();
+            if (typeof onBackspaceFirst === 'function') onBackspaceFirst();
+          }
           return;
         }
         if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) focusAt(i - 1); return; }
@@ -1149,7 +1164,8 @@
           slots[i] = normalize(e.key);
           inp.value = slots[i];
           render();
-          if (i < length - 1) focusAt(i + 1); else render();
+          if (i < length - 1) focusAt(i + 1);
+          else { onComplete && onComplete(); }
         }
       });
 
@@ -1165,8 +1181,12 @@
         } else if (!val && wasFilled && i > 0) {
           // 移动端删除键常只触发 input 事件（不触发 keydown）：清空后回退上一格
           focusAt(i - 1);
+        } else if (!val && wasFilled && i === 0) {
+          render();
+          if (typeof onBackspaceFirst === 'function') onBackspaceFirst();
         } else {
           render();
+          if (val && i === length - 1) onComplete && onComplete();
         }
       });
 
@@ -1423,26 +1443,1134 @@
     gridApi.focus();
   }
 
-  // 逐句精读：逐句展示（不评分）
-  function renderArticleSentence(body, sentence) {
-    body.innerHTML = `
-      <p class="esc-quiz-q">逐句精读</p>
-      <div class="esc-sentence-block">${esc(sentence)}</div>
-      <div style="display:flex;gap:12px;margin-top:20px">
-        <button class="esc-btn esc-btn-ghost" data-act="prev" style="flex:1">上一句</button>
-        <button class="esc-btn esc-btn-primary" data-act="next" style="flex:1">${session.idx + 1 >= session.queue.length ? '完成' : '下一句'}</button>
-      </div>`;
-    UI.refreshIcons(body);
-    body.querySelector('[data-act="next"]').addEventListener('click', () => {
-      if (session.idx + 1 >= session.queue.length) finish(); else next();
+  /* ==================================================================
+     语境填空 · 全文（对齐网页端 cloze_mode_ui）
+     整篇文章挖空 → 段落分组 → 逐段渲染：每个生词一个字母格输入，
+     支持 检查/提示/显示答案/朗读/句首翻译气泡/连击计分/结算。
+     ================================================================== */
+  const CLOZE_ICONS = {
+    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    star: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    refresh: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>',
+    bulb: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6"></path><path d="M12 17v4"></path><path d="M12 3a6 6 0 0 0-4 10.5c.5.5 1 1.5 1 2.5h6c0-1 .5-2 1-2.5A6 6 0 0 0 12 3z"></path></svg>',
+    eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    speak: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
+    prev: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    next: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+    trans: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h6M7 3v2M5 5c0 4-1 6-3 8M5 9c2 2 4 3 5 4M13 13l4-9 4 9M14.5 10h5M17 16v5M15 21h4"></path></svg>'
+  };
+
+  function renderArticleCloze(body, item) {
+    // 重启时清理上一轮残留
+    clozeCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    clozeCleanups.length = 0;
+
+    // 生词图：当前选中生词本（词形还原后命中），对齐网页端
+    const vocabMap = {};
+    getSelectedVocab().forEach((w) => {
+      const key = String(w.word || '').toLowerCase().trim();
+      if (key) vocabMap[key] = w.meaning || '';
     });
-    const prev = body.querySelector('[data-act="prev"]');
-    if (prev) prev.addEventListener('click', () => { if (session.idx > 0) { session.idx--; step(); } });
+
+    const articleText = item.originalText || item.text || '';
+    const tokens = [];
+    const re = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
+    let mm;
+    while ((mm = re.exec(articleText)) !== null) {
+      if (mm[1]) tokens.push({ type: 'word', value: mm[1], index: mm.index });
+      else tokens.push({ type: 'nonword', value: mm[2] });
+    }
+    // 全文章唯一命中（按词形去重），对齐网页端 clozeItems
+    const clozeItems = [];
+    const seenLemmas = new Set();
+    tokens.forEach((token) => {
+      if (token.type !== 'word') return;
+      const lower = token.value.toLowerCase();
+      const lemma = quizLemmatize(lower, vocabMap);
+      const matchedKey = vocabMap[lower] ? lower : (vocabMap[lemma] ? lemma : null);
+      if (matchedKey && !seenLemmas.has(matchedKey)) {
+        seenLemmas.add(matchedKey);
+        clozeItems.push({ word: token.value, lemma: matchedKey, meaning: vocabMap[matchedKey], index: token.index });
+      }
+    });
+    if (clozeItems.length === 0) { UI.toast('该文章中没有找到生词本中的单词'); closeOverlay(); return; }
+
+    overlay && overlay.classList.add('esc-overlay-cloze');
+    body.className = '';
+
+    // 句子分析索引：en(trim 后) -> 翻译，供句首翻译气泡查找
+    const sentArr = (item.result && Array.isArray(item.result.sentences)) ? item.result.sentences : [];
+    const sd = item.sentenceData || {};
+    function findSentenceTranslation(sentenceText) {
+      const key = String(sentenceText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (!key) return '';
+      for (let i = 0; i < sentArr.length; i++) {
+        const st = sentArr[i];
+        if (!st) continue;
+        const en = String(st.en || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (!en) continue;
+        if (en === key || key.indexOf(en) === 0 || en.indexOf(key) === 0) {
+          return (st.zh || st.translation || '') || (sd[i] && (sd[i].translation || sd[i].zh || '')) || '';
+        }
+      }
+      return '';
+    }
+
+    // ---- 段落分组 ----
+    const paragraphs = articleText.split(/\n\n+/).filter((p) => p.trim().length > 0);
+    let paraStart = 0;
+    const paragraphBounds = paragraphs.map((p) => {
+      const start = paraStart;
+      const end = paraStart + p.length;
+      paraStart = end + 2;
+      return { start, end, text: p };
+    });
+    const paragraphGroups = [];
+    const paraGroupMap = new Map();
+    clozeItems.forEach((it) => {
+      const pi = paragraphBounds.findIndex((b) => it.index >= b.start && it.index < b.end);
+      if (pi < 0) return;
+      if (!paraGroupMap.has(pi)) {
+        paraGroupMap.set(pi, { paragraphIndex: pi, text: paragraphs[pi], items: [], bounds: paragraphBounds[pi] });
+        paragraphGroups.push(paraGroupMap.get(pi));
+      }
+      paraGroupMap.get(pi).items.push(it);
+    });
+    paragraphGroups.sort((a, b) => a.paragraphIndex - b.paragraphIndex);
+    let currentParagraphIdx = 0;
+
+    // ---- 状态 ----
+    let clozeScore = 0, clozeStreakCount = 0, clozeMaxStreak = 0, clozeWrongCount = 0, clozeSkippedCount = 0, clozeChecked = false;
+    const wordStates = new Map(); // lowerWord -> correct|revealed|incorrect
+    let clozeInputItems = []; // {item, wrapper, grid, gridApi, boxes}
+    let transBubble = null;
+
+    function closeTransBubble() {
+      if (transBubble) { transBubble.remove(); transBubble = null; }
+    }
+    function speakSentence(text, grid) {
+      if (grid) grid.classList.add('speaking');
+      if (typeof Speech.speak === 'function') {
+        Speech.speak(text, { rate: 0.85 });
+        setTimeout(() => { if (grid) grid.classList.remove('speaking'); }, 1400);
+      }
+    }
+    function getComboBonus(streak) {
+      if (streak >= 20) return 10;
+      if (streak >= 10) return 5;
+      if (streak >= 5) return 3;
+      if (streak >= 3) return 2;
+      return 0;
+    }
+    function updateScore() {
+      const el = document.getElementById('clozeScoreNum');
+      if (el) el.textContent = clozeScore;
+      const badge = document.getElementById('clozeScoreBadge');
+      if (badge) {
+        badge.classList.remove('score-pop');
+        void badge.offsetWidth;
+        badge.classList.add('score-pop');
+      }
+    }
+    function updateStreak() {
+      const sEl = document.getElementById('clozeStreak');
+      if (!sEl) return;
+      if (clozeStreakCount >= 10) { sEl.textContent = '🔥 超级连击 ' + clozeStreakCount + ' 次！'; sEl.className = 'cloze-streak streak-10'; }
+      else if (clozeStreakCount >= 5) { sEl.textContent = '🔥 连击 ' + clozeStreakCount + ' 次！'; sEl.className = 'cloze-streak streak-5'; }
+      else if (clozeStreakCount >= 3) { sEl.textContent = '⚡ ' + clozeStreakCount + ' 连对'; sEl.className = 'cloze-streak streak-3'; }
+      else { sEl.textContent = ''; sEl.className = 'cloze-streak'; }
+    }
+    function updateProgress() {
+      let completed = 0;
+      clozeItems.forEach((it) => {
+        const st = wordStates.get(it.word.toLowerCase());
+        if (st === 'correct' || st === 'revealed') completed++;
+      });
+      const fillEl = document.getElementById('clozeProgressFill');
+      const idxEl = document.getElementById('clozeProgressText');
+      const pct = clozeItems.length ? (completed / clozeItems.length * 100) : 0;
+      if (fillEl) fillEl.style.width = pct + '%';
+      if (idxEl) idxEl.textContent = '已攻克 ' + completed + ' / ' + clozeItems.length;
+      if (completed === clozeItems.length && clozeItems.length > 0) setTimeout(() => showSummary(), 420);
+    }
+
+    // ---- 检查 / 重置 / 显示答案 ----
+    function doCheck() {
+      if (clozeChecked) { doReset(); return; }
+      let correct = 0, wrong = 0, newlySolved = 0, gainedScore = 0;
+      clozeInputItems.forEach((it) => {
+        const { item, wrapper, gridApi } = it;
+        if (wrapper.classList.contains('correct') || wrapper.classList.contains('revealed')) return;
+        const answer = (wrapper.dataset.answer || '').toLowerCase();
+        const lemma = wrapper.dataset.lemma || '';
+        const userAnswer = gridApi.slots.join('');
+        wrapper.classList.remove('correct', 'incorrect');
+        const boxes = gridApi.boxes, inputs = gridApi.inputs;
+        boxes.forEach((box, idx) => {
+          box.classList.remove('correct', 'wrong', 'revealed');
+          if (idx < answer.length && idx < userAnswer.length && userAnswer[idx] === answer[idx]) {
+            box.classList.add('correct');
+            if (inputs[idx]) inputs[idx].value = answer[idx];
+          } else if (idx < userAnswer.length) {
+            box.classList.add('wrong');
+          }
+        });
+        const ok = !!userAnswer && (userAnswer === answer || userAnswer === lemma.toLowerCase() || quizLemmatize(userAnswer, vocabMap) === lemma);
+        if (ok) {
+          wrapper.classList.add('correct');
+          wordStates.set(item.word.toLowerCase(), 'correct');
+          boxes.forEach((box, idx) => {
+            box.classList.remove('wrong');
+            box.classList.add('correct');
+            if (inputs[idx]) { inputs[idx].value = answer[idx]; inputs[idx].disabled = true; }
+          });
+          correct++; newlySolved++;
+          clozeStreakCount++;
+          if (clozeStreakCount > clozeMaxStreak) clozeMaxStreak = clozeStreakCount;
+          gainedScore += 10 + getComboBonus(clozeStreakCount);
+        } else {
+          wrapper.classList.add('incorrect');
+          wordStates.set(item.word.toLowerCase(), 'incorrect');
+          clozeWrongCount++; wrong++;
+          clozeStreakCount = 0;
+          boxes.forEach((box, idx) => {
+            box.classList.add('revealed');
+            box.classList.remove('wrong');
+            if (inputs[idx]) { inputs[idx].value = answer[idx]; inputs[idx].disabled = true; }
+          });
+          const ca = document.createElement('span');
+          ca.className = 'cloze-correct-answer';
+          ca.textContent = wrapper.dataset.answer;
+          wrapper.appendChild(ca);
+        }
+      });
+      clozeScore += gainedScore;
+      updateScore(); updateStreak(); updateProgress();
+      const resultEl = document.getElementById('clozePracticeResult');
+      if (resultEl) {
+        if (newlySolved > 0 && wrong === 0) {
+          resultEl.innerHTML = '<span class="cloze-correct">✓ 正确 ' + correct + (gainedScore > 0 ? ' · +' + gainedScore + '分' : '') + '</span>';
+          resultEl.className = 'cloze-result cloze-result-correct';
+          const card = body.querySelector('.cloze-card');
+          if (card) { card.classList.add('cloze-card-correct'); setTimeout(() => card.classList.remove('cloze-card-correct'), 600); }
+        } else if (newlySolved === 0 && wrong === 0) {
+          resultEl.innerHTML = '<span class="cloze-skip">没有需要检查的填空</span>';
+          resultEl.className = 'cloze-result cloze-result-skip';
+        } else {
+          resultEl.innerHTML = '<span class="cloze-wrong">✗ 正确 ' + correct + ' · 错误 ' + wrong + '</span>';
+          resultEl.className = 'cloze-result cloze-result-wrong';
+          const card = body.querySelector('.cloze-card');
+          if (card) { card.classList.add('cloze-card-wrong'); setTimeout(() => card.classList.remove('cloze-card-wrong'), 600); }
+        }
+      }
+      if (wrong > 0) {
+        clozeChecked = true;
+        const cb = document.getElementById('clozeCheckBtn');
+        if (cb) { cb.innerHTML = CLOZE_ICONS.refresh; cb.dataset.mode = 'reset'; cb.title = '重新尝试'; }
+      }
+    }
+
+    function doReset() {
+      clozeInputItems.forEach((it) => {
+        const { item, wrapper, gridApi } = it;
+        if (wrapper.classList.contains('correct') || wrapper.classList.contains('revealed')) return;
+        wrapper.classList.remove('correct', 'incorrect');
+        wordStates.delete(item.word.toLowerCase());
+        const ca = wrapper.querySelector('.cloze-correct-answer');
+        if (ca) ca.remove();
+        gridApi.boxes.forEach((box, idx) => {
+          box.classList.remove('correct', 'wrong', 'revealed', 'filled');
+          if (gridApi.inputs[idx]) { gridApi.inputs[idx].value = ''; gridApi.inputs[idx].disabled = false; }
+        });
+        gridApi.render();
+      });
+      const resultEl = document.getElementById('clozePracticeResult');
+      if (resultEl) { resultEl.innerHTML = ''; resultEl.className = 'cloze-result'; }
+      clozeChecked = false;
+      const cb = document.getElementById('clozeCheckBtn');
+      if (cb) { cb.innerHTML = CLOZE_ICONS.check; delete cb.dataset.mode; cb.title = '检查答案'; }
+      const firstUnsolved = clozeInputItems.find((it) => !it.wrapper.classList.contains('correct') && !it.wrapper.classList.contains('revealed'));
+      if (firstUnsolved) firstUnsolved.gridApi.focus();
+    }
+
+    function doReveal() {
+      let revealed = 0;
+      clozeInputItems.forEach((it) => {
+        const { item, wrapper, gridApi } = it;
+        if (wrapper.classList.contains('correct') || wrapper.classList.contains('revealed')) return;
+        const answer = item.word.toLowerCase();
+        wrapper.classList.remove('incorrect');
+        wrapper.classList.add('revealed');
+        wordStates.set(item.word.toLowerCase(), 'revealed');
+        const ca = wrapper.querySelector('.cloze-correct-answer');
+        if (ca) ca.remove();
+        gridApi.boxes.forEach((box, idx) => {
+          box.classList.add('revealed');
+          box.classList.remove('wrong');
+          if (gridApi.inputs[idx]) { gridApi.inputs[idx].value = answer[idx]; gridApi.inputs[idx].disabled = true; }
+        });
+        revealed++;
+        clozeSkippedCount++;
+        clozeScore = Math.max(0, clozeScore - 5);
+      });
+      clozeStreakCount = 0;
+      updateScore(); updateStreak(); updateProgress();
+      const resultEl = document.getElementById('clozePracticeResult');
+      if (resultEl) {
+        if (revealed > 0) {
+          resultEl.innerHTML = '<span class="cloze-skip">已显示 ' + revealed + ' 个答案 · -' + (revealed * 5) + '分</span>';
+          resultEl.className = 'cloze-result cloze-result-skip';
+        } else {
+          resultEl.innerHTML = '<span class="cloze-skip">没有可显示的答案</span>';
+          resultEl.className = 'cloze-result cloze-result-skip';
+        }
+      }
+    }
+
+    // ---- 句首翻译气泡 ----
+    function showTranslation(btn, sentenceText) {
+      if (transBubble) { closeTransBubble(); return; }
+      const translation = findSentenceTranslation(sentenceText);
+      if (!translation) { UI.toast('暂无翻译'); return; }
+      const b = document.createElement('div');
+      b.className = 'cloze-trans-bubble';
+      b.textContent = translation;
+      document.body.appendChild(b);
+      transBubble = b;
+      requestAnimationFrame(() => {
+        const btnRect = btn.getBoundingClientRect();
+        const bRect = b.getBoundingClientRect();
+        let top = btnRect.top - bRect.height - 8;
+        let left = Math.max(8, Math.min(btnRect.left, window.innerWidth - bRect.width - 8));
+        if (top < 8) { top = btnRect.bottom + 8; b.classList.add('below'); }
+        b.style.top = top + 'px';
+        b.style.left = left + 'px';
+        b.classList.add('visible');
+      });
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!b.contains(e.target)) { closeTransBubble(); document.removeEventListener('click', handler); }
+        };
+        document.addEventListener('click', handler);
+      }, 10);
+    }
+
+    // ---- 渲染当前段落 ----
+    function renderCurrentParagraph() {
+      const contentEl = document.getElementById('clozeContent');
+      if (!contentEl) return;
+      contentEl.innerHTML = '';
+      clozeInputItems = [];
+      const indicator = document.getElementById('clozeParaIndicator');
+      const prevBtn = document.getElementById('clozePrevBtn');
+      const nextBtn = document.getElementById('clozeNextBtn');
+      if (paragraphGroups.length === 0) {
+        if (indicator) indicator.textContent = '没有可练习的段落';
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) nextBtn.disabled = true;
+        return;
+      }
+      if (currentParagraphIdx < 0) currentParagraphIdx = 0;
+      if (currentParagraphIdx >= paragraphGroups.length) currentParagraphIdx = paragraphGroups.length - 1;
+      const group = paragraphGroups[currentParagraphIdx];
+      if (indicator) indicator.textContent = '段落 ' + (currentParagraphIdx + 1) + ' / ' + paragraphGroups.length;
+      if (prevBtn) prevBtn.disabled = currentParagraphIdx === 0;
+      if (nextBtn) nextBtn.disabled = currentParagraphIdx >= paragraphGroups.length - 1;
+
+      const paraText = group.text || '';
+      const items = group.items.slice().sort((a, b) => a.index - b.index);
+      const paraStart = group.bounds.start;
+
+      // 段落按句分割
+      const sentParts = [];
+      const sentRe = /[^.!?]*[.!?]+/g;
+      let lastIdx = 0, sm;
+      while ((sm = sentRe.exec(paraText)) !== null) {
+        sentParts.push({ text: sm[0], start: sm.index, end: sm.index + sm[0].length });
+        lastIdx = sm.index + sm[0].length;
+      }
+      const rest = paraText.slice(lastIdx).trim();
+      if (rest) sentParts.push({ text: rest, start: lastIdx, end: paraText.length });
+      if (!sentParts.length && paraText.length) sentParts.push({ text: paraText, start: 0, end: paraText.length });
+
+      const localIdxByItem = new Map();
+      let gi = 0;
+
+      sentParts.forEach((sentence) => {
+        const sentItems = items.filter((it) => {
+          const ls = it.index - paraStart;
+          return ls >= sentence.start && ls < sentence.end;
+        });
+        // 句首翻译按钮
+        const transBtn = document.createElement('button');
+        transBtn.type = 'button';
+        transBtn.className = 'cloze-sent-trans-btn';
+        transBtn.title = '查看翻译';
+        transBtn.innerHTML = CLOZE_ICONS.trans;
+        transBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showTranslation(transBtn, sentence.text);
+        });
+        contentEl.appendChild(transBtn);
+
+        let cursor = paraStart + sentence.start;
+        sentItems.forEach((item) => {
+          const localStart = item.index - paraStart;
+          const localEnd = localStart + item.word.length;
+          if (localStart > cursor - paraStart) {
+            const before = paraText.substring(cursor - paraStart, localStart);
+            if (before) {
+              const span = document.createElement('span');
+              span.className = 'cloze-text';
+              span.textContent = before;
+              contentEl.appendChild(span);
+            }
+          }
+          // 字母格
+          const wrapper = document.createElement('span');
+          wrapper.className = 'cloze-input-wrapper';
+          wrapper.dataset.answer = item.word;
+          wrapper.dataset.lemma = item.lemma;
+          wrapper.dataset.meaning = item.meaning;
+          const prevState = wordStates.get(item.word.toLowerCase());
+          if (prevState === 'correct') wrapper.classList.add('correct');
+          else if (prevState === 'revealed') wrapper.classList.add('revealed');
+          else if (prevState === 'incorrect') wrapper.classList.add('incorrect');
+
+          const grid = document.createElement('span');
+          grid.className = 'cloze-letter-grid';
+          const wordUpper = item.word.toLowerCase();
+          const gridApi = setupLetterGrid(grid, wordUpper.length, () => doCheck(), () => {
+            const next = clozeInputItems[gi + 1];
+            if (next) next.gridApi.focus();
+          }, () => {
+            const prev = clozeInputItems[gi - 1];
+            if (prev) prev.gridApi.focusAt(prev.gridApi.slots.length - 1);
+          });
+          // 已完成状态回填
+          if (prevState === 'correct' || prevState === 'revealed') {
+            gridApi.slots.forEach((_, idx) => { gridApi.slots[idx] = wordUpper[idx]; });
+            gridApi.boxes.forEach((box, idx) => {
+              box.classList.add(prevState === 'correct' ? 'correct' : 'revealed');
+              if (gridApi.inputs[idx]) { gridApi.inputs[idx].value = wordUpper[idx]; gridApi.inputs[idx].disabled = true; }
+            });
+            gridApi.render();
+          }
+          // 点击字母格：朗读该单词
+          grid.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speakSentence(item.word, grid);
+          });
+          wrapper.appendChild(grid);
+          contentEl.appendChild(wrapper);
+          localIdxByItem.set(item, gi);
+          clozeInputItems.push({ item, wrapper, grid, gridApi, boxes: gridApi.boxes });
+          gi++;
+          cursor = paraStart + localEnd;
+        });
+        // 句尾剩余文本
+        const tailStart = cursor - paraStart;
+        if (tailStart < sentence.end) {
+          const tail = paraText.substring(tailStart, sentence.end);
+          if (tail) {
+            const span = document.createElement('span');
+            span.className = 'cloze-text';
+            span.textContent = tail;
+            contentEl.appendChild(span);
+          }
+        }
+        // 句末朗读按钮
+        const speakBtn = document.createElement('button');
+        speakBtn.type = 'button';
+        speakBtn.className = 'cloze-sent-speak-btn';
+        speakBtn.title = '朗读本句';
+        speakBtn.innerHTML = CLOZE_ICONS.speak;
+        speakBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          speakSentence(sentence.text);
+        });
+        contentEl.appendChild(speakBtn);
+        // 句间分割线
+        if (sentence !== sentParts[sentParts.length - 1]) {
+          const divider = document.createElement('div');
+          divider.className = 'cloze-sentence-divider';
+          contentEl.appendChild(divider);
+        }
+      });
+
+      // 默认聚焦第一个未完成单词
+      setTimeout(() => {
+        const firstUnsolved = clozeInputItems.find((it) => !it.wrapper.classList.contains('correct') && !it.wrapper.classList.contains('revealed'));
+        if (firstUnsolved) firstUnsolved.gridApi.focus();
+      }, 60);
+    }
+
+    function onSwitchParagraph() {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeTransBubble();
+      clozeChecked = false;
+      const cb = document.getElementById('clozeCheckBtn');
+      if (cb) { cb.innerHTML = CLOZE_ICONS.check; delete cb.dataset.mode; cb.title = '检查答案'; }
+      const resultEl = document.getElementById('clozePracticeResult');
+      if (resultEl) { resultEl.innerHTML = ''; resultEl.className = 'cloze-result'; }
+      const sEl = document.getElementById('clozeStreak');
+      if (sEl) { sEl.textContent = ''; sEl.className = 'cloze-streak'; }
+      renderCurrentParagraph();
+    }
+
+    // ---- 结算 ----
+    function showSummary() {
+      if (body.querySelector('.cloze-summary')) return;
+      closeTransBubble();
+      const bottomEl = body.querySelector('.cloze-bottom-nav');
+      if (bottomEl) bottomEl.style.display = 'none';
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      const total = clozeItems.length;
+      let correctCount = 0, skippedCount = 0;
+      clozeItems.forEach((it) => {
+        const st = wordStates.get(it.word.toLowerCase());
+        if (st === 'correct') correctCount++;
+        else if (st === 'revealed') skippedCount++;
+      });
+      const wrongAttempts = clozeWrongCount;
+      const rate = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+      const isPerfect = wrongAttempts === 0 && skippedCount === 0;
+      if (isPerfect) clozeScore += 20;
+
+      Store.recordWordsLearned(correctCount);
+      Store.recordWordsMastered(correctCount);
+      Store.recordModuleActivity(MODULE_MAP.cloze || 'cloze', correctCount);
+      const p = Store.getProgress();
+      Store.updateProgress({ correctRate: rate || p.correctRate });
+
+      let titleText = '太棒了，完成啦！', titleClass = '';
+      if (isPerfect) { titleText = '完美通关！'; titleClass = 'perfect'; }
+      else if (rate >= 90) titleText = '非常出色！';
+      else if (rate >= 70) titleText = '做得不错！';
+      else if (rate >= 50) titleText = '继续加油！';
+
+      const card = body.querySelector('.cloze-card');
+      if (card) {
+        card.innerHTML = `
+          <div class="cloze-summary">
+            <div class="cloze-summary-icon">${CLOZE_ICONS.star}</div>
+            <div class="cloze-summary-title ${titleClass}">${esc(titleText)}</div>
+            <div class="cloze-summary-stats">
+              <div class="cloze-summary-stat"><span class="cloze-summary-val correct">${correctCount}</span><span class="cloze-summary-lbl">正确</span></div>
+              <div class="cloze-summary-stat"><span class="cloze-summary-val wrong">${wrongAttempts}</span><span class="cloze-summary-lbl">错误尝试</span></div>
+              <div class="cloze-summary-stat"><span class="cloze-summary-val rate">${rate}%</span><span class="cloze-summary-lbl">正确率</span></div>
+              <div class="cloze-summary-stat"><span class="cloze-summary-val streak">${clozeMaxStreak}</span><span class="cloze-summary-lbl">最大连击</span></div>
+              ${skippedCount > 0 ? `<div class="cloze-summary-stat"><span class="cloze-summary-val skip">${skippedCount}</span><span class="cloze-summary-lbl">显示答案</span></div>` : ''}
+              <div class="cloze-summary-stat"><span class="cloze-summary-val score">${clozeScore}</span><span class="cloze-summary-lbl">得分</span></div>
+            </div>
+            ${isPerfect ? '<div class="cloze-perfect-badge">完美通关！零错误零跳过，奖励 +20 分</div>' : ''}
+            <div class="cloze-summary-actions">
+              <button class="cloze-summary-restart" data-act="retry">再来一轮</button>
+              <button class="cloze-summary-back" data-act="done">返回</button>
+            </div>
+          </div>`;
+        card.querySelector('[data-act="retry"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          renderArticleCloze(body, item);
+        });
+        card.querySelector('[data-act="done"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeOverlay();
+        });
+      }
+    }
+
+    // ---- 骨架 ----
+    body.innerHTML = `
+      <div class="cloze-container">
+        <div class="cloze-header">
+          <button class="cloze-back-btn" data-act="close" title="返回">${CLOZE_ICONS.back}</button>
+          <h3>语境填空 · ${clozeItems.length} 个生词</h3>
+          <span class="cloze-score-badge" id="clozeScoreBadge">${CLOZE_ICONS.star}<span id="clozeScoreNum">0</span></span>
+        </div>
+        <div class="cloze-top-bar">
+          <div class="cloze-progress-track"><div class="cloze-progress-fill" id="clozeProgressFill" style="width:0%"></div></div>
+          <span class="cloze-para-indicator" id="clozeParaIndicator"></span>
+          <span class="cloze-progress-text" id="clozeProgressText">已攻克 0 / ${clozeItems.length}</span>
+        </div>
+        <div class="cloze-card">
+          <div class="cloze-main"><div class="cloze-content" id="clozeContent"></div></div>
+          <div class="cloze-feedback">
+            <div class="cloze-streak" id="clozeStreak"></div>
+            <div class="cloze-result" id="clozePracticeResult"></div>
+          </div>
+          <div class="cloze-bottom-nav">
+            <button class="cloze-nav-btn" id="clozePrevBtn" title="上一段">${CLOZE_ICONS.prev}</button>
+            <div class="cloze-tool-group">
+              <button class="cloze-tool-btn cloze-check-btn" id="clozeCheckBtn" title="检查答案">${CLOZE_ICONS.check}</button>
+              <button class="cloze-tool-btn cloze-hint-btn" id="clozeHintBtn" title="提示（显示首字母）">${CLOZE_ICONS.bulb}</button>
+              <button class="cloze-tool-btn cloze-reveal-btn" id="clozeRevealBtn" title="显示答案">${CLOZE_ICONS.eye}</button>
+              <button class="cloze-tool-btn cloze-speak-btn" id="clozeSpeakBtn" title="朗读当前段落">${CLOZE_ICONS.speak}</button>
+            </div>
+            <button class="cloze-nav-btn" id="clozeNextBtn" title="下一段">${CLOZE_ICONS.next}</button>
+          </div>
+        </div>
+      </div>`;
+
+    body.querySelector('[data-act="close"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeTransBubble();
+      closeOverlay();
+    });
+
+    const checkBtn = body.querySelector('#clozeCheckBtn');
+    checkBtn.addEventListener('click', (e) => { e.stopPropagation(); if (checkBtn.dataset.mode === 'reset') doReset(); else doCheck(); });
+    body.querySelector('#clozeHintBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const unsolved = clozeInputItems.find((it) => !it.wrapper.classList.contains('correct') && !it.wrapper.classList.contains('revealed'));
+      if (!unsolved) { UI.toast('没有可提示的填空'); return; }
+      const gridApi = unsolved.gridApi;
+      const word = unsolved.item.word.toLowerCase();
+      const firstIdx = gridApi.slots.findIndex((ch) => !ch);
+      const idx = firstIdx >= 0 ? firstIdx : 0;
+      gridApi.setSlot(idx, word[idx]);
+      const box = gridApi.boxes[idx];
+      if (box) {
+        box.style.transition = 'none';
+        box.style.transform = 'scale(.3) rotateX(90deg)';
+        box.style.opacity = '0';
+        requestAnimationFrame(() => {
+          box.style.transition = 'all .35s cubic-bezier(.34,1.56,.64,1)';
+          box.style.transform = '';
+          box.style.opacity = '';
+        });
+      }
+      gridApi.focusAt(idx);
+      clozeScore = Math.max(0, clozeScore - 3);
+      updateScore();
+    });
+    body.querySelector('#clozeRevealBtn').addEventListener('click', (e) => { e.stopPropagation(); doReveal(); });
+    body.querySelector('#clozeSpeakBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (paragraphGroups.length > 0) speakSentence(paragraphGroups[currentParagraphIdx].text);
+    });
+    body.querySelector('#clozePrevBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentParagraphIdx > 0) { currentParagraphIdx--; onSwitchParagraph(); }
+    });
+    body.querySelector('#clozeNextBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentParagraphIdx < paragraphGroups.length - 1) { currentParagraphIdx++; onSwitchParagraph(); }
+    });
+
+    renderCurrentParagraph();
+    updateScore();
+    updateProgress();
+    setTimeout(() => { if (clozeInputItems[0]) clozeInputItems[0].gridApi.focus(); }, 120);
+  }
+
+  /* ==================================================================
+     逐句精读（对齐网页端 article_review_ui 的 showSentenceReviewInterface）
+     逐句展示 + 词级高亮（点击看释义）/ 收藏 / 朗读高亮 /
+     翻译·知识点·语法三页签 + 补拉 / 生词句列表 / 结算
+     ================================================================== */
+  const SENT_ICONS = {
+    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    speak: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
+    bookmark: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+    bookmarkFill: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    next: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+    list: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+  };
+
+  function renderArticleSentence(body, item) {
+    // 重启时清理上一轮残留
+    sentCleanups.forEach((fn) => { try { fn(); } catch (e) {} });
+    sentCleanups.length = 0;
+
+    const articleId = item.id;
+    // 句子数组：优先用已解析的句子对象，否则本地分句
+    let sentArr = (item.result && Array.isArray(item.result.sentences)) ? item.result.sentences : [];
+    if (!sentArr.length) {
+      sentArr = (Shared.splitSentences ? Shared.splitSentences(item.text || '') : []).map((en) => ({ en }));
+    }
+    const sentences = sentArr.map((s, i) => (typeof s === 'string' ? { en: s } : s)).filter((s) => s && s.en);
+    if (sentences.length === 0) { UI.toast('该文章没有解析句子数据'); closeOverlay(); return; }
+
+    overlay && overlay.classList.add('esc-overlay-sent');
+    body.className = '';
+
+    const sd = item.sentenceData || {};
+    const vocabMap = {};
+    getSelectedVocab().forEach((w) => {
+      const key = String(w.word || '').toLowerCase().trim();
+      if (key) vocabMap[key] = w.meaning || '';
+    });
+
+    // 收藏状态（按句子索引，对齐网页端 localStorage）
+    const FAV_KEY = 'sentFavorites_' + articleId;
+    function getSentFavorites() {
+      try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); } catch (e) { return new Set(); }
+    }
+    function saveSentFavorites(set) {
+      try { localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(set))); } catch (e) { /* ignore */ }
+    }
+
+    const ANALYSIS_TABS = [
+      { key: 'translation', label: '翻译' },
+      { key: 'knowledge', label: '知识点' },
+      { key: 'syntax', label: '语法' }
+    ];
+
+    let currentIndex = 0;
+    let currentTtsToken = 0;
+    const readSentencesSet = new Set();
+    const touchedVocabSet = new Set();
+    let sentVocabPanelOpen = false;
+    let transBubble = null;
+
+    function closeTransBubble() {
+      if (transBubble) { transBubble.remove(); transBubble = null; }
+    }
+    function showWordBubble(meaning, element) {
+      closeTransBubble();
+      const b = document.createElement('div');
+      b.className = 'sent-word-bubble';
+      b.textContent = meaning;
+      document.body.appendChild(b);
+      transBubble = b;
+      requestAnimationFrame(() => {
+        const r = element.getBoundingClientRect();
+        const br = b.getBoundingClientRect();
+        let top = r.bottom + 8;
+        let left = r.left + (r.width / 2) - (br.width / 2);
+        if (left < 8) left = 8;
+        if (left + br.width > window.innerWidth - 8) left = window.innerWidth - br.width - 8;
+        b.style.top = top + 'px';
+        b.style.left = left + 'px';
+        b.classList.add('visible');
+      });
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!b.contains(e.target) && e.target !== element) { closeTransBubble(); document.removeEventListener('click', handler); }
+        };
+        document.addEventListener('click', handler);
+      }, 10);
+    }
+
+    // 词级高亮：生词可点击看释义；记录 charOffset 供朗读高亮
+    function buildSentHighlightedText(text) {
+      const frag = document.createDocumentFragment();
+      const regex = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
+      let m;
+      let wordIdx = 0, charOffset = 0;
+      while ((m = regex.exec(text)) !== null) {
+        if (m[1]) {
+          const word = m[1];
+          const lower = word.toLowerCase();
+          const span = document.createElement('span');
+          span.className = 'sent-word';
+          span.dataset.idx = wordIdx;
+          span.dataset.offset = charOffset;
+          span.textContent = word;
+          if (vocabMap[lower]) {
+            span.classList.add('review-vocab-word');
+            span.dataset.meaning = vocabMap[lower];
+            span.addEventListener('click', (e) => {
+              e.stopPropagation();
+              showWordBubble(span.dataset.meaning, span);
+            });
+          }
+          frag.appendChild(span);
+          wordIdx++;
+          charOffset += word.length;
+        } else if (m[2]) {
+          frag.appendChild(document.createTextNode(m[2]));
+          charOffset += m[2].length;
+        }
+      }
+      return frag;
+    }
+
+    function collectSentenceVocab(idx) {
+      const text = sentences[idx].en || '';
+      const regex = /([a-zA-Z'-]+)/g;
+      let m;
+      while ((m = regex.exec(text)) !== null) {
+        const lower = m[1].toLowerCase();
+        if (vocabMap[lower]) touchedVocabSet.add(lower);
+      }
+    }
+
+    // 分析数据：句子对象自带字段 + sentenceData 覆盖（补拉持久化）
+    function getAnalysis(idx) {
+      const base = sentences[idx] || {};
+      const extra = sd[idx] || {};
+      return {
+        translation: base.zh || base.translation || extra.translation || extra.zh || '',
+        knowledge: base.knowledge || extra.knowledge || '',
+        syntax: base.syntax || extra.syntax || null,
+        words: base.words || extra.words || []
+      };
+    }
+    function syntaxSummary(syntax) {
+      if (!syntax || typeof syntax !== 'object') return '';
+      const parts = [];
+      if (syntax.structure) parts.push('结构：' + syntax.structure);
+      if (syntax.function) parts.push('功能：' + syntax.function);
+      if (syntax.pattern) parts.push('句型：' + syntax.pattern);
+      if (syntax.syntax) parts.push(syntax.syntax);
+      if (Array.isArray(syntax.constituents) && syntax.constituents.length) {
+        parts.push(syntax.constituents.map((c) => (c.name ? c.name + '：' + c.text : c.text)).join('；'));
+      }
+      return parts.join('\n');
+    }
+
+    function ensureAnalysisTabs(analysisEl) {
+      if (analysisEl.querySelector('.sentence-analysis-tabs')) return;
+      analysisEl.innerHTML = '';
+      const tabsBar = document.createElement('div');
+      tabsBar.className = 'sentence-analysis-tabs';
+      ANALYSIS_TABS.forEach((t, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sentence-tab-btn' + (i === 0 ? ' active' : '');
+        btn.dataset.tab = t.key;
+        btn.textContent = t.label;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          analysisEl.querySelectorAll('.sentence-tab-btn').forEach((b) => b.classList.remove('active'));
+          analysisEl.querySelectorAll('.sentence-tab-content').forEach((c) => c.classList.remove('active'));
+          btn.classList.add('active');
+          const content = analysisEl.querySelector('.sentence-tab-content[data-tab="' + t.key + '"]');
+          if (content) content.classList.add('active');
+        });
+        tabsBar.appendChild(btn);
+      });
+      const refreshBtn = document.createElement('button');
+      refreshBtn.type = 'button';
+      refreshBtn.className = 'sentence-tab-btn tab-refresh';
+      refreshBtn.title = '重新分析当前句子';
+      refreshBtn.innerHTML = SENT_ICONS.refresh;
+      refreshBtn.addEventListener('click', (e) => { e.stopPropagation(); fetchSentenceAnalysis(currentIndex); });
+      tabsBar.appendChild(refreshBtn);
+      const contentsWrap = document.createElement('div');
+      contentsWrap.className = 'sentence-tab-contents';
+      ANALYSIS_TABS.forEach((t, i) => {
+        const content = document.createElement('div');
+        content.className = 'sentence-tab-content' + (i === 0 ? ' active' : '');
+        content.dataset.tab = t.key;
+        contentsWrap.appendChild(content);
+      });
+      analysisEl.appendChild(tabsBar);
+      analysisEl.appendChild(contentsWrap);
+    }
+    function setTabContent(analysisEl, key, html, isEmpty) {
+      const content = analysisEl.querySelector('.sentence-tab-content[data-tab="' + key + '"]');
+      if (!content) return;
+      content.innerHTML = '';
+      if (isEmpty || !html) {
+        const empty = document.createElement('div');
+        empty.className = 'sentence-analysis-empty';
+        empty.textContent = isEmpty ? html : '暂无';
+        content.appendChild(empty);
+        return;
+      }
+      const value = document.createElement('div');
+      value.className = 'analysis-value';
+      value.innerHTML = html;
+      content.appendChild(value);
+    }
+
+    async function fetchSentenceAnalysis(idx) {
+      const analysisEl = document.getElementById('sentenceReviewAnalysis');
+      if (!analysisEl) return;
+      const en = sentences[idx] && sentences[idx].en;
+      if (!en) return;
+      const loading = '<span class="analysis-loading">AI 分析中...</span>';
+      setTabContent(analysisEl, 'translation', loading);
+      setTabContent(analysisEl, 'knowledge', loading);
+      setTabContent(analysisEl, 'syntax', loading);
+      try {
+        if (!Mobile.API || typeof Mobile.API.refetch !== 'function') throw new Error('no api');
+        const [tRes, kRes, sRes] = await Promise.all([
+          Mobile.API.refetch(en, 'translation'),
+          Mobile.API.refetch(en, 'knowledge'),
+          Mobile.API.refetch(en, 'syntax')
+        ]);
+        const merged = {
+          translation: (tRes && (tRes.zh || tRes.translation)) || '',
+          knowledge: (kRes && kRes.knowledge) || '',
+          syntax: (kRes && kRes.syntax) || (sRes && sRes.syntax) || null
+        };
+        sd[idx] = Object.assign({}, sd[idx], merged);
+        if (Store.updateSentenceData) Store.updateSentenceData(articleId, idx, merged);
+        if (currentIndex === idx && analysisEl) {
+          setTabContent(analysisEl, 'translation', merged.translation || '');
+          setTabContent(analysisEl, 'knowledge', merged.knowledge || '');
+          setTabContent(analysisEl, 'syntax', merged.syntax ? esc(syntaxSummary(merged.syntax)).replace(/\n/g, '<br>') : '');
+        }
+      } catch (e) {
+        console.warn('[逐句精读] 分析失败:', e);
+        if (currentIndex === idx && analysisEl) {
+          setTabContent(analysisEl, 'translation', '分析失败，请重试', true);
+          setTabContent(analysisEl, 'knowledge', '');
+          setTabContent(analysisEl, 'syntax', '');
+        }
+      }
+    }
+
+    // 朗读当前句：逐词高亮（onboundary）
+    function speakCurrentSentence() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const token = ++currentTtsToken;
+        const sentenceTextEl = document.getElementById('sentenceReviewText');
+        if (sentenceTextEl) sentenceTextEl.querySelectorAll('.sent-word-active').forEach((w) => w.classList.remove('sent-word-active'));
+        const utterance = new SpeechSynthesisUtterance(sentences[currentIndex].en);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        utterance.onboundary = (ev) => {
+          if (token !== currentTtsToken || !sentenceTextEl) return;
+          const charIndex = ev.charIndex || 0;
+          const wordEls = sentenceTextEl.querySelectorAll('.sent-word');
+          if (!wordEls.length) return;
+          let target = null;
+          wordEls.forEach((w) => {
+            const offset = parseInt(w.dataset.offset, 10);
+            const len = (w.textContent || '').length;
+            if (offset <= charIndex && charIndex < offset + len) target = w;
+          });
+          if (!target) {
+            for (const w of wordEls) { if (parseInt(w.dataset.offset, 10) >= charIndex) { target = w; break; } }
+          }
+          if (target) {
+            wordEls.forEach((w) => w.classList.remove('sent-word-active'));
+            target.classList.add('sent-word-active');
+          }
+        };
+        const clearHighlights = () => {
+          if (token !== currentTtsToken) return;
+          if (sentenceTextEl) sentenceTextEl.querySelectorAll('.sent-word-active').forEach((w) => w.classList.remove('sent-word-active'));
+        };
+        utterance.onend = clearHighlights;
+        utterance.onerror = clearHighlights;
+        window.speechSynthesis.speak(utterance);
+      } else if (typeof Speech.speak === 'function') {
+        Speech.speak(sentences[currentIndex].en);
+      }
+    }
+
+    function updateFavoriteUI(idx) {
+      const favs = getSentFavorites();
+      const isFav = favs.has(idx);
+      const favBtn = document.getElementById('sentenceFavBtn');
+      if (favBtn) {
+        favBtn.innerHTML = isFav ? SENT_ICONS.bookmarkFill : SENT_ICONS.bookmark;
+        favBtn.classList.toggle('favorited', isFav);
+      }
+      const textEl = document.getElementById('sentenceReviewText');
+      if (textEl) {
+        let mark = textEl.querySelector('.sent-fav-mark');
+        if (isFav) {
+          if (!mark) {
+            mark = document.createElement('span');
+            mark.className = 'sent-fav-mark';
+            mark.innerHTML = SENT_ICONS.bookmarkFill;
+            textEl.appendChild(mark);
+          }
+        } else if (mark) mark.remove();
+      }
+    }
+
+    function renderSentence(idx) {
+      currentIndex = idx;
+      currentTtsToken++;
+      readSentencesSet.add(idx);
+      collectSentenceVocab(idx);
+      const sentenceTextEl = document.getElementById('sentenceReviewText');
+      const analysisEl = document.getElementById('sentenceReviewAnalysis');
+      if (sentenceTextEl) {
+        sentenceTextEl.innerHTML = '';
+        sentenceTextEl.appendChild(buildSentHighlightedText(sentences[idx].en));
+      }
+      updateFavoriteUI(idx);
+      document.querySelectorAll('.sent-vocab-panel-item').forEach((it) => {
+        it.classList.toggle('active', parseInt(it.dataset.idx, 10) === idx);
+      });
+      const indexEl = document.getElementById('sentenceIndex');
+      if (indexEl) indexEl.textContent = (idx + 1) + ' / ' + sentences.length;
+      const prevBtn = document.getElementById('sentencePrevBtn');
+      const nextBtn = document.getElementById('sentenceNextBtn');
+      if (prevBtn) prevBtn.disabled = idx === 0;
+      if (nextBtn) nextBtn.disabled = idx === sentences.length - 1;
+      const fillEl = document.getElementById('sentenceProgressFill');
+      if (fillEl) fillEl.style.width = ((idx + 1) / sentences.length * 100) + '%';
+
+      if (analysisEl) {
+        ensureAnalysisTabs(analysisEl);
+        const data = getAnalysis(idx);
+        if (data.translation || data.knowledge || data.syntax) {
+          setTabContent(analysisEl, 'translation', esc(data.translation).replace(/\n/g, '<br>'));
+          setTabContent(analysisEl, 'knowledge', esc(data.knowledge).replace(/\n/g, '<br>'));
+          setTabContent(analysisEl, 'syntax', data.syntax ? esc(syntaxSummary(data.syntax)).replace(/\n/g, '<br>') : '');
+        } else {
+          fetchSentenceAnalysis(idx);
+        }
+      }
+    }
+
+    // ---- 骨架 ----
+    body.innerHTML = `
+      <div class="sent-container">
+        <div class="sent-header">
+          <button class="sent-back-btn" data-act="close" title="返回">${SENT_ICONS.back}</button>
+          <h3>逐句精读 · ${sentences.length} 句</h3>
+          <div class="sent-header-actions">
+            <button class="sent-fav-btn" id="sentenceFavBtn" title="收藏当前句子">${SENT_ICONS.bookmark}</button>
+            <button class="sent-tts-btn" id="sentenceTtsBtn" title="朗读当前句子">${SENT_ICONS.speak}</button>
+          </div>
+        </div>
+        <div class="sent-progress-wrap">
+          <div class="sent-progress-track"><div class="sent-progress-fill" id="sentenceProgressFill" style="width:${(1 / sentences.length * 100)}%"></div></div>
+          <span class="sent-progress-text" id="sentenceIndex">1 / ${sentences.length}</span>
+        </div>
+        <div class="sent-nav">
+          <span class="sent-nav-hint">点生词看释义 · 点击朗读</span>
+          <button class="sent-vocab-nav-btn" id="sentVocabBtn" title="生词句列表">${SENT_ICONS.list}</button>
+        </div>
+        <div class="sent-vocab-panel" id="sentVocabPanel" hidden></div>
+        <div class="sent-main">
+          <div class="sentence-review-text" id="sentenceReviewText"></div>
+          <div class="sentence-review-analysis" id="sentenceReviewAnalysis"></div>
+        </div>
+        <div class="sent-bottom">
+          <button class="sent-nav-btn" id="sentencePrevBtn" title="上一句">${SENT_ICONS.prev}</button>
+          <button class="sent-done-btn" data-act="done">${SENT_ICONS.check}<span>完成</span></button>
+          <button class="sent-nav-btn" id="sentenceNextBtn" title="下一句">${SENT_ICONS.next}</button>
+        </div>
+      </div>`;
+
+    body.querySelector('[data-act="close"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeTransBubble();
+      closeOverlay();
+    });
+    body.querySelector('[data-act="done"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      showSentenceSummary();
+    });
+    body.querySelector('#sentenceFavBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const favs = getSentFavorites();
+      if (favs.has(currentIndex)) favs.delete(currentIndex); else favs.add(currentIndex);
+      saveSentFavorites(favs);
+      updateFavoriteUI(currentIndex);
+    });
+    body.querySelector('#sentenceTtsBtn').addEventListener('click', (e) => { e.stopPropagation(); speakCurrentSentence(); });
+    body.querySelector('#sentencePrevBtn').addEventListener('click', (e) => { e.stopPropagation(); if (currentIndex > 0) renderSentence(currentIndex - 1); });
+    body.querySelector('#sentenceNextBtn').addEventListener('click', (e) => { e.stopPropagation(); if (currentIndex < sentences.length - 1) renderSentence(currentIndex + 1); });
+
+    // ---- 生词句列表 ----
+    const vocabSentences = [];
+    sentences.forEach((s, i) => {
+      const sWords = (s.en || '').match(/[a-zA-Z'-]+/g) || [];
+      const count = sWords.filter((w) => vocabMap[w.toLowerCase()]).length;
+      if (count > 0) {
+        vocabSentences.push({ idx: i, count, preview: s.en.replace(/\s+/g, ' ').trim().slice(0, 20) });
+      }
+    });
+    const vocabBtn = body.querySelector('#sentVocabBtn');
+    const vocabPanel = body.querySelector('#sentVocabPanel');
+    if (vocabSentences.length > 0) {
+      let listHtml = '<div class="sent-vocab-panel-header">生词句列表（' + vocabSentences.length + '）</div>';
+      listHtml += vocabSentences.map((vs) =>
+        '<button type="button" class="sent-vocab-panel-item" data-idx="' + vs.idx + '">' +
+          '<span class="sent-vocab-panel-num">' + (vs.idx + 1) + '</span>' +
+          '<span class="sent-vocab-panel-preview">' + esc(vs.preview) + '</span>' +
+          '<span class="sent-vocab-panel-count">' + vs.count + '词</span>' +
+        '</button>').join('');
+      vocabPanel.innerHTML = listHtml;
+      vocabPanel.querySelectorAll('.sent-vocab-panel-item').forEach((it) => {
+        it.addEventListener('click', (e) => {
+          e.stopPropagation();
+          vocabPanel.hidden = true;
+          vocabBtn.classList.remove('active');
+          sentVocabPanelOpen = false;
+          renderSentence(parseInt(it.dataset.idx, 10));
+        });
+      });
+      vocabBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sentVocabPanelOpen = !sentVocabPanelOpen;
+        vocabPanel.hidden = !sentVocabPanelOpen;
+        vocabBtn.classList.toggle('active', sentVocabPanelOpen);
+      });
+    } else {
+      vocabBtn.style.display = 'none';
+      vocabPanel.innerHTML = '<div class="sent-vocab-panel-empty">暂无含生词的句子</div>';
+    }
+
+    // ---- 结算 ----
+    function showSentenceSummary() {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      closeTransBubble();
+      const readCount = readSentencesSet.size;
+      const totalCount = sentences.length;
+      const vocabCount = touchedVocabSet.size;
+      const rate = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
+      const isPerfect = readCount >= totalCount;
+
+      Store.recordModuleActivity(MODULE_MAP.sentence || 'sentenceReview', Math.max(1, readCount));
+      if (vocabCount > 0) Store.recordWordsLearned(vocabCount);
+
+      let titleText = '阅读完成！', titleClass = '';
+      if (isPerfect) { titleText = '全部读完！'; titleClass = 'perfect'; }
+      else if (rate >= 80) titleText = '读得不错！';
+      else if (rate >= 50) titleText = '继续加油！';
+
+      const main = body.querySelector('.sent-main');
+      const bottom = body.querySelector('.sent-bottom');
+      if (main) {
+        main.innerHTML = `
+          <div class="sent-summary">
+            <div class="sent-summary-icon">${SENT_ICONS.check}</div>
+            <div class="sent-summary-title ${titleClass}">${esc(titleText)}</div>
+            <div class="sent-summary-stats">
+              <div class="sent-summary-stat"><span class="sent-summary-val correct">${readCount}</span><span class="sent-summary-lbl">已读句数</span></div>
+              <div class="sent-summary-stat"><span class="sent-summary-val total">${totalCount}</span><span class="sent-summary-lbl">总句数</span></div>
+              <div class="sent-summary-stat"><span class="sent-summary-val vocab">${vocabCount}</span><span class="sent-summary-lbl">涉及生词</span></div>
+              <div class="sent-summary-stat"><span class="sent-summary-val rate">${rate}%</span><span class="sent-summary-lbl">完成率</span></div>
+            </div>
+            ${isPerfect ? '<div class="sent-perfect-badge">已完成全部句子的精读！</div>' : ''}
+            <div class="sent-summary-actions">
+              <button class="sent-summary-retry" data-act="retry">再来一轮</button>
+              <button class="sent-summary-back" data-act="done">返回</button>
+            </div>
+          </div>`;
+        if (bottom) bottom.style.display = 'none';
+        main.querySelector('[data-act="retry"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          renderArticleSentence(body, item);
+        });
+        main.querySelector('[data-act="done"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeOverlay();
+        });
+      }
+    }
+
+    renderSentence(0);
   }
 
   /* ================= 全文回顾 · 杂志风格（THE ENGLISH READER） =================
      只保留杂志版式，移除其它阅读风格。全屏沉浸：隐藏弹层通用头部，杂志铺满。 */
   let reviewCleanups = [];
+  // 语境填空 / 逐句精读 各自的事件/定时器清理队列（关闭弹层时统一释放，防止残留）
+  let clozeCleanups = [];
+  let sentCleanups = [];
 
   // 生词释义气泡（移动端轻量固定弹层）
   function showReviewBubble(word, meaning, practiceText) {

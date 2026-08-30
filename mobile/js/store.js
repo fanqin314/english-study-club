@@ -486,6 +486,17 @@
     return item;
   }
   function getHistoryItem(id) { return getHistory().find((h) => h.id === id) || null; }
+  // 逐句精读：把某句的 AI 分析（translation/knowledge/syntax）持久化到该文章 sentenceData[idx]
+  function updateSentenceData(id, idx, data) {
+    const list = (_readJSON(D.history, []) || []);
+    const item = list.find((h) => h.id === id);
+    if (!item) return;
+    const sd = (item.sentenceData && typeof item.sentenceData === 'object') ? item.sentenceData : {};
+    sd[idx] = Object.assign({}, sd[idx], data || {});
+    item.sentenceData = sd;
+    _writeJSON(D.history, list);
+    emit('history', getHistory());
+  }
   function removeHistory(id) {
     const list = (_readJSON(D.history, []) || []).filter((h) => h.id !== id);
     _writeJSON(D.history, list);
@@ -711,7 +722,7 @@
     NOTEBOOK_COLORS,
     getReadingStyle, setReadingStyle,
     getSkipDeleteConfirm, setSkipDeleteConfirm,
-    getHistory, addHistory, getHistoryItem, removeHistory, clearHistory,
+    getHistory, addHistory, getHistoryItem, updateSentenceData, removeHistory, clearHistory,
     getSettings, updateSettings,
     getProgress, updateProgress,
     recordWordsLearned, recordWordsMastered, recordModuleActivity, getModuleActivity,
