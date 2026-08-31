@@ -1248,7 +1248,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   display: flex; align-items: center; gap: 8px; padding: 0 12px;
   background: var(--study-card); border: 1.5px solid var(--study-border); border-radius: 999px;
   box-shadow: 0 6px 18px -8px color-mix(in srgb, #000 35%, transparent);
-  color: var(--study-foreground); cursor: pointer; white-space: nowrap;
+  color: var(--study-foreground); cursor: pointer; white-space: nowrap; touch-action: none;
   transform-origin: center center;
   transition: opacity .22s ease, transform .35s cubic-bezier(.34, 1.56, .64, 1),
     border-color .18s ease, background-color .18s ease,
@@ -1267,8 +1267,9 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1.04);
 }
 .esc-art-row .esc-nbwheel.dragging .esc-nbwheel-item.visible { pointer-events: none; }
-/* 拖动中禁用 item 的 transform 过渡，保证跟手即时（不产生拖影延迟感） */
-.esc-nbwheel.dragging .esc-nbwheel-item { transition: opacity .22s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease; }
+/* 拖动中：让 item 的 transform 也带一个极短过渡（约 0.1s），
+   弥合手机触摸事件之间的稀疏间隔，把「跳槽位」变成平滑滑移——既有跟手感又不顿挫 */
+.esc-nbwheel.dragging .esc-nbwheel-item { transition: transform .11s ease-out, opacity .22s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease; }
 .esc-nbwheel-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--nb, #506080); }
 .esc-nbwheel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 600; }
 .esc-nbwheel-count { flex: 0 0 auto; font-size: 11px; color: var(--study-muted-foreground); }
