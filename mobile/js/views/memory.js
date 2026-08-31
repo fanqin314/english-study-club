@@ -52,6 +52,123 @@
   };
   const NB_COLORS = (Shared.NB_COLORS) || ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#64748b'];
 
+  /* ==================================================================
+     共享工具（本文件内部复用，仅在 memory.js 作用域内使用）：
+     · ICONS_COMMON：跨图标组(CLOZE_ICONS / SENT_ICONS)完全相同的 SVG 常量
+     · SPEAK_SVG：朗读喇叭图标（由 ICONS_COMMON.speak 引用）
+     · tokenizeWords：词/非词逐字切分，供语境填空/逐句精读/全文回顾/生词测验复用
+     · quizLemmatize：词形还原，把变形词映射回原词以命中生词本（与网页端一致）
+     ================================================================== */
+  // 朗读喇叭图标（任务指定共享常量，被 CLOZE_ICONS.speak / SENT_ICONS.speak 复用）
+  const SPEAK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+  const ICONS_COMMON = {
+    back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
+    speak: SPEAK_SVG,
+    prev: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    next: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+  };
+
+  // 词/非词切分：`([a-zA-Z'-]+)|([^a-zA-Z'-]+)`，返回 [{ type:'word'|'nonword', value, index }]（index 为原文中起始下标）
+  function tokenizeWords(text) {
+    const tokens = [];
+    const re = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
+    let mm;
+    while ((mm = re.exec(text)) !== null) {
+      if (mm[1]) tokens.push({ type: 'word', value: mm[1], index: mm.index });
+      else tokens.push({ type: 'nonword', value: mm[2], index: mm.index });
+    }
+    return tokens;
+  }
+
+  // 词形还原：把变形词映射回原词，以便命中生词本（与网页端一致）
+  function quizLemmatize(w, vocabMap) {
+    const irregular = {
+      'ran':'run','runs':'run','running':'run','runned':'run',
+      'ate':'eat','eats':'eat','eating':'eat','eaten':'eat',
+      'went':'go','goes':'go','going':'go','gone':'go',
+      'came':'come','comes':'come','coming':'come',
+      'took':'take','takes':'take','taking':'take','taken':'take',
+      'saw':'see','sees':'see','seeing':'see','seen':'see',
+      'gave':'give','gives':'give','giving':'give','given':'give',
+      'made':'make','makes':'make','making':'make',
+      'wrote':'write','writes':'write','writing':'write','written':'write',
+      'spoke':'speak','speaks':'speak','speaking':'speak','spoken':'speak',
+      'broke':'break','breaks':'break','breaking':'break','broken':'break',
+      'drove':'drive','drives':'drive','driving':'drive','driven':'drive',
+      'began':'begin','begins':'begin','beginning':'begin','begun':'begin',
+      'drank':'drink','drinks':'drink','drinking':'drink','drunk':'drink',
+      'sang':'sing','sings':'sing','singing':'sing','sung':'sing',
+      'swam':'swim','swims':'swim','swimming':'swim','swum':'swim',
+      'knew':'know','knows':'know','knowing':'know','known':'know',
+      'grew':'grow','grows':'grow','growing':'grow','grown':'grow',
+      'threw':'throw','throws':'throw','throwing':'throw','thrown':'throw',
+      'drew':'draw','draws':'draw','drawing':'draw','drawn':'draw',
+      'stole':'steal','steals':'steal','stealing':'steal','stolen':'steal',
+      'woke':'wake','wakes':'wake','waking':'wake','woken':'wake',
+      'froze':'freeze','freezes':'freeze','freezing':'freeze','frozen':'freeze',
+      'forgot':'forget','forgets':'forget','forgetting':'forget','forgotten':'forget',
+      'chose':'choose','chooses':'choose','choosing':'choose','chosen':'choose',
+      'hid':'hide','hides':'hide','hiding':'hide','hidden':'hide',
+      'bit':'bite','bites':'bite','biting':'bite','bitten':'bite',
+      'fell':'fall','falls':'fall','falling':'fall','fallen':'fall',
+      'flew':'fly','flies':'fly','flying':'fly','flown':'fly',
+      'blew':'blow','blows':'blow','blowing':'blow','blown':'blow',
+      'shook':'shake','shakes':'shake','shaking':'shake','shaken':'shake',
+      'met':'meet','meets':'meet','meeting':'meet',
+      'kept':'keep','keeps':'keep','keeping':'keep',
+      'slept':'sleep','sleeps':'sleep','sleeping':'sleep',
+      'left':'leave','leaves':'leave','leaving':'leave',
+      'spent':'spend','spends':'spend','spending':'spend',
+      'built':'build','builds':'build','building':'build',
+      'said':'say','says':'say','saying':'say',
+      'held':'hold','holds':'hold','holding':'hold',
+      'taught':'teach','teaches':'teach','teaching':'teach',
+      'thought':'think','thinks':'think','thinking':'think',
+      'bought':'buy','buys':'buy','buying':'buy',
+      'sent':'send','sends':'send','sending':'send',
+      'found':'find','finds':'find','finding':'find',
+      'felt':'feel','feels':'feel','feeling':'feel',
+      'won':'win','wins':'win','winning':'win',
+      'told':'tell','tells':'tell','telling':'tell',
+      'sold':'sell','sells':'sell','selling':'sell',
+      'lost':'lose','loses':'lose','losing':'lose',
+      'lay':'lie','lies':'lie','lying':'lie','lain':'lie',
+      'sat':'sit','sits':'sit','sitting':'sit',
+      'became':'become','becomes':'become','becoming':'become',
+      'led':'lead','leads':'lead','leading':'lead',
+      'rose':'rise','rises':'rise','rising':'rise','risen':'rise',
+      'better':'good','best':'good','worse':'bad','worst':'bad'
+    };
+    if (irregular[w]) return irregular[w];
+    if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+    if (w.endsWith('ves') && w.length > 4) return w.slice(0, -3) + 'f';
+    if (w.endsWith('es') && w.length > 4 && /sses|ches|shes|xes|zzes|oes$/.test(w)) return w.slice(0, -2);
+    if (w.endsWith('ing')) {
+      const base = w.slice(0, -3);
+      const doubled = base.replace(/(.)\1$/, '$1');
+      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
+      if (vocabMap[base] || vocabMap[base + 'e']) return base;
+      return doubled;
+    }
+    if (w.endsWith('ed')) {
+      const base = w.slice(0, -2);
+      const doubled = base.replace(/(.)\1$/, '$1');
+      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
+      if (vocabMap[base] || vocabMap[base + 'e']) return base;
+      return doubled;
+    }
+    if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) return w.slice(0, -1);
+    return w;
+  }
+
+  // 词卡进度头（word 模式 esc-fill 共用）：进度条 + 可选进度计数
+  function fillTopHeader(pct, progressNum) {
+    return '<div class="fill-top">' +
+      '<div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:' + pct + '%"></div></div>' +
+      (progressNum || '') +
+      '</div>';
+  }
+
   const FALLBACK = [
     { word: 'serendipity', phonetic: 'ˌser.ənˈdɪp.ə.ti', meaning: '意外发现珍奇事物的本领', example: 'Life is full of serendipity.', exampleZh: '生活中处处充满意外惊喜。' },
     { word: 'eloquent', phonetic: 'ˈel.ə.kwənt', meaning: '雄辩的；有口才的', example: 'She gave an eloquent speech.', exampleZh: '她发表了一场感人至深的演讲。' },
@@ -303,6 +420,9 @@
     });
   }
 
+  /* ==================================================================
+     文章选择 + bind + selectTab — 文章选择列表、事件绑定与标签切换
+     ================================================================== */
   function bind(root) {
     // 标签切换
     root.querySelectorAll('#m-mmtabs button').forEach((b) => {
@@ -790,6 +910,9 @@
   };
   const FC_RATE_LABEL = { unknown: '不认识', vague: '模糊', known: '已掌握' };
 
+  /* ==================================================================
+     renderFlash 闪卡 — 卡面翻转，按认识程度分档计分
+     ================================================================== */
   function renderFlash(body, w) {
     const total = session.queue.length;
     const idx = session.idx;
@@ -958,6 +1081,9 @@
     ['listenzh', 'ear', '听音选义']
   ];
 
+  /* ==================================================================
+     renderChoice 选词 — 看义选词 / 听音选词等多种子模式
+     ================================================================== */
   function renderChoice(body, w) {
     const sub = (session.choiceMode = session.choiceMode || 'meaning');
     const word = String(w.word || '');
@@ -1000,10 +1126,7 @@
 
     body.innerHTML = `
       <div class="esc-fill" data-mode="choice">
-        <div class="fill-top">
-          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
-          <div class="esc-fill-progress-num"><span data-role="idx">${session.idx + 1}</span>/<span data-role="total">${session.queue.length}</span></div>
-        </div>
+        ${fillTopHeader(pct, `<div class="esc-fill-progress-num"><span data-role="idx">${session.idx + 1}</span>/<span data-role="total">${session.queue.length}</span></div>`)}
         <div class="esc-submode-bar" data-role="submode">
           ${CHOICE_SUBMODES.map(([m, ico, label]) => `<button class="esc-submode-btn${m === sub ? ' active' : ''}" data-m="${m}">${icon(ico)}<span>${label}</span></button>`).join('')}
         </div>
@@ -1094,6 +1217,9 @@
   const FILL_HINT_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10"></path><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="8" x2="12" y2="10"></line><line x1="12" y1="14" x2="12" y2="16"></line><line x1="8" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="16" y2="12"></line></svg>`;
   const FILL_SKIP_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>`;
 
+  /* ==================================================================
+     setupLetterGrid 通用字母格 — 填空/听写/语境填空共用的字母格输入
+     ================================================================== */
   // 字母格输入（填空/听写/语境填空共用）：每个格子一个真实 <input>，
   // 兼容手机虚拟键盘 input 事件；点格聚焦、只输入当前格、
   // 删除当前格字母后回退上一格、后续字母不自动前移。
@@ -1202,6 +1328,9 @@
     };
   }
 
+  /* ==================================================================
+     renderCloze 填空 — 单词挖空的字母格补全输入
+     ================================================================== */
   function renderCloze(body, w) {
     const word = String(w.word || '').toLowerCase();
     const meaning = w.meaning || w.mean || '(无释义)';
@@ -1213,9 +1342,7 @@
 
     body.innerHTML = `
       <div class="esc-fill" data-mode="fill">
-        <div class="fill-top">
-          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
-        </div>
+        ${fillTopHeader(pct)}
         <div class="fill-card" data-role="card">
           <div class="fill-meaning">${esc(meaning)}</div>
           <div class="fill-sentence">${sentenceHtml}</div>
@@ -1326,6 +1453,9 @@
     gridApi.focus();
   }
 
+  /* ==================================================================
+     renderDictation 听写 — 听发音拼写单词的字母格补全
+     ================================================================== */
   // 听写：听音拼写字母格（网页版 spell-card 结构，统一到 --study 主题）
   function renderDictation(body, w) {
     const word = String(w.word || '').toLowerCase();
@@ -1334,9 +1464,7 @@
 
     body.innerHTML = `
       <div class="esc-fill" data-mode="dictation">
-        <div class="fill-top">
-          <div class="fill-progress-track"><div class="fill-progress-fill" data-role="progress" style="width:${pct}%"></div></div>
-        </div>
+        ${fillTopHeader(pct)}
         <div class="fill-card" data-role="card">
           <button class="sq-play-btn" data-act="play" title="播放发音">${CHOICE_VOL_SVG}</button>
           <p class="spell-prompt">听发音，拼写单词</p>
@@ -1449,15 +1577,15 @@
      支持 检查/提示/显示答案/朗读/句首翻译气泡/连击计分/结算。
      ================================================================== */
   const CLOZE_ICONS = {
-    back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
+    back: ICONS_COMMON.back,
     star: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
     check: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
     refresh: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>',
     bulb: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6"></path><path d="M12 17v4"></path><path d="M12 3a6 6 0 0 0-4 10.5c.5.5 1 1.5 1 2.5h6c0-1 .5-2 1-2.5A6 6 0 0 0 12 3z"></path></svg>',
     eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
-    speak: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
-    prev: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
-    next: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+    speak: ICONS_COMMON.speak,
+    prev: ICONS_COMMON.prev,
+    next: ICONS_COMMON.next,
     trans: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h6M7 3v2M5 5c0 4-1 6-3 8M5 9c2 2 4 3 5 4M13 13l4-9 4 9M14.5 10h5M17 16v5M15 21h4"></path></svg>'
   };
 
@@ -1474,13 +1602,7 @@
     });
 
     const articleText = item.originalText || item.text || '';
-    const tokens = [];
-    const re = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
-    let mm;
-    while ((mm = re.exec(articleText)) !== null) {
-      if (mm[1]) tokens.push({ type: 'word', value: mm[1], index: mm.index });
-      else tokens.push({ type: 'nonword', value: mm[2] });
-    }
+    const tokens = tokenizeWords(articleText);
     // 全文章唯一命中（按词形去重），对齐网页端 clozeItems
     const clozeItems = [];
     const seenLemmas = new Set();
@@ -2072,13 +2194,13 @@
      翻译·知识点·语法三页签 + 补拉 / 生词句列表 / 结算
      ================================================================== */
   const SENT_ICONS = {
-    back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
-    speak: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
+    back: ICONS_COMMON.back,
+    speak: ICONS_COMMON.speak,
     bookmark: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
     bookmarkFill: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
     refresh: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>',
-    prev: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
-    next: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+    prev: ICONS_COMMON.prev,
+    next: ICONS_COMMON.next,
     list: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
     check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
   };
@@ -2161,17 +2283,15 @@
     // 词级高亮：生词可点击看释义；记录 charOffset 供朗读高亮
     function buildSentHighlightedText(text) {
       const frag = document.createDocumentFragment();
-      const regex = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
-      let m;
-      let wordIdx = 0, charOffset = 0;
-      while ((m = regex.exec(text)) !== null) {
-        if (m[1]) {
-          const word = m[1];
+      let wordIdx = 0;
+      tokenizeWords(text).forEach((t) => {
+        if (t.type === 'word') {
+          const word = t.value;
           const lower = word.toLowerCase();
           const span = document.createElement('span');
           span.className = 'sent-word';
           span.dataset.idx = wordIdx;
-          span.dataset.offset = charOffset;
+          span.dataset.offset = t.index;
           span.textContent = word;
           if (vocabMap[lower]) {
             span.classList.add('review-vocab-word');
@@ -2183,12 +2303,10 @@
           }
           frag.appendChild(span);
           wordIdx++;
-          charOffset += word.length;
-        } else if (m[2]) {
-          frag.appendChild(document.createTextNode(m[2]));
-          charOffset += m[2].length;
+        } else {
+          frag.appendChild(document.createTextNode(t.value));
         }
-      }
+      });
       return frag;
     }
 
@@ -2322,6 +2440,8 @@
 
     // 朗读当前句：逐词高亮（onboundary）
     function speakCurrentSentence() {
+      // 【特例】此处需持有 utterance 对象以注册 onboundary/onend 逐词高亮回调，
+      // 通用封装 Mobile.Speech.speak(text, opts) 不提供回调，故保留内联实现以不变更表现。
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const token = ++currentTtsToken;
@@ -2594,12 +2714,10 @@
     paras.forEach((paraStr) => {
       const p = document.createElement('div');
       p.className = 'review-paragraph';
-      const regex = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
-      let m;
       let hasVocab = false;
-      while ((m = regex.exec(paraStr)) !== null) {
-        if (m[1]) {
-          const word = m[1];
+      tokenizeWords(paraStr).forEach((t) => {
+        if (t.type === 'word') {
+          const word = t.value;
           const lower = word.toLowerCase();
           if (vocabMap[lower]) {
             hasVocab = true;
@@ -2616,16 +2734,19 @@
           } else {
             p.appendChild(document.createTextNode(word));
           }
-        } else if (m[2]) {
-          p.appendChild(document.createTextNode(m[2]));
+        } else {
+          p.appendChild(document.createTextNode(t.value));
         }
-      }
+      });
       if (!hasVocab) p.classList.add('no-vocab');
       frag.appendChild(p);
     });
     container.appendChild(frag);
   }
 
+  /* ==================================================================
+     导出 — Obsidian 风格 Markdown / 预览 / 剪贴板复制 / 导出浮窗
+     ================================================================== */
   // 导出当前回顾文章为 Obsidian 风格 Markdown：文章 + 生词 [^n] 注解 + 中文翻译
   // vocabMap: { lowerKey: meaning }；每个在文中出现的生词标注 [^n]，文末汇总音标与释义
   function buildExportMarkdown(text, vocabMap, translation) {
@@ -2865,6 +2986,8 @@
       if (isSpeaking) {
         window.speechSynthesis.cancel(); isSpeaking = false; tts.innerHTML = speakerSVG;
       } else {
+        // 【特例】此处需持有 utterance 对象以注册 onend 回调在读完时复位播放图标，
+        // 通用封装 Mobile.Speech.speak(text, opts) 不提供回调，故保留内联实现以不变更表现。
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance(originalText);
@@ -2894,87 +3017,6 @@
 
   /* ===== 生词检验 · 文章完形填空（对齐网页端 vocab_quiz_ui） ===== */
   let quizCleanups = [];
-
-  // 词形还原：把变形词映射回原词，以便命中生词本（与网页端一致）
-  function quizLemmatize(w, vocabMap) {
-    const irregular = {
-      'ran':'run','runs':'run','running':'run','runned':'run',
-      'ate':'eat','eats':'eat','eating':'eat','eaten':'eat',
-      'went':'go','goes':'go','going':'go','gone':'go',
-      'came':'come','comes':'come','coming':'come',
-      'took':'take','takes':'take','taking':'take','taken':'take',
-      'saw':'see','sees':'see','seeing':'see','seen':'see',
-      'gave':'give','gives':'give','giving':'give','given':'give',
-      'made':'make','makes':'make','making':'make',
-      'wrote':'write','writes':'write','writing':'write','written':'write',
-      'spoke':'speak','speaks':'speak','speaking':'speak','spoken':'speak',
-      'broke':'break','breaks':'break','breaking':'break','broken':'break',
-      'drove':'drive','drives':'drive','driving':'drive','driven':'drive',
-      'began':'begin','begins':'begin','beginning':'begin','begun':'begin',
-      'drank':'drink','drinks':'drink','drinking':'drink','drunk':'drink',
-      'sang':'sing','sings':'sing','singing':'sing','sung':'sing',
-      'swam':'swim','swims':'swim','swimming':'swim','swum':'swim',
-      'knew':'know','knows':'know','knowing':'know','known':'know',
-      'grew':'grow','grows':'grow','growing':'grow','grown':'grow',
-      'threw':'throw','throws':'throw','throwing':'throw','thrown':'throw',
-      'drew':'draw','draws':'draw','drawing':'draw','drawn':'draw',
-      'stole':'steal','steals':'steal','stealing':'steal','stolen':'steal',
-      'woke':'wake','wakes':'wake','waking':'wake','woken':'wake',
-      'froze':'freeze','freezes':'freeze','freezing':'freeze','frozen':'freeze',
-      'forgot':'forget','forgets':'forget','forgetting':'forget','forgotten':'forget',
-      'chose':'choose','chooses':'choose','choosing':'choose','chosen':'choose',
-      'hid':'hide','hides':'hide','hiding':'hide','hidden':'hide',
-      'bit':'bite','bites':'bite','biting':'bite','bitten':'bite',
-      'fell':'fall','falls':'fall','falling':'fall','fallen':'fall',
-      'flew':'fly','flies':'fly','flying':'fly','flown':'fly',
-      'blew':'blow','blows':'blow','blowing':'blow','blown':'blow',
-      'shook':'shake','shakes':'shake','shaking':'shake','shaken':'shake',
-      'met':'meet','meets':'meet','meeting':'meet',
-      'kept':'keep','keeps':'keep','keeping':'keep',
-      'slept':'sleep','sleeps':'sleep','sleeping':'sleep',
-      'left':'leave','leaves':'leave','leaving':'leave',
-      'spent':'spend','spends':'spend','spending':'spend',
-      'built':'build','builds':'build','building':'build',
-      'said':'say','says':'say','saying':'say',
-      'held':'hold','holds':'hold','holding':'hold',
-      'taught':'teach','teaches':'teach','teaching':'teach',
-      'thought':'think','thinks':'think','thinking':'think',
-      'bought':'buy','buys':'buy','buying':'buy',
-      'sent':'send','sends':'send','sending':'send',
-      'found':'find','finds':'find','finding':'find',
-      'felt':'feel','feels':'feel','feeling':'feel',
-      'won':'win','wins':'win','winning':'win',
-      'told':'tell','tells':'tell','telling':'tell',
-      'sold':'sell','sells':'sell','selling':'sell',
-      'lost':'lose','loses':'lose','losing':'lose',
-      'lay':'lie','lies':'lie','lying':'lie','lain':'lie',
-      'sat':'sit','sits':'sit','sitting':'sit',
-      'became':'become','becomes':'become','becoming':'become',
-      'led':'lead','leads':'lead','leading':'lead',
-      'rose':'rise','rises':'rise','rising':'rise','risen':'rise',
-      'better':'good','best':'good','worse':'bad','worst':'bad'
-    };
-    if (irregular[w]) return irregular[w];
-    if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
-    if (w.endsWith('ves') && w.length > 4) return w.slice(0, -3) + 'f';
-    if (w.endsWith('es') && w.length > 4 && /sses|ches|shes|xes|zzes|oes$/.test(w)) return w.slice(0, -2);
-    if (w.endsWith('ing')) {
-      const base = w.slice(0, -3);
-      const doubled = base.replace(/(.)\1$/, '$1');
-      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
-      if (vocabMap[base] || vocabMap[base + 'e']) return base;
-      return doubled;
-    }
-    if (w.endsWith('ed')) {
-      const base = w.slice(0, -2);
-      const doubled = base.replace(/(.)\1$/, '$1');
-      if (vocabMap[doubled] || vocabMap[doubled + 'e']) return doubled;
-      if (vocabMap[base] || vocabMap[base + 'e']) return base;
-      return doubled;
-    }
-    if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) return w.slice(0, -1);
-    return w;
-  }
 
   function quizBuildArticleHTML(tokens, blankEntries) {
     let html = '';
@@ -3009,13 +3051,7 @@
 
     const articleText = item.originalText || item.text || '';
     // 分词
-    const tokens = [];
-    const re = /([a-zA-Z'-]+)|([^a-zA-Z'-]+)/g;
-    let mm;
-    while ((mm = re.exec(articleText)) !== null) {
-      if (mm[1]) tokens.push({ type: 'word', value: mm[1] });
-      else tokens.push({ type: 'nonword', value: mm[2] });
-    }
+    const tokens = tokenizeWords(articleText);
 
     // 挖空条目
     const blankEntries = [];
@@ -3756,6 +3792,9 @@
     if (spOverlay) closeSp();
   });
 
+  /* ==================================================================
+     收尾 — 数据监听自动刷新、离开导航关闭弹层、IIFE 导出视图
+     ================================================================== */
   Mobile.Views = Mobile.Views || {};
   Mobile.Views.memory = { render, closeOverlay };
 })(window);
