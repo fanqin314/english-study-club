@@ -116,6 +116,9 @@
         if (typeof window.fillThemeColorSettings === 'function') {
             window.fillThemeColorSettings(contentEl);
         }
+        if (typeof window.fillThemePluginSettings === 'function') {
+            window.fillThemePluginSettings(contentEl);
+        }
         if (typeof window.fillMemoryBackgroundSettings === 'function') {
             window.fillMemoryBackgroundSettings(contentEl);
         }

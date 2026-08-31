@@ -128,7 +128,9 @@
   }
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
-  function apply() { applyColorTheme(getStored(), isDark()); }
+  // 启用主题插件时跳过自定义配色，避免内联变量覆盖主题的语义色
+  function pluginActive() { return !!(window.ThemePlugin && window.ThemePlugin.isEnabled()); }
+  function apply() { if (pluginActive()) return; applyColorTheme(getStored(), isDark()); }
 
   function defaults(dark) {
     const c = getStored();

@@ -1,0 +1,1017 @@
+/* ============================================================
+   BRUTAL COMIC — hard-edge comic × brutalism theme plugin
+   ------------------------------------------------------------
+   THESIS: 硬边漫画 × 粗野主义：零圆角、3px 纯黑描边、无模糊硬阴影、
+           纯色块与网点印刷纹理。拒绝圆角卡片、柔阴影与玻璃渐变。
+   OWN-WORLD: 亮色纸白 / 暗色墨黑双模式；漫画三原色（红=主强调、黄=点缀、
+              蓝=辅助）；粗黑描边语言；5px 5px 0 硬阴影；方角对话框式徽章。
+   STORY: 精读工具换上一副印刷漫画的皮：卡片如贴纸、按钮如印章、
+          徽章如漫画标签，阅读仍是第一优先级。
+   FIRST VIEWPORT: 顶栏胶囊变方块黑描边、侧栏网点底 + 硬边激活块、
+                   句子卡片贴纸化，红色主按钮即视感最强。
+   FORM: user-pinned brief — hard-edge comic / brutalism (brutal-comic).
+   FINISH: unreviewed and undocumented is unfinished; this build ends
+           with the finish review, the verdict, DESIGN.md, and every
+           shipping raster carrying its provenance.
+   ============================================================
+   即插即用契约：
+   · 本文件所有规则都挂在 html[data-theme-plugin="brutal-comic"] 前缀下，
+     只有启用该主题时才生效，互不污染。
+   · 由 ui/settings/theme_plugin.js 动态 <link> 加载；删除本目录后加载
+     失败即自动回退，不触碰任何原样式文件。
+   ============================================================ */
+
+/* ========== 主题语义色 ========== */
+html[data-theme-plugin="brutal-comic"] {
+  /* 墨色略柔（#1C1C1C）以降低纯黑满屏的刺眼感 */
+  --brutal-ink: #1C1C1C;      /* 描边/文字墨色 */
+  --brutal-paper: #FFFDF7;     /* 卡片/弹窗/输入近白底 */
+  --brutal-paper-warm: #F2EBD9; /* 暖纸面（侧栏/面板） */
+  --brutal-red: #E04535;      /* 主强调 · 略降饱和的漫画红 */
+  --brutal-red-deep: #B82E22;
+  --brutal-yellow: #FFD23F;   /* 点缀 · 漫画黄（仅少量使用） */
+  --brutal-blue: #2F6FCB;     /* 辅助 · 品蓝 */
+  --brutal-soft: #F4ECD7;     /* 柔暖悬停（替代刺眼亮黄） */
+  --brutal-line: 2px;         /* 描边宽度：3→2，减满屏噪音 */
+  --brutal-shadow-sm: 2px 2px 0 var(--brutal-ink);
+  --brutal-shadow-md: 4px 4px 0 var(--brutal-ink);
+  --brutal-shadow-lg: 5px 5px 0 var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"][data-theme="dark"] {
+  --brutal-ink: #F2EFE6;      /* 暗色下描边/文字为纸白 */
+  --brutal-paper: #0B0B0D;
+  --brutal-paper-warm: #141417;
+  --brutal-red: #FF4D3D;
+  --brutal-red-deep: #E23B2C;
+  --brutal-yellow: #FFD23F;
+  --brutal-blue: #6E8DF0;
+}
+
+/* ========== 1. 变量层 · 亮色 ========== */
+html[data-theme-plugin="brutal-comic"] {
+  /* 60% 中性色 · 暖白纸面，替代纯白以降低刺眼 */
+  --study-background: #FAF6EA;
+  --study-foreground: #1C1C1C;
+  --study-card: #FFFDF7;
+  --study-card-foreground: #1C1C1C;
+  --study-popover: #FFFDF7;
+  --study-popover-foreground: #1C1C1C;
+
+  /* 25% 主品牌色 · 墨色 */
+  --study-primary: #1C1C1C;
+  --study-primary-foreground: #FFFFFF;
+
+  /* 15% 强调色 · 漫画红 */
+  --study-accent: var(--brutal-red);
+  --study-accent-foreground: #FFFFFF;
+  --study-accent-hover: var(--brutal-red-deep);
+
+  /* 中性面 · 暖纸 */
+  --study-muted: var(--brutal-paper-warm);
+  --study-muted-foreground: #5A5344;
+
+  /* 边框与输入 · 墨色略柔 */
+  --study-border: #1C1C1C;
+  --study-input: #1C1C1C;
+  --study-ring: #1C1C1C;
+
+  /* 状态色 */
+  --state-success: #1E7A3C;
+  --state-warning: #A8620A;
+  --state-error: #D2241F;
+  --state-info: #1D4ED8;
+
+  /* 圆角清零 */
+  --study-radius-sm: 0;
+  --study-radius-md: 0;
+  --study-radius-lg: 0;
+
+  /* 硬阴影（无模糊偏移） */
+  --study-shadow-sm: var(--brutal-shadow-sm);
+  --study-shadow-md: var(--brutal-shadow-md);
+  --study-shadow-lg: var(--brutal-shadow-lg);
+
+  /* 字体：正文无衬线，标题黑体（由下方 h 标签覆盖） */
+  --study-font-sans: 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --study-font-serif: 'Times New Roman', 'Songti SC', 'SimSun', 'STSong', serif;
+  --study-font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+/* ========== 2. 变量层 · 暗色 ========== */
+html[data-theme-plugin="brutal-comic"][data-theme="dark"] {
+  /* 60% 中性色 */
+  --study-background: #0B0B0D;
+  --study-foreground: #F2EFE6;
+  --study-card: #141417;
+  --study-card-foreground: #F2EFE6;
+  --study-popover: #1C1C20;
+  --study-popover-foreground: #F2EFE6;
+
+  /* 25% 主品牌色 · 纸白 */
+  --study-primary: #F2EFE6;
+  --study-primary-foreground: #0B0B0D;
+
+  /* 15% 强调色 · 亮红 */
+  --study-accent: var(--brutal-red);
+  --study-accent-foreground: #0B0B0D;
+  --study-accent-hover: var(--brutal-red-deep);
+
+  /* 中性面 */
+  --study-muted: #1C1C20;
+  --study-muted-foreground: #B0AAA0;
+
+  /* 边框与输入 */
+  --study-border: #F2EFE6;
+  --study-input: #F2EFE6;
+  --study-ring: #F2EFE6;
+
+  /* 状态色 */
+  --state-success: #34D399;
+  --state-warning: #FBBF24;
+  --state-error: #F87171;
+  --state-info: #6E8DF0;
+
+  --study-radius-sm: 0;
+  --study-radius-md: 0;
+  --study-radius-lg: 0;
+
+  --study-shadow-sm: 3px 3px 0 rgba(0, 0, 0, 0.9);
+  --study-shadow-md: 5px 5px 0 rgba(0, 0, 0, 0.9);
+  --study-shadow-lg: 7px 7px 0 rgba(0, 0, 0, 0.9);
+}
+
+/* ========== 3. 标题黑体 ========== */
+html[data-theme-plugin="brutal-comic"] h1,
+html[data-theme-plugin="brutal-comic"] h2,
+html[data-theme-plugin="brutal-comic"] h3,
+html[data-theme-plugin="brutal-comic"] h4,
+html[data-theme-plugin="brutal-comic"] h5,
+html[data-theme-plugin="brutal-comic"] h6 {
+  font-family: Impact, 'Haettenschweiler', 'Franklin Gothic Heavy', 'SimHei', 'Heiti SC', 'Microsoft YaHei', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+/* ========== 4. 浏览器表面 ========== */
+html[data-theme-plugin="brutal-comic"] ::selection {
+  background: #F6E8B8;        /* 柔暖黄，降低高饱和刺激 */
+  color: var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] :focus-visible {
+  outline: 3px dashed var(--brutal-ink);
+  outline-offset: 2px;
+}
+
+html[data-theme-plugin="brutal-comic"] ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+html[data-theme-plugin="brutal-comic"] ::-webkit-scrollbar-track {
+  background: var(--brutal-paper-warm);
+  border-left: 2px solid var(--brutal-ink);
+}
+html[data-theme-plugin="brutal-comic"] ::-webkit-scrollbar-thumb {
+  background: var(--brutal-ink);
+  border: 3px solid var(--brutal-paper-warm);
+  border-radius: 0;
+}
+html[data-theme-plugin="brutal-comic"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--brutal-red);
+}
+
+/* ========== 5. 卡片 · 贴纸化 ========== */
+html[data-theme-plugin="brutal-comic"] .card,
+html[data-theme-plugin="brutal-comic"] .card-flat,
+html[data-theme-plugin="brutal-comic"] .card-elevated {
+  border: var(--brutal-line) solid var(--brutal-ink);
+  border-radius: 0;
+  box-shadow: var(--brutal-shadow-md);
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-card {
+  border: var(--brutal-line) solid var(--brutal-ink);
+  border-left: var(--brutal-line) solid var(--brutal-ink);
+  border-radius: 0;
+  box-shadow: var(--brutal-shadow-sm);
+  background: var(--brutal-paper);
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-card:hover {
+  border-color: var(--brutal-ink);
+  border-left-color: var(--brutal-red);
+  box-shadow: var(--brutal-shadow-sm);
+  transform: translate(-1px, -1px);
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-text {
+  border-bottom: var(--brutal-line) solid var(--brutal-ink);
+  font-family: var(--study-font-serif);
+  font-weight: 500;
+  line-height: 1.95;
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-buttons {
+  border-bottom: var(--brutal-line) solid var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .detail-panel.show {
+  border-top: var(--brutal-line) solid var(--brutal-ink);
+}
+
+/* ========== 6. 按钮 · 印章 ========== */
+html[data-theme-plugin="brutal-comic"] button {
+  border: 2px solid var(--brutal-ink);
+  border-radius: 0;
+  box-shadow: var(--brutal-shadow-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+html[data-theme-plugin="brutal-comic"] button:hover {
+  background: var(--brutal-soft);
+  color: var(--brutal-ink);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--brutal-shadow-sm);
+}
+
+html[data-theme-plugin="brutal-comic"] button:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+html[data-theme-plugin="brutal-comic"] button.btn-primary,
+html[data-theme-plugin="brutal-comic"] button.section-btn.primary,
+html[data-theme-plugin="brutal-comic"] .settings-action-btn.confirm-active {
+  background: var(--brutal-red);
+  border-color: var(--brutal-ink);
+  color: #FFFFFF;
+  box-shadow: var(--brutal-shadow-sm);
+}
+
+html[data-theme-plugin="brutal-comic"] button.btn-primary:hover,
+html[data-theme-plugin="brutal-comic"] button.section-btn.primary:hover,
+html[data-theme-plugin="brutal-comic"] .settings-action-btn.confirm-active:hover {
+  background: var(--brutal-red-deep);
+  color: #FFFFFF;
+}
+
+html[data-theme-plugin="brutal-comic"] .settings-action-btn {
+  border: 2px solid var(--brutal-ink);
+  border-radius: 0;
+  box-shadow: var(--brutal-shadow-sm);
+}
+
+html[data-theme-plugin="brutal-comic"] .settings-action-btn:hover {
+  background: var(--brutal-soft);
+  color: var(--brutal-ink);
+  border-color: var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .settings-action-btn-danger:hover {
+  background: var(--brutal-red);
+  color: #FFFFFF;
+}
+
+/* 圆形图标按钮 → 硬边方块 */
+html[data-theme-plugin="brutal-comic"] button.btn-icon,
+html[data-theme-plugin="brutal-comic"] button.icon-only-btn,
+html[data-theme-plugin="brutal-comic"] button.icon-btn,
+html[data-theme-plugin="brutal-comic"] button.settings-btn,
+html[data-theme-plugin="brutal-comic"] button.back-btn,
+html[data-theme-plugin="brutal-comic"] .sidebar-toggle-btn,
+html[data-theme-plugin="brutal-comic"] .sidebar-close-btn {
+  border-radius: 0;
+}
+
+html[data-theme-plugin="brutal-comic"] button.section-btn {
+  border: 2px solid var(--brutal-ink);
+  border-radius: 0;
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-buttons button {
+  border: 2px solid var(--brutal-ink);
+  border-radius: 0;
+}
+
+html[data-theme-plugin="brutal-comic"] .sentence-buttons button.active {
+  background: var(--brutal-red) !important;
+  color: #FFFFFF !important;
+  border-color: var(--brutal-ink);
+}
+
+/* ========== 7. 输入框 ========== */
+html[data-theme-plugin="brutal-comic"] textarea,
+html[data-theme-plugin="brutal-comic"] input[type="text"],
+html[data-theme-plugin="brutal-comic"] input[type="password"],
+html[data-theme-plugin="brutal-comic"] input[type="search"],
+html[data-theme-plugin="brutal-comic"] select {
+  border: var(--brutal-line) solid var(--brutal-ink);
+  border-radius: 0;
+  background: var(--brutal-paper);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme-plugin="brutal-comic"] textarea:focus,
+html[data-theme-plugin="brutal-comic"] input:focus,
+html[data-theme-plugin="brutal-comic"] select:focus {
+  outline: 3px dashed var(--brutal-ink);
+  outline-offset: 2px;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* ========== 8. 弹窗 ========== */
+html[data-theme-plugin="brutal-comic"] .modal-content {
+  background: var(--brutal-paper);
+  border: var(--brutal-line) solid var(--brutal-ink);
+  border-radius: 0;
+  box-shadow: 6px 6px 0 var(--brutal-ink);
+}
+
+/* ========== 9. 侧边栏 ========== */
+html[data-theme-plugin="brutal-comic"] .sidebar {
+  background: var(--brutal-paper);
+  border-right: var(--brutal-line) solid var(--brutal-ink);
+  box-shadow: none;
+}
+
+html[data-theme-plugin="brutal-comic"] .sidebar-header {
+  border-bottom: var(--brutal-line) solid var(--brutal-ink);
+  background: var(--brutal-paper-warm);
+  /* 极淡、大间隔网点：仅作印刷感暗示，避免频闪 */
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--brutal-ink) 8%, transparent) 1px, transparent 1.3px);
+  background-size: 22px 22px;
+}
+
+html[data-theme-plugin="brutal-comic"] .sidebar-nav {
+  border-bottom: var(--brutal-line) solid var(--brutal-ink);
+  background: var(--brutal-paper-warm);
+}
+
+html[data-theme-plugin="brutal-comic"] .sidebar-nav-item,
+html[data-theme-plugin="brutal-comic"] .sidebar-menu-item {
+  border-radius: 0;
+}
+
+html[data-theme-plugin="brutal-comic"] .sidebar-nav-item:hover,
+html[data-theme-plugin="brutal-comic"] .sidebar-menu-item:hover {
+  background: var(--brutal-soft);
+  color: var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .sidebar-nav-item.active,
+html[data-theme-plugin="brutal-comic"] .sidebar-menu-item.active {
+  background: var(--brutal-red);
+  border: 2px solid var(--brutal-ink);
+  color: #FFFFFF;
+  box-shadow: var(--brutal-shadow-sm);
+}
+
+/* ========== 10. 顶部导航 ========== */
+html[data-theme-plugin="brutal-comic"] .main-buttons {
+  border: var(--brutal-line) solid var(--brutal-ink);
+  border-radius: 0;
+  background: var(--brutal-paper-warm);
+}
+
+html[data-theme-plugin="brutal-comic"] .main-buttons .link,
+html[data-theme-plugin="brutal-comic"] .main-buttons .memory-mode-button {
+  border-radius: 0;
+  border: 2px solid transparent;
+}
+
+html[data-theme-plugin="brutal-comic"] .main-buttons .link.active,
+html[data-theme-plugin="brutal-comic"] .main-buttons .memory-mode-button.active {
+  background: var(--brutal-red);
+  border-color: var(--brutal-ink);
+  color: #FFFFFF;
+  box-shadow: var(--brutal-shadow-sm);
+}
+
+/* ========== 11. 徽章 / 标签 · 漫画对话框 ========== */
+html[data-theme-plugin="brutal-comic"] .sentence-type-badge,
+html[data-theme-plugin="brutal-comic"] .syntax-clause-cat,
+html[data-theme-plugin="brutal-comic"] .constituent-badge {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+  box-shadow: 2px 2px 0 var(--brutal-ink);
+  font-weight: 700;
+}
+
+html[data-theme-plugin="brutal-comic"] .syntax-badge {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+  box-shadow: 1px 1px 0 var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .syntax-clause {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .syntax-clause-trigger {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+}
+
+/* ========== 12. 状态 / 小控件 ========== */
+html[data-theme-plugin="brutal-comic"] .status-dot {
+  border-radius: 0;
+  border: 1px solid var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .toast {
+  border-radius: 0;
+  border: var(--brutal-line) solid var(--brutal-ink);
+  box-shadow: 3px 3px 0 var(--brutal-ink);
+  font-weight: 600;
+}
+
+html[data-theme-plugin="brutal-comic"] .copy-btn,
+html[data-theme-plugin="brutal-comic"] .refresh-button {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .copy-btn .tooltip {
+  border-radius: 0;
+  border: 2px solid var(--brutal-ink);
+  background: var(--brutal-ink);
+}
+
+/* ========== 13. 设置面板 ========== */
+html[data-theme-plugin="brutal-comic"] .settings-section {
+  border-top: 2px dashed var(--brutal-ink);
+}
+
+html[data-theme-plugin="brutal-comic"] .settings-section:first-child {
+  border-top: none;
+}
+
+html[data-theme-plugin="brutal-comic"] .settings-section h3 {
+  text-transform: uppercase;
+}
+
+/* ========== 14. 阅读区排版 ========== */
+html[data-theme-plugin="brutal-comic"] .sentence-text.has-type-badge {
+  padding-right: 100px;
+}
+
+/* 漫画红强调：语法标签文字 */
+html[data-theme-plugin="brutal-comic"] .syntax-badge-label {
+  color: var(--brutal-red);
+  border-right-color: var(--brutal-ink);
+}
+
+/* ========== 15. 动画 · 硬弹入 ========== */
+html[data-theme-plugin="brutal-comic"] .sentence-card {
+  animation: brutal-sentence-in 0.22s ease-out both;
+}
+
+@keyframes brutal-sentence-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   16. 全面硬边化兜底（彻底覆盖未显式处理的组件）
+   ------------------------------------------------------------
+   组件量大且多用写死圆角/柔和阴影，这里用作用域兜底
+   一次性清零圆角、硬边化阴影、去模糊与发光，并精细
+   处理少数写死颜色的特殊控件。
+   ============================================================ */
+
+/* 16.1 零圆角：粗野主义核心，强制清零所有圆角 */
+html[data-theme-plugin="brutal-comic"] * {
+  border-radius: 0 !important;
+}
+
+/* 16.2 硬阴影变量（让引用 --shadow* 的组件跟随） */
+html[data-theme-plugin="brutal-comic"] {
+  --shadow: var(--brutal-shadow-md);
+  --shadow-sm: var(--brutal-shadow-sm);
+  --shadow-md: var(--brutal-shadow-md);
+  --shadow-lg: var(--brutal-shadow-lg);
+  --shadow-xl: var(--brutal-shadow-lg);
+  --btn-shadow: var(--brutal-shadow-sm);
+}
+html[data-theme-plugin="brutal-comic"][data-theme="dark"] {
+  --shadow: 3px 3px 0 var(--brutal-ink);
+  --shadow-sm: 2px 2px 0 var(--brutal-ink);
+  --shadow-md: 3px 3px 0 var(--brutal-ink);
+  --shadow-lg: 4px 4px 0 var(--brutal-ink);
+  --shadow-xl: 4px 4px 0 var(--brutal-ink);
+  --btn-shadow: 2px 2px 0 var(--brutal-ink);
+}
+
+/* 16.3 主容器硬阴影（覆盖写死的柔和阴影） */
+html[data-theme-plugin="brutal-comic"] .vocab-card,
+html[data-theme-plugin="brutal-comic"] .word-item,
+html[data-theme-plugin="brutal-comic"] .history-card,
+html[data-theme-plugin="brutal-comic"] .history-item,
+html[data-theme-plugin="brutal-comic"] .mode-card,
+html[data-theme-plugin="brutal-comic"] .memory-mode-tab,
+html[data-theme-plugin="brutal-comic"] .memory-notebook-current,
+html[data-theme-plugin="brutal-comic"] .memory-article-current,
+html[data-theme-plugin="brutal-comic"] .memory-notebook-dropdown,
+html[data-theme-plugin="brutal-comic"] .memory-article-dropdown,
+html[data-theme-plugin="brutal-comic"] .memory-nb-multi-list,
+html[data-theme-plugin="brutal-comic"] .memory-nb-multi-item,
+html[data-theme-plugin="brutal-comic"] .memory-nb-multi-empty,
+html[data-theme-plugin="brutal-comic"] .selected-notebook-badge,
+html[data-theme-plugin="brutal-comic"] .notebook-tab,
+html[data-theme-plugin="brutal-comic"] .notebook-action-btn,
+html[data-theme-plugin="brutal-comic"] .words-toolbar,
+html[data-theme-plugin="brutal-comic"] .batch-actions-bar,
+html[data-theme-plugin="brutal-comic"] .edit-form,
+html[data-theme-plugin="brutal-comic"] .import-help-dialog,
+html[data-theme-plugin="brutal-comic"] .export-dialog,
+html[data-theme-plugin="brutal-comic"] .format-option,
+html[data-theme-plugin="brutal-comic"] .format-item,
+html[data-theme-plugin="brutal-comic"] .constituent-tip,
+html[data-theme-plugin="brutal-comic"] .custom-menu,
+html[data-theme-plugin="brutal-comic"] .modal-content,
+html[data-theme-plugin="brutal-comic"] .card-3d,
+html[data-theme-plugin="brutal-comic"] .card-face,
+html[data-theme-plugin="brutal-comic"] .flip-front,
+html[data-theme-plugin="brutal-comic"] .flip-back,
+html[data-theme-plugin="brutal-comic"] .feedback-overlay,
+html[data-theme-plugin="brutal-comic"] .example-area,
+html[data-theme-plugin="brutal-comic"] .capsule-button,
+html[data-theme-plugin="brutal-comic"] .mastery-btn,
+html[data-theme-plugin="brutal-comic"] .pos,
+html[data-theme-plugin="brutal-comic"] .header-section-btn,
+html[data-theme-plugin="brutal-comic"] .collapse-btn,
+html[data-theme-plugin="brutal-comic"] .edit-word-btn,
+html[data-theme-plugin="brutal-comic"] .delete-word-btn,
+html[data-theme-plugin="brutal-comic"] .save-btn,
+html[data-theme-plugin="brutal-comic"] .cancel-btn,
+html[data-theme-plugin="brutal-comic"] .sidebar-toggle-btn,
+html[data-theme-plugin="brutal-comic"] .sidebar-close-btn,
+html[data-theme-plugin="brutal-comic"] .sidebar-nav-item,
+html[data-theme-plugin="brutal-comic"] .sidebar-menu-item,
+html[data-theme-plugin="brutal-comic"] .glass-toggle .toggle-label,
+html[data-theme-plugin="brutal-comic"] .glass-toggle .toggle-slider,
+html[data-theme-plugin="brutal-comic"] .nav-btn,
+html[data-theme-plugin="brutal-comic"] .counter,
+html[data-theme-plugin="brutal-comic"] .vocab-card.memory-mode-card {
+  box-shadow: var(--brutal-shadow-md) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card.memory-mode-card {
+  border: 2px solid var(--brutal-ink) !important;
+}
+
+/* 16.4 去玻璃/模糊（粗野主义拒绝模糊） */
+html[data-theme-plugin="brutal-comic"] .card-face,
+html[data-theme-plugin="brutal-comic"] .flip-front,
+html[data-theme-plugin="brutal-comic"] .flip-back,
+html[data-theme-plugin="brutal-comic"] .feedback-overlay,
+html[data-theme-plugin="brutal-comic"] .example-area,
+html[data-theme-plugin="brutal-comic"] .pos,
+html[data-theme-plugin="brutal-comic"] .glass-toggle .toggle-label,
+html[data-theme-plugin="brutal-comic"] .memory-notebook-current,
+html[data-theme-plugin="brutal-comic"] .memory-article-current,
+html[data-theme-plugin="brutal-comic"] .nav-btn,
+html[data-theme-plugin="brutal-comic"] .icon-only-btn,
+html[data-theme-plugin="brutal-comic"] #flashcardModeContainer .fill-progress-wrap {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 16.5 去掉记忆模式彩虹模糊光晕（不兼容模糊发光） */
+html[data-theme-plugin="brutal-comic"] .memory-mode-outer-glow,
+html[data-theme-plugin="brutal-comic"] .memory-mode-hover-effect,
+html[data-theme-plugin="brutal-comic"] .vocab-card.memory-mode-card::before {
+  display: none !important;
+}
+
+/* 16.6 复选框/单选：方角黑边，选中红 */
+html[data-theme-plugin="brutal-comic"] .custom-checkbox,
+html[data-theme-plugin="brutal-comic"] .select-all-checkbox,
+html[data-theme-plugin="brutal-comic"] .word-checkbox {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-ink) !important;
+  background: var(--brutal-paper) !important;
+}
+html[data-theme-plugin="brutal-comic"] .custom-checkbox:checked,
+html[data-theme-plugin="brutal-comic"] .select-all-checkbox:checked,
+html[data-theme-plugin="brutal-comic"] .word-checkbox:checked {
+  background: var(--brutal-red) !important;
+  border-color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] #posCheckboxGroup input[type="checkbox"] {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-ink) !important;
+  background: var(--brutal-paper) !important;
+}
+html[data-theme-plugin="brutal-comic"] #posCheckboxGroup input[type="checkbox"]:checked {
+  background: var(--brutal-red) !important;
+  border-color: var(--brutal-ink) !important;
+  color: #fff !important;
+}
+
+/* 16.7 历史删除按钮：方角红边，去光晕放大 */
+html[data-theme-plugin="brutal-comic"] .history-delete-btn {
+  border: 2px solid var(--brutal-red) !important;
+  color: var(--brutal-red) !important;
+}
+html[data-theme-plugin="brutal-comic"] .history-delete-btn::before {
+  display: none !important;
+}
+html[data-theme-plugin="brutal-comic"] .history-delete-btn:hover {
+  background: var(--brutal-red) !important;
+  color: #fff !important;
+  transform: none !important;
+  box-shadow: var(--brutal-shadow-sm) !important;
+}
+
+/* 16.8 玻璃开关：方角去玻璃 */
+html[data-theme-plugin="brutal-comic"] .glass-toggle .toggle-label {
+  background: var(--brutal-paper-warm) !important;
+  border: 2px solid var(--brutal-ink) !important;
+  box-shadow: var(--brutal-shadow-sm) !important;
+}
+html[data-theme-plugin="brutal-comic"] .glass-toggle .toggle-slider {
+  background: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .glass-toggle input:checked + .toggle-label {
+  background: var(--brutal-red) !important;
+}
+html[data-theme-plugin="brutal-comic"] .glass-toggle input:checked + .toggle-label .toggle-slider {
+  background: #fff !important;
+}
+
+/* 16.9 闪卡：方角硬边，去渐变文字与玻璃 */
+html[data-theme-plugin="brutal-comic"] .card-3d {
+  border: 2px solid var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .glare {
+  display: none !important;
+}
+html[data-theme-plugin="brutal-comic"] .flip-front {
+  -webkit-background-clip: initial !important;
+  background: var(--brutal-ink) !important;
+  color: var(--brutal-paper) !important;
+}
+html[data-theme-plugin="brutal-comic"] .word {
+  -webkit-background-clip: initial !important;
+  background: none !important;
+  color: var(--brutal-ink) !important;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme-plugin="brutal-comic"] .flip-back {
+  background: var(--brutal-paper) !important;
+  border: 2px solid var(--brutal-ink) !important;
+  color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] #flashcardModeContainer .fill-progress-track,
+html[data-theme-plugin="brutal-comic"] #flashcardModeContainer .fill-progress-wrap,
+html[data-theme-plugin="brutal-comic"] #flashcardModeContainer .fill-progress-fill {
+  border-radius: 0 !important;
+}
+
+/* 16.10 自定义菜单 / 提示 / 分隔：方角硬边 */
+html[data-theme-plugin="brutal-comic"] .custom-menu {
+  border: 2px solid var(--brutal-ink) !important;
+  background: var(--brutal-paper) !important;
+}
+html[data-theme-plugin="brutal-comic"] .custom-menu-item:hover {
+  background: var(--brutal-soft) !important;
+}
+html[data-theme-plugin="brutal-comic"] .constituent-tip {
+  border: 2px solid var(--brutal-ink) !important;
+  background: var(--brutal-paper) !important;
+}
+html[data-theme-plugin="brutal-comic"] .menu-divider {
+  background: var(--brutal-ink) !important;
+}
+
+/* 16.11 暗色弹窗去玻璃 */
+html[data-theme-plugin="brutal-comic"][data-theme="dark"] .modal-content {
+  background: var(--brutal-paper) !important;
+}
+
+/* 16.12 生词本卡片去渐变，统一为纸面硬边 */
+html[data-theme-plugin="brutal-comic"] .vocab-card {
+  background: var(--brutal-paper) !important;
+  border: 2px solid var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-title,
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-count,
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-date,
+html[data-theme-plugin="brutal-comic"] .vocab-card .word-count {
+  color: var(--brutal-ink) !important;
+  -webkit-text-fill-color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-meta {
+  color: var(--text-light, #5A5344) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-progress-bar {
+  background: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-progress-track {
+  background: var(--brutal-paper-warm) !important;
+  border: 1px solid var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .format-badge {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border: 2px solid var(--brutal-ink) !important;
+}
+
+/* ============================================================
+   17. 漫画活力增强层（打破"全是大白方块"的单调）
+   ------------------------------------------------------------
+   手法：撞色分区色条 + 彩色实心徽章 + 主 CTA 黄填充 +
+        按钮/卡片按压抬起动效 + 主区细网点纹理。
+        仍严格保持零圆角与粗黑描边，只是让色彩与节奏跳出来。
+   ============================================================ */
+
+/* 17.1 分区撞色条：不同模块用三原色建立辨识度与节奏 */
+html[data-theme-plugin="brutal-comic"] .vocab-card {
+  border-left: 8px solid var(--brutal-blue) !important;
+}
+html[data-theme-plugin="brutal-comic"] .vocab-card .vocab-title {
+  border-bottom: 3px solid var(--brutal-blue);
+  display: inline-block;
+  padding-bottom: 2px;
+}
+html[data-theme-plugin="brutal-comic"] .history-card,
+html[data-theme-plugin="brutal-comic"] .history-item {
+  border: 2px solid var(--brutal-ink) !important;
+  border-left: 8px solid var(--brutal-yellow) !important;
+}
+html[data-theme-plugin="brutal-comic"] .mode-card {
+  border-top: 6px solid var(--brutal-red) !important;
+}
+
+/* 17.2 彩色实心徽章：让小标签跳出三原色，打破全白 */
+html[data-theme-plugin="brutal-comic"] .sentence-type-badge {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .constituent-badge {
+  background: var(--brutal-blue) !important;
+  color: #FFFFFF !important;
+}
+html[data-theme-plugin="brutal-comic"] .syntax-clause-cat {
+  background: var(--brutal-red) !important;
+  color: #FFFFFF !important;
+}
+html[data-theme-plugin="brutal-comic"] .syntax-badge {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+}
+
+/* 17.3 主 CTA 黄填充高亮（漫画印章感；红留给激活态/危险） */
+html[data-theme-plugin="brutal-comic"] button.btn-primary,
+html[data-theme-plugin="brutal-comic"] button.section-btn.primary,
+html[data-theme-plugin="brutal-comic"] .generate-btn,
+html[data-theme-plugin="brutal-comic"] button.secondary:not(.icon-btn):not(.icon-only-btn):not(.file-upload-btn):not(.camera-btn):not(.panel-toggle-btn):not(.back-btn):not(.mobile-settings-btn) {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border-color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] button.btn-primary:hover,
+html[data-theme-plugin="brutal-comic"] button.section-btn.primary:hover,
+html[data-theme-plugin="brutal-comic"] .generate-btn:hover,
+html[data-theme-plugin="brutal-comic"] button.secondary:not(.icon-btn):not(.icon-only-btn):not(.file-upload-btn):not(.camera-btn):not(.panel-toggle-btn):not(.back-btn):not(.mobile-settings-btn):hover {
+  background: var(--brutal-red) !important;
+  color: #FFFFFF !important;
+}
+
+/* 17.4 按钮按压动效：hover 抬起更大，active 真的按下 */
+html[data-theme-plugin="brutal-comic"] button:hover {
+  background: var(--brutal-soft) !important;
+  color: var(--brutal-ink) !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0 var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 var(--brutal-ink) !important;
+}
+
+/* 17.5 卡片悬停抬起：主容器 hover 时阴影变大，有互动呼吸感 */
+html[data-theme-plugin="brutal-comic"] .vocab-card:hover,
+html[data-theme-plugin="brutal-comic"] .history-card:hover,
+html[data-theme-plugin="brutal-comic"] .word-item:hover,
+html[data-theme-plugin="brutal-comic"] .mode-card:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 7px 7px 0 var(--brutal-ink) !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+/* 17.6 主内容区细网点纹理：印刷感，不抢眼 */
+html[data-theme-plugin="brutal-comic"] #mainContent,
+html[data-theme-plugin="brutal-comic"] .main-content,
+html[data-theme-plugin="brutal-comic"] .reading-area,
+html[data-theme-plugin="brutal-comic"] #vocabInterface,
+html[data-theme-plugin="brutal-comic"] #historyInterface,
+html[data-theme-plugin="brutal-comic"] #memoryModeInterface {
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--brutal-ink) 5%, transparent) 1px, transparent 1.3px);
+  background-size: 26px 26px;
+}
+
+/* ============================================================
+   18. 移动端叠加层（brutal-comic · 统一插件 / 同一份 theme.css）
+   ------------------------------------------------------------
+   移动端组件类为 .esc-*，全部以 html[data-theme-plugin="brutal-comic"]
+   为前缀，作用域隔离；变量层加 [data-platform="mobile"]，仅在移动平台
+   覆盖桌面裸变量块（桌面端 html 无 data-platform，自然只匹配桌面块）。
+   全局零圆角已由第 16.1 节统一处理，此处仅作移动专属补充。
+   ============================================================ */
+
+/* 18.0 移动端变量层（浅色 / 暖纸） */
+html[data-theme-plugin="brutal-comic"][data-platform="mobile"] {
+  --brutal-ink: #1A1A1A;
+  --brutal-soft: #F0EADB;
+  --brutal-yellow: #FFD23F;
+  --brutal-yellow-hi: #FFE27A;
+  --brutal-red: #E23D3D;
+  --brutal-blue: #2D6CDF;
+  --brutal-green: #2E9E5B;
+
+  /* —— 配色覆盖为漫画三原色 + 墨黑 —— */
+  --study-background: #FAF6EA;
+  --study-foreground: #1A1A1A;
+  --study-card: #FFFDF5;
+  --study-card-foreground: #1A1A1A;
+  --study-popover: #FFFDF5;
+  --study-popover-foreground: #1A1A1A;
+  --study-primary: var(--brutal-blue);
+  --study-primary-foreground: #FFFFFF;
+  --study-accent: var(--brutal-yellow);
+  --study-accent-foreground: #1A1A1A;
+  --study-accent-hover: var(--brutal-yellow-hi);
+  --study-muted: #EFE9DA;
+  --study-muted-foreground: #5A5750;
+  --study-border: var(--brutal-ink);
+  --study-input: #FFFDF5;
+  --study-ring: var(--brutal-ink);
+  --study-success: var(--brutal-green);
+  --study-warning: #E8A33D;
+  --study-danger: var(--brutal-red);
+  --study-error: var(--brutal-red);
+  --study-info: var(--brutal-blue);
+
+  /* —— 零圆角 —— */
+  --study-radius-sm: 0px;
+  --study-radius-md: 0px;
+  --study-radius-lg: 0px;
+
+  /* —— 偏移硬阴影（替代软模糊阴影） —— */
+  --study-shadow-sm: 3px 3px 0 var(--brutal-ink);
+  --study-shadow-md: 5px 5px 0 var(--brutal-ink);
+  --study-shadow-lg: 8px 8px 0 var(--brutal-ink);
+}
+
+/* 18.0 深色（漫画暗纸） */
+html[data-theme-plugin="brutal-comic"][data-theme="dark"][data-platform="mobile"] {
+  --brutal-ink: #F3EEDD;
+  --brutal-soft: #2A2519;
+  --brutal-yellow: #FFD23F;
+  --brutal-yellow-hi: #FFE27A;
+  --brutal-red: #FF6B6B;
+  --brutal-blue: #6FA0FF;
+  --brutal-green: #5FC28C;
+  --study-background: #14110C;
+  --study-foreground: #F3EEDD;
+  --study-card: #1F1B14;
+  --study-card-foreground: #F3EEDD;
+  --study-popover: #1F1B14;
+  --study-popover-foreground: #F3EEDD;
+  --study-primary: var(--brutal-blue);
+  --study-primary-foreground: #14110C;
+  --study-accent: var(--brutal-yellow);
+  --study-accent-foreground: #14110C;
+  --study-accent-hover: var(--brutal-yellow-hi);
+  --study-muted: #2A2519;
+  --study-muted-foreground: #B9B0A0;
+  --study-border: var(--brutal-ink);
+  --study-input: #1F1B14;
+  --study-ring: var(--brutal-ink);
+  --study-success: var(--brutal-green);
+  --study-warning: #C9A25C;
+  --study-danger: var(--brutal-red);
+  --study-error: var(--brutal-red);
+  --study-info: var(--brutal-blue);
+  --study-shadow-sm: 3px 3px 0 #000000;
+  --study-shadow-md: 5px 5px 0 #000000;
+  --study-shadow-lg: 8px 8px 0 #000000;
+}
+
+/* 18.1 spinner 例外：保留圆形旋转指示（全局已清零圆角，否则方块旋转怪异） */
+html[data-theme-plugin="brutal-comic"] .esc-pl-spin,
+html[data-theme-plugin="brutal-comic"] .esc-pl-spin::after {
+  border-radius: 999px !important;
+}
+
+/* 18.2 粗黑描边（漫画核心；原硬写 1px → 3px ink） */
+html[data-theme-plugin="brutal-comic"] .esc-card,
+html[data-theme-plugin="brutal-comic"] .esc-header,
+html[data-theme-plugin="brutal-comic"] .esc-btn,
+html[data-theme-plugin="brutal-comic"] .esc-btn-ghost,
+html[data-theme-plugin="brutal-comic"] .esc-input,
+html[data-theme-plugin="brutal-comic"] .esc-textarea,
+html[data-theme-plugin="brutal-comic"] .esc-badge,
+html[data-theme-plugin="brutal-comic"] .esc-pill,
+html[data-theme-plugin="brutal-comic"] .esc-pill-row,
+html[data-theme-plugin="brutal-comic"] .esc-tab,
+html[data-theme-plugin="brutal-comic"] .esc-stat,
+html[data-theme-plugin="brutal-comic"] .esc-sentence,
+html[data-theme-plugin="brutal-comic"] .esc-spanel,
+html[data-theme-plugin="brutal-comic"] .esc-nav,
+html[data-theme-plugin="brutal-comic"] .esc-nb-delete,
+html[data-theme-plugin="brutal-comic"] .esc-progress {
+  border: 3px solid var(--brutal-ink) !important;
+}
+/* 删除按钮：硬边 + 硬阴影（原软发光） */
+html[data-theme-plugin="brutal-comic"] .esc-nb-delete {
+  box-shadow: 4px 4px 0 var(--brutal-ink) !important;
+}
+/* 输入框聚焦：黑边 + 硬阴影环（替代软 focus ring） */
+html[data-theme-plugin="brutal-comic"] .esc-input:focus,
+html[data-theme-plugin="brutal-comic"] .esc-textarea:focus {
+  border-color: var(--brutal-ink) !important;
+  box-shadow: 4px 4px 0 var(--brutal-ink) !important;
+}
+/* 句子卡左侧蓝条加粗 */
+html[data-theme-plugin="brutal-comic"] .esc-sentence {
+  border-left: 6px solid var(--study-primary) !important;
+}
+
+/* 18.3 撞色分区（不同视图顶栏粗色条 + 卡片色条） */
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="home"] .esc-header { border-top: 6px solid var(--brutal-blue) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="vocab"] .esc-header { border-top: 6px solid var(--brutal-blue) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="history"] .esc-header { border-top: 6px solid var(--brutal-yellow) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="memory"] .esc-header { border-top: 6px solid var(--brutal-red) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] .esc-header { border-top: 6px solid var(--brutal-ink) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="detail"] .esc-header { border-top: 6px solid var(--brutal-ink) !important; }
+
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="vocab"] .esc-card { border-left: 8px solid var(--brutal-blue) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="history"] .esc-card { border-left: 8px solid var(--brutal-yellow) !important; }
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="memory"] .esc-card { border-top: 6px solid var(--brutal-red) !important; }
+
+/* 18.4 主 CTA 黄填充高亮 + 按压动效 */
+html[data-theme-plugin="brutal-comic"] .esc-btn-primary {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border-color: var(--brutal-ink) !important;
+}
+html[data-theme-plugin="brutal-comic"] .esc-btn-primary:hover {
+  background: var(--brutal-yellow-hi) !important;
+}
+/* 重写原 scale(.96) 为真实按下位移（漫画印章感） */
+html[data-theme-plugin="brutal-comic"] .esc-btn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0 var(--brutal-ink) !important;
+}
+/* 选中态 tab / pill 硬边高亮 */
+html[data-theme-plugin="brutal-comic"] .esc-tab.is-active,
+html[data-theme-plugin="brutal-comic"] .esc-pill.is-active {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border-color: var(--brutal-ink) !important;
+}
+/* 底部导航选中：黄色方块高亮片（原淡色圆片 → 硬边方块） */
+html[data-theme-plugin="brutal-comic"] .esc-nav-item.is-active::before {
+  background: var(--brutal-yellow) !important;
+  opacity: 1 !important;
+}
+/* 生词本筛选 tab 选中态（类为 .esc-nb-tab，而非 .esc-tab） */
+html[data-theme-plugin="brutal-comic"] .esc-nb-tab.is-active {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border-color: var(--brutal-ink) !important;
+}
+/* 设置页选项选中态（限定 settings 视图，避免污染底部导航） */
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] .is-active,
+html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] button.is-active {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  border-color: var(--brutal-ink) !important;
+}
+
+/* 18.5 彩色徽章（实心三原色） + 数字强调 */
+html[data-theme-plugin="brutal-comic"] .esc-badge {
+  background: var(--brutal-yellow) !important;
+  color: var(--brutal-ink) !important;
+  font-weight: 700;
+}
+html[data-theme-plugin="brutal-comic"] .esc-stat .esc-num { color: var(--brutal-blue) !important; }
+
+/* 18.6 网点纹理（印刷感，不抢眼） */
+html[data-theme-plugin="brutal-comic"] .esc-app,
+html[data-theme-plugin="brutal-comic"] .esc-page,
+html[data-theme-plugin="brutal-comic"] .esc-main {
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--brutal-ink) 6%, transparent) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+}
+/* 标题漫画粗体 */
+html[data-theme-plugin="brutal-comic"] .esc-header h1 {
+  font-weight: 900;
+  letter-spacing: .5px;
+}

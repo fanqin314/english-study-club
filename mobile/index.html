@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light" data-fontsize="medium" style="--esc-kb: 0px;"><head>
+<html lang="zh-CN" data-theme="light" data-fontsize="medium" data-platform="mobile" style="--esc-kb: 0px;"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>英研社 · 移动端</title>
@@ -472,6 +472,9 @@
   <!-- 模块按依赖顺序加载：先基础，后视图，最后引导 -->
   <script src="js/ui.js"></script>
   <script src="js/store.js?v=20260826g"></script>
+  <!-- 主题插件加载器（移动端相对路径 ../themes/） -->
+  <script>window.THEME_PLUGIN_BASE = '../themes/';</script>
+  <script src="../themes/theme_plugin.js"></script>
   <script src="js/foldersync.js"></script>
   <script src="../core/shared/sentence_split.js"></script>
   <script src="../core/shared/parse_core.js"></script>

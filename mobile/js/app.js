@@ -119,7 +119,9 @@
     const s = Store.getSettings();
     document.documentElement.setAttribute('data-theme', s.darkMode ? 'dark' : 'light');
     document.documentElement.setAttribute('data-fontsize', s.fontSize || 'medium');
-    applyColors(s);
+    // 应用主题插件（未选则回退默认）；插件启用后由主题接管配色
+    if (window.ThemePlugin) ThemePlugin.enable(s.themePlugin || '');
+    if (!(window.ThemePlugin && window.ThemePlugin.isEnabled())) applyColors(s);
   }
 
   // index.html 内含一份「冻结的旧版」静态预渲染快照（生词本 51 张卡、历史、记忆、设置等）。

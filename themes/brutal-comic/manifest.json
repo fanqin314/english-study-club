@@ -1,0 +1,10 @@
+{
+  "id": "brutal-comic",
+  "name": "硬边漫画 Brutal Comic",
+  "version": "1.0.0",
+  "description": "硬边漫画 × 粗野主义：零圆角、粗黑描边与硬阴影的印刷漫画风，即插即用。",
+  "author": "英研社",
+  "css": "theme.css",
+  "supportsDark": true,
+  "tags": ["brutalism", "comic", "hard-edge"]
+}

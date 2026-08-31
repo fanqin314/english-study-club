@@ -64,6 +64,7 @@
     themeNeutral: null,
     themePrimary: null,
     themeAccent: null,
+    themePlugin: '',          // 主题插件 id（'' = 默认，对应 themes/index.json 清单）
     profileName: '英语学习者',
     profileEmail: 'learner@example.com'
   };
@@ -549,7 +550,8 @@
       profileEmail: next.profileEmail,
       themeNeutral: next.themeNeutral,
       themePrimary: next.themePrimary,
-      themeAccent: next.themeAccent
+      themeAccent: next.themeAccent,
+      themePlugin: next.themePlugin || ''
     };
     _writeJSON(KEYS.settings, local);
     emit('settings', next);

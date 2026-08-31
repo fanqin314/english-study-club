@@ -126,6 +126,17 @@
           </div>
         </div>
 
+        <div class="esc-group-title">界面主题</div>
+        <div class="esc-list">
+          <div class="esc-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px">
+            <div class="esc-seg esc-theme-pick" id="m-set-theme" style="flex-wrap:wrap;gap:6px">
+              <button data-v="" class="${s.themePlugin ? '' : 'is-active'}">默认</button>
+              ${(window.ThemePlugin ? window.ThemePlugin.list() : []).map((t) => `<button data-v="${esc(t.id)}" class="${s.themePlugin === t.id ? 'is-active' : ''}">${esc(t.name)}</button>`).join('')}
+            </div>
+            <div class="esc-color-row-note" style="font-size:12px;color:var(--study-muted-foreground)">切换即时生效；启用主题后由主题接管配色。</div>
+          </div>
+        </div>
+
         <div class="esc-group-title">词性高亮</div>
         <div class="esc-list">
           <div class="esc-row">
@@ -257,6 +268,15 @@
         b.classList.add('is-active');
         const v = b.getAttribute('data-v');
         Store.updateSettings({ fontSize: v }); applyFont(v);
+      });
+    });
+
+    // 界面主题选择（即时生效，持久化并触发 app.js applyPrefs 重绘）
+    root.querySelectorAll('#m-set-theme button').forEach((b) => {
+      b.addEventListener('click', () => {
+        root.querySelectorAll('#m-set-theme button').forEach((x) => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+        Store.updateSettings({ themePlugin: b.getAttribute('data-v') || '' });
       });
     });
 

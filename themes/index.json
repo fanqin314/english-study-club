@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-31T00:00:00.000Z",
+  "themes": [
+    {
+      "id": "brutal-comic",
+      "name": "硬边漫画 Brutal Comic",
+      "version": "1.0.0",
+      "path": "themes/brutal-comic"
+    }
+  ]
+}
