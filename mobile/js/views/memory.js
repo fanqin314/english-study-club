@@ -1449,7 +1449,7 @@
      支持 检查/提示/显示答案/朗读/句首翻译气泡/连击计分/结算。
      ================================================================== */
   const CLOZE_ICONS = {
-    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>',
     star: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
     check: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
     refresh: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>',
@@ -1986,7 +1986,7 @@
     body.innerHTML = `
       <div class="cloze-container">
         <div class="cloze-header">
-          <button class="cloze-back-btn" data-act="close" title="返回">${CLOZE_ICONS.back}</button>
+          <button class="cloze-back-btn" data-act="close" title="关闭" aria-label="关闭">${CLOZE_ICONS.back}</button>
           <h3>语境填空 · ${clozeItems.length} 个生词</h3>
         </div>
         <div class="cloze-top-bar">
@@ -2072,7 +2072,7 @@
      翻译·知识点·语法三页签 + 补拉 / 生词句列表 / 结算
      ================================================================== */
   const SENT_ICONS = {
-    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+    back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>',
     speak: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
     bookmark: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
     bookmarkFill: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
@@ -2424,7 +2424,7 @@
     body.innerHTML = `
       <div class="sent-container">
         <div class="sent-header">
-          <button class="sent-back-btn" data-act="close" title="返回">${SENT_ICONS.back}</button>
+          <button class="sent-back-btn" data-act="close" title="关闭" aria-label="关闭">${SENT_ICONS.back}</button>
           <h3>逐句精读 · ${sentences.length} 句</h3>
           <div class="sent-header-actions">
             <button class="sent-fav-btn" id="sentenceFavBtn" title="收藏当前句子">${SENT_ICONS.bookmark}</button>
