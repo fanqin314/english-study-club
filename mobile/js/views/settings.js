@@ -16,6 +16,7 @@
   const esc = UI.esc, icon = UI.icon;
 
   function applyTheme(dark) { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); }
+  function applyBrutal(on) { document.body.classList.toggle('theme-brutal', !!on); }
   function applyFont(size) { document.documentElement.setAttribute('data-fontsize', size); }
 
   // 返回三种色当前「有效值」（自定义值优先，否则按明暗给默认，用于色块展示）
@@ -115,6 +116,10 @@
           <div class="esc-row">
             <div class="esc-row-left">${icon('moon')}<span class="esc-row-label">深色模式</span></div>
             <label class="esc-toggle"><input type="checkbox" id="m-set-dark" ${s.darkMode ? 'checked' : ''}><span class="esc-slider"></span></label>
+          </div>
+          <div class="esc-row">
+            <div class="esc-row-left">${icon('hammer')}<span class="esc-row-label">粗野主义主题</span></div>
+            <label class="esc-toggle"><input type="checkbox" id="m-set-brutal" ${s.brutalMode ? 'checked' : ''}><span class="esc-slider"></span></label>
           </div>
           <div class="esc-row">
             <div class="esc-row-left">${icon('type')}<span class="esc-row-label">字体大小</span></div>
@@ -251,6 +256,7 @@
     root.querySelector('#m-set-pron').addEventListener('change', (e) => Store.updateSettings({ autoPronounce: e.target.checked }));
     root.querySelector('#m-set-collect').addEventListener('change', (e) => Store.updateSettings({ autoCollect: e.target.checked }));
     root.querySelector('#m-set-dark').addEventListener('change', (e) => { Store.updateSettings({ darkMode: e.target.checked }); applyTheme(e.target.checked); });
+    root.querySelector('#m-set-brutal').addEventListener('change', (e) => { Store.updateSettings({ brutalMode: e.target.checked }); applyBrutal(e.target.checked); });
     root.querySelectorAll('#m-set-font button').forEach((b) => {
       b.addEventListener('click', () => {
         root.querySelectorAll('#m-set-font button').forEach((x) => x.classList.remove('is-active'));

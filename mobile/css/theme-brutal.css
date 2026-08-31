@@ -1,0 +1,147 @@
+/* ============================================================
+   theme-brutal.css —— 粗野主义（Brutalism）移动端主题变种
+   独立CSS层叠插件，只覆盖变量与关键样式，不修改原theme.css
+   使用：body.theme-brutal { ... }
+   ============================================================ */
+
+body.theme-brutal {
+  /* ---------- 粗野主义核心变量覆写 ---------- */
+  --study-radius: 0px;          /* 圆角 → 直角 */
+  --study-radius-sm: 0px;
+  --study-radius-lg: 0px;
+
+  --study-border-width: 2px;    /* 边框加粗 */
+  --study-border: var(--study-border-width) solid #000;
+
+  /* 亮主题粗野配色：高对比、纯黑边框 */
+  --study-foreground: #000000;
+  --study-background: #ffffff;
+  --study-card: #ffffff;
+  --study-border: var(--study-border-width) solid #000;
+  --study-muted: #f0f0f0;
+  --study-muted-foreground: #333333;
+  --study-primary: #000000;
+  --study-accent: #111111;
+  --study-success: #000000;
+  --study-error: #000000;
+
+  /* 阴影 → 去掉柔化内阴影，改用硬投影（甚至无阴影） */
+  --study-shadow-1: 4px 4px 0 0 #000000;
+  --study-shadow-2: 6px 6px 0 0 #000000;
+
+  /* 字体 → 加粗、增大对比度 */
+  --study-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --study-font-serif: 'Times New Roman', Times, serif;
+}
+
+/* 深色模式粗野配色 */
+body.theme-brutal[data-theme="dark"] {
+  --study-foreground: #ffffff;
+  --study-background: #000000;
+  --study-card: #000000;
+  --study-border: var(--study-border-width) solid #ffffff;
+  --study-muted: #111111;
+  --study-muted-foreground: #cccccc;
+  --study-primary: #ffffff;
+  --study-accent: #eeeeee;
+  --study-success: #ffffff;
+  --study-error: #ffffff;
+  --study-shadow-1: 4px 4px 0 0 #ffffff;
+  --study-shadow-2: 6px 6px 0 0 #ffffff;
+}
+
+/* ---------- 按钮组件：去掉圆角，加粗边框，去掉内阴影 ---------- */
+body.theme-brutal .esc-icon-btn,
+body.theme-brutal .cloze-back-btn,
+body.theme-brutal .sent-back-btn,
+body.theme-brutal .esc-nbwheel-btn {
+  border-radius: 0;
+  border: 2px solid var(--study-primary);
+  box-shadow: none;
+  background: transparent;
+  color: var(--study-primary);
+}
+body.theme-brutal .esc-nbwheel-btn {
+  background: var(--study-primary);
+  color: var(--study-background);
+}
+body.theme-brutal button:not(.esc-nbwheel-btn):active,
+body.theme-brutal .esc-icon-btn:active {
+  transform: translate(2px, 2px);
+}
+
+/* ---------- 卡片面板：粗边框直角，硬投影 ---------- */
+body.theme-brutal .bn-panel,
+body.theme-brutal .bn-popover,
+body.theme-brutal .cloze-container,
+body.theme-brutal .sent-container,
+body.theme-brutal .quiz-container {
+  border-radius: 0;
+  border: 2px solid var(--study-border);
+  box-shadow: var(--study-shadow-1);
+}
+
+/* ---------- 生词本轮盘 ---------- */
+body.theme-brutal .esc-nbwheel-item {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: 3px 3px 0 0 color-mix(in srgb, #000 35%, transparent);
+}
+body.theme-brutal .esc-nbwheel-item.selected {
+  box-shadow: 6px 6px 0 0 color-mix(in srgb, var(--nb, #506080) 70%, transparent);
+}
+
+/* ---------- 语境填空字母格（横线粗野版） ---------- */
+body.theme-brutal .cloze-letter-grid .letter-box {
+  border-bottom-width: 3px;
+}
+
+/* ---------- 句子块 ---------- */
+body.theme-brutal .esc-sentence-block,
+body.theme-brutal .esc-article-text {
+  border-radius: 0;
+  border: 2px solid var(--study-border);
+}
+
+/* ---------- 输入框 ---------- */
+body.theme-brutal input[type="text"],
+body.theme-brutal .letter-input {
+  border-radius: 0;
+  border: 2px solid var(--study-border);
+}
+body.theme-brutal .letter-box.active-slot {
+  border-bottom-color: var(--study-primary);
+}
+
+/* ---------- 底部操作条 ---------- */
+body.theme-brutal .cloze-toolbar,
+body.theme-brutal .sent-toolbar {
+  border-top: 2px solid var(--study-border);
+}
+
+/* ---------- 三页签（逐句精读） ---------- */
+body.theme-brutal .sent-tabs {
+  border-bottom: 2px solid var(--study-border);
+}
+body.theme-brutal .sent-tab {
+  border-radius: 0;
+  border: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  font-weight: 700;
+}
+body.theme-brutal .sent-tab.active {
+  border-color: var(--study-border);
+  border-bottom-color: transparent;
+  background: transparent;
+  color: var(--study-foreground);
+}
+
+/* ---------- 生词行 ---------- */
+body.theme-brutal .esc-word-row {
+  border-bottom: 2px solid var(--study-border);
+}
+body.theme-brutal .esc-word-inner {
+  border-radius: 0;
+  border: 2px solid var(--study-border);
+  box-shadow: var(--study-shadow-1);
+}

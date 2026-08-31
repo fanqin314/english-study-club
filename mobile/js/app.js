@@ -119,6 +119,7 @@
     const s = Store.getSettings();
     document.documentElement.setAttribute('data-theme', s.darkMode ? 'dark' : 'light');
     document.documentElement.setAttribute('data-fontsize', s.fontSize || 'medium');
+    document.body.classList.toggle('theme-brutal', !!s.brutalMode);
     applyColors(s);
   }
 
