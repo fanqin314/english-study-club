@@ -2822,7 +2822,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   background: var(--study-card); border-bottom: 1px solid var(--study-border);
   box-shadow: var(--study-shadow-sm);
 }
-.quiz-header h3 { flex: 1; margin: 0; text-align: center; font-size: 16px; font-weight: 700; color: var(--study-foreground); }
+.quiz-header h3 { flex: 1; margin: 0; text-align: center; font-size: 16px; font-weight: 600; font-family: var(--study-font-sans); color: var(--study-foreground); }
 /* ---- 进度条 ---- */
 .quiz-progress-wrap {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
@@ -3010,7 +3010,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .cloze-back-btn:active, .cloze-nav-btn:active:not(:disabled), .cloze-tool-btn:active:not(:disabled) {
   transform: scale(.94); background: var(--study-muted);
 }
-.cloze-header h3 { flex: 1; min-width: 0; margin: 0; font-size: 15px; font-weight: 700; color: var(--study-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cloze-header h3 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 600; font-family: var(--study-font-sans); color: var(--study-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cloze-score-badge {
   display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
   padding: 5px 12px; border-radius: 999px;
@@ -3191,7 +3191,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   transition: transform .12s ease, background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 .sent-back-btn:active, .sent-fav-btn:active, .sent-tts-btn:active, .sent-nav-btn:active:not(:disabled) { transform: scale(.94); background: var(--study-muted); }
-.sent-header h3 { flex: 1; min-width: 0; margin: 0; font-size: 15px; font-weight: 700; color: var(--study-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sent-header h3 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 600; font-family: var(--study-font-sans); color: var(--study-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sent-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .sent-fav-btn { color: var(--study-muted-foreground); }
 .sent-fav-btn.favorited { color: var(--study-warning); border-color: var(--study-warning); background: color-mix(in srgb, var(--study-warning) 12%, var(--study-card)); }
@@ -3344,7 +3344,7 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 /* ---- 窄屏适配 ---- */
 @media (max-width: 480px) {
   .cloze-header, .sent-header { padding: 8px 12px; }
-  .cloze-header h3, .sent-header h3 { font-size: 14px; }
+  .cloze-header h3, .sent-header h3 { font-size: 15px; }
   .cloze-main, .sent-main { padding: 14px 12px 22px; }
   .cloze-progress-text { font-size: 11px; }
   .cloze-para-indicator { display: none; }
