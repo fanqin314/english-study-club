@@ -1988,7 +1988,6 @@
         <div class="cloze-header">
           <button class="cloze-back-btn" data-act="close" title="返回">${CLOZE_ICONS.back}</button>
           <h3>语境填空 · ${clozeItems.length} 个生词</h3>
-          <span class="cloze-score-badge" id="clozeScoreBadge">${CLOZE_ICONS.star}<span id="clozeScoreNum">0</span></span>
         </div>
         <div class="cloze-top-bar">
           <div class="cloze-progress-track"><div class="cloze-progress-fill" id="clozeProgressFill" style="width:0%"></div></div>
