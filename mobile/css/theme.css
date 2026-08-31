@@ -1260,7 +1260,13 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-nbwheel-items {
   position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; z-index: 7;
   pointer-events: none;
+  /* 整环包裹层整体缩放：从按钮中心弹性“长出”，营造整体生长感（对齐 demo 的 .ring） */
+  transform: scale(0);
+  transform-origin: center center;
+  transition: transform .36s cubic-bezier(.34, 1.56, .64, 1);
+  will-change: transform;
 }
+.esc-nbwheel.active .esc-nbwheel-items { transform: scale(1); }
 /* 展开时的透明捕捉面：放大「可拖动旋转」的触摸区域到整个风扇区（超出芯片本身），
    避免上下拖动空白风扇时落到下方内容触发滚动。收起时禁用不影响原交互。 */
 .esc-nbwheel-area {
@@ -1283,19 +1289,21 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
     border-color .18s ease, background-color .18s ease,
     box-shadow .18s ease, color .18s ease;
   pointer-events: none; opacity: 0;
-  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5);
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle)));
 }
 /* 收起状态（轮盘未展开时，无论类名如何都隐藏）——保证再次点击按钮一定收回 */
 .esc-nbwheel:not(.active) .esc-nbwheel-item {
   opacity: 0 !important; pointer-events: none !important;
-  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5) !important;
+  transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) !important;
 }
-.esc-nbwheel-item.visible { pointer-events: auto; opacity: 1; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1); }
-.esc-nbwheel-item.hidden { pointer-events: none; opacity: 0; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(.5); }
+.esc-nbwheel-item.visible { pointer-events: auto; opacity: 1; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))); }
+.esc-nbwheel-item.hidden { pointer-events: none; opacity: 0; transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))); }
 .esc-nbwheel-item.focused {
   transform: rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(1.04);
 }
 .esc-art-row .esc-nbwheel.dragging .esc-nbwheel-item.visible { pointer-events: none; }
+/* 拖动中禁用 item 的 transform 过渡，保证跟手即时（不产生拖影延迟感） */
+.esc-nbwheel.dragging .esc-nbwheel-item { transition: opacity .22s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease; }
 .esc-nbwheel-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--nb, #506080); }
 .esc-nbwheel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 600; }
 .esc-nbwheel-count { flex: 0 0 auto; font-size: 11px; color: var(--study-muted-foreground); }
