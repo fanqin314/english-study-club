@@ -3064,10 +3064,22 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 }
 .cloze-letter-grid { display: inline-flex; flex-wrap: wrap; gap: 5px; }
 .cloze-letter-grid .letter-box {
-  --letter-h: clamp(32px, 9.5vw, 40px);
+  --letter-h: 34px;
   width: clamp(24px, 7.5vw, 32px); height: var(--letter-h);
-  font-size: clamp(.88rem, 4.2vw, 1.02rem); border-radius: 9px;
+  font-size: clamp(.9rem, 4.4vw, 1.05rem);
+  /* 横线样式：去掉方框，只保留底部下划线 */
+  background: transparent; border: none; border-bottom: 2px solid var(--study-border);
+  border-radius: 0; box-shadow: none;
 }
+.cloze-letter-grid .letter-box.active-slot {
+  border-bottom-color: var(--study-accent); transform: none;
+  box-shadow: none;
+}
+.cloze-letter-grid .letter-box.filled,
+.cloze-letter-grid .letter-box.correct,
+.cloze-letter-grid .letter-box.wrong { background: transparent; }
+.cloze-letter-grid .letter-box.correct { border-bottom-color: var(--study-success) !important; }
+.cloze-letter-grid .letter-box.wrong { border-bottom-color: var(--study-error) !important; }
 .cloze-letter-grid .letter-input { line-height: var(--letter-h); }
 .cloze-correct-answer {
   display: block; margin-top: 2px; font-size: 11px; font-weight: 700;
