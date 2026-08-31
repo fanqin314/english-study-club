@@ -452,21 +452,19 @@
   function wheelRender(m) {
     const isMobile = window.innerWidth <= 480;
     const radius = isMobile ? 104 : 140;          // 展开半径（移动端更小，避免溢出屏幕）
-    const maxArc = isMobile ? 78 : 82;            // 扇形最大半角：始终限制在按钮右侧，不越过屏幕边缘
     const angles = wheelAngles(m);
-    // 按与 0° 的距离排序，取最近的前 visible 个作为可见项
+    // 连续角度模式：每个 item 直接使用自身连续角度（base+offset），互不重排，
+    // 拖动时所有项如陀螺般连续旋转，跟手顺滑（对齐 demo 的流畅感）。
+    // 可见性仅取「离 0° 最近的 N 个」，这些项角度仍保持连续，不做槽位重排。
     const byDist = angles.slice().sort((a, b) => Math.abs(a.actual) - Math.abs(b.actual));
-    const visibleArr = byDist.slice(0, m.visible).sort((a, b) => a.actual - b.actual); // 角度升序（扇形内 左→右）
+    const visibleArr = byDist.slice(0, m.visible);
+    const visibleSet = new Set(visibleArr.map((v) => v.index));
     const focusObj = visibleArr.reduce((p, c) => (Math.abs(c.actual) < Math.abs(p.actual) ? c : p), visibleArr[0]);
-    // 把可见项均匀分配到右侧扇形的固定槽位，保证不重叠、不跑出屏幕
-    const V = visibleArr.length;
-    const spacing = V <= 1 ? 0 : (2 * maxArc) / (V - 1);
-    const slotOf = new Map(visibleArr.map((it, k) => [it.index, -maxArc + spacing * k]));
     m.els.forEach((el, i) => {
-      const a = slotOf.has(i) ? slotOf.get(i) : angles[i].actual;
+      const a = angles[i].actual;                  // 连续角度（不再塞固定槽位）
       el.style.setProperty('--angle', a + 'deg');
       el.style.setProperty('--radius', radius + 'px');
-      const visible = slotOf.has(i);
+      const visible = visibleSet.has(i);
       const focused = (visible && i === focusObj.index);
       el.classList.toggle('visible', visible);
       el.classList.toggle('hidden', !visible);
