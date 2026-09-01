@@ -2889,7 +2889,9 @@
     // 标记为全屏杂志弹层：隐藏通用头部、去掉内边距（见 theme.css .esc-overlay-review）
     if (overlay) overlay.classList.add('esc-overlay-review');
 
-    body.className = '';
+    // 保留 .esc-overlay-body 类，让 theme.css 的 .esc-overlay-review .esc-overlay-body
+    // （display:block + overflow-y:auto）生效；若清空 class 会丢失滚动容器，长文无法滑动。
+    body.className = 'esc-overlay-body';
     body.innerHTML = `
       <div class="rv-mag-wrapper">
         <div class="rv-mag-topbar">

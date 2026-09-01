@@ -2233,6 +2233,17 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   gap: 10px;
   padding-top: 4px;
 }
+/* 统计/计划弹层（[data-role="sp-body"]）：数字/时间输入被键盘盖住时，底部补出可滚动的键盘空间，输入可见可滚 */
+.is-kb-open .esc-overlay-body[data-role="sp-body"] {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--esc-kb, 0px) + 12px);
+}
+/* 底部弹层（.esc-bsheet，重命名生词本等）：键盘弹出时整个弹层上移，避开键盘；同时收缩高度保持可滚动 */
+.is-kb-open .esc-bsheet {
+  max-height: calc(88vh - var(--esc-kb, 0px));
+}
+.is-kb-open .esc-bsheet-backdrop .esc-bsheet {
+  transform: translateY(calc(-1 * var(--esc-kb, 0px)));
+}
 .fill-hint-btn, .fill-skip-btn {
   width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
   border-radius: 50%; cursor: pointer; color: var(--study-muted-foreground);

@@ -27,8 +27,8 @@
       });
     })();
   </script>
-  <!-- 图标（lucide CDN；离线时图标不显示但布局不受影响） -->
-  <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+  <!-- 图标（lucide 本地副本，离线可用） -->
+  <script src="vendor/lucide.min.js"></script>
   <!-- 自包含主题与组件样式（还原「深度解析 等 5 个设计」稿） -->
   <link rel="stylesheet" href="css/theme.css?v=20260830g">
   <!-- 叠加视图（生词测验 / 语境填空 / 逐句精读）：拆出自主题.css，变量复用 theme.css 顶层 :root -->
@@ -504,7 +504,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function (e) {
+      navigator.serviceWorker.register('sw.js?v=v3').catch(function (e) {
         console.warn('[SW] 注册失败（本地 file:// 下忽略即可）', e);
       });
     });

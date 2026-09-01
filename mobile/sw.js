@@ -1,15 +1,24 @@
 /* ============================================================
    sw.js — 英研社移动端 Service Worker
    策略：核心资源预缓存（install）+ stale-while-revalidate（运行时）
-   目的：添加到主屏后，离线也能打开并使用（lucide 图标 CDN 离线时
-        不显示但布局与功能不受影响，与现状一致）。
+   目的：添加到主屏后，离线也能打开并使用。图标已本地化（vendor/
+        lucide.min.js），离线不再依赖 CDN。
+   版本化：APP_VER 为本地于 sw.js 的唯一版本号，同时用作缓存 key
+        命名空间与 index.html 注册 URL 的 ?v=（两者一致，改资源即
+        bump APP_VER，离线不命中旧缓存）。
    ============================================================ */
-const VERSION = 'esc-mobile-v1';
+const PREFIX = 'esc-mobile';
+const APP_VER = 'v3';
+const VERSION = PREFIX + '-' + APP_VER;
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/theme.css',
+  './css/views-quiz.css',
+  './css/views-cloze.css',
+  './css/views-sent.css',
+  './vendor/lucide.min.js',
   './js/app.js',
   './js/router.js',
   './js/store.js',
@@ -48,8 +57,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // 仅处理同源或导航请求
-  if (url.origin !== self.location.origin && !req.mode === 'navigate') return;
+  // 仅处理同源或导航请求（原 !req.mode === 'navigate' 因运算符优先级恒为 false，已修正）
+  if (url.origin !== self.location.origin && req.mode !== 'navigate') return;
 
   // 导航请求：网络优先，失败回退缓存首页（离线可开）
   if (req.mode === 'navigate') {
