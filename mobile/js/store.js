@@ -192,7 +192,11 @@
       addedAt: ts,
       createdAt: ts,
       example: _normExample(w.context),
-      exampleZh: exObj ? (exObj.zh || '') : (w.contextZh || '')
+      exampleZh: exObj ? (exObj.zh || '') : (w.contextZh || ''),
+      // SRS 复习字段透传（对齐 core/shared/srs.js），供记忆队列按 nextReview 排序
+      box: w.box,
+      interval: w.interval,
+      nextReview: w.nextReview
     };
   }
   function _parseId(id) {
@@ -236,13 +240,16 @@
       emit('vocab', getVocab());
       return exists;
     }
+    // 对齐桌面端 SRS 数据层（core/shared/srs.js）：新增单词即初始化
+    // box/interval/nextReview 字段（initWord 原地补字段；SRS 未加载时优雅降级）
     const item = {
       word,
       meaning: zh,
       pos: w.pos || '',
       context: example,
       phonetic: ph,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      ...(window.EnglishStudyShared && window.EnglishStudyShared.SRS ? window.EnglishStudyShared.SRS.initWord({}) : {})
     };
     nb.words.unshift(item);
     _saveVocabData(d);
@@ -301,6 +308,44 @@
     const nb = d.notebooks[id];
     if (!nb) return [];
     return (nb.words || []).map((w) => _wordToVM(id, w));
+  }
+  // 复习结果写回当前生词本（对齐桌面端 SRS 数据层）：按 word 不区分大小写找到词，
+  // 读取其 box/interval，调 SRS.schedule(box, interval, correct) 得新值写回并持久化，
+  // 返回更新后的词；未找到词或 SRS 未加载时返回 null。
+  function applyReview(word, correct) {
+    const d = _getVocabData();
+    const nb = _currentNotebook(d);
+    if (!nb) return null;
+    const lower = String(word || '').toLowerCase();
+    const w = (nb.words || []).find((x) => (x.word || '').toLowerCase() === lower);
+    if (!w) return null;
+    const SRS = window.EnglishStudyShared && window.EnglishStudyShared.SRS;
+    if (!SRS) return null;
+    const next = SRS.schedule(w.box, w.interval, correct);
+    if (next && typeof next === 'object') {
+      if ('box' in next) w.box = next.box;
+      if ('interval' in next) w.interval = next.interval;
+      if ('nextReview' in next) w.nextReview = next.nextReview;
+    }
+    _saveVocabData(d);
+    emit('vocab', getVocab());
+    return w;
+  }
+  // 当前生词本待复习词数（委托共享层 SRS.dueCount）
+  function getDueCount() {
+    const d = _getVocabData();
+    const nb = _currentNotebook(d);
+    const SRS = window.EnglishStudyShared && window.EnglishStudyShared.SRS;
+    if (!nb || !SRS || typeof SRS.dueCount !== 'function') return 0;
+    return SRS.dueCount(nb.words || []);
+  }
+  // 当前生词本待复习队列（委托共享层 SRS.dueWords，按 nextReview 升序）
+  function getReviewQueue() {
+    const d = _getVocabData();
+    const nb = _currentNotebook(d);
+    const SRS = window.EnglishStudyShared && window.EnglishStudyShared.SRS;
+    if (!nb || !SRS || typeof SRS.dueWords !== 'function') return [];
+    return SRS.dueWords(nb.words || []);
   }
   // 新建生词本（对齐桌面端 VocabData.createNotebook）：重名报错，成功后返回 {success,id}
   function createNotebook(name) {
@@ -720,6 +765,7 @@
     uid, todayStr,
     getVocab, addWord, removeWord, updateWord, getWord,
     getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, isWordInNotebook,
+    applyReview, getDueCount, getReviewQueue,
     setCurrentNotebook, renameNotebook, updateNotebookColor, mergeNotebooks, deleteNotebook,
     NOTEBOOK_COLORS,
     getReadingStyle, setReadingStyle,

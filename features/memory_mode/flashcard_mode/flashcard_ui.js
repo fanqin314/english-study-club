@@ -646,6 +646,11 @@
                 const feedbackDetail = document.getElementById('feedbackDetail');
                 const item = wordsData[currentIndex];
 
+                // Leitner 间隔重复调度：known/vague 视为正确，unknown 视为错误
+                if (window.VocabData && typeof window.VocabData.scheduleWord === 'function') {
+                    window.VocabData.scheduleWord(window.VocabData.getCurrentNotebookId(), item.word, rating !== 'unknown');
+                }
+
                 if (feedbackOverlay && feedbackIcon && feedbackText && feedbackDetail) {
                     if (rating === 'known') {
                         feedbackIcon.innerHTML = '✓';

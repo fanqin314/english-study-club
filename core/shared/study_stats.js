@@ -194,6 +194,43 @@
     return { today: todayMap, all: allMap, list: list };
   };
 
+  /**
+   * 最近 days 天活动序列（每日所有模块计数之和，供热力图使用）
+   * @param {number} [days=84] 天数
+   * @returns {{days:Array<{dateStr:string,value:number}>, max:number}}
+   *          days 按时间从旧到新排列；max 为序列中最大值
+   */
+  Stats.activitySeries = function (days) {
+    if (!days || days <= 0) days = 84;
+    var data = moduleData();
+    var now = new Date();
+    var out = [];
+    var max = 0;
+    for (var i = days - 1; i >= 0; i--) {
+      var d = new Date(now);
+      d.setDate(d.getDate() - i);
+      var dateStr = d.toDateString();
+      var day = data[dateStr] || {};
+      var total = 0;
+      for (var mk in day) {
+        total += day[mk] || 0;
+      }
+      if (total > max) max = total;
+      out.push({ dateStr: dateStr, value: total });
+    }
+    return { days: out, max: max };
+  };
+
+  /**
+   * 最近 weeks 周活动序列（热力图数据源）
+   * @param {number} [weeks=12] 周数
+   * @returns {{days:Array<{dateStr:string,value:number}>, max:number}}
+   */
+  Stats.heatmap = function (weeks) {
+    if (!weeks || weeks <= 0) weeks = 12;
+    return Stats.activitySeries(weeks * 7);
+  };
+
   /* ---------------- 学习计划 ---------------- */
   /** 单词计划数据（生词本列表注入） */
   Stats.wordPlan = function (notebooks) {

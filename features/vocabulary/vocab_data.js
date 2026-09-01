@@ -4,6 +4,9 @@
     const STORAGE_KEY = 'vocabData';
     const FILE_NAME = 'vocabData.json';
     const TS_KEY = 'vocabData_ts';  // 时间戳键，用于比较新旧
+
+    // Leitner 间隔重复调度器（core/shared/srs.js，已在 index.html 中 study_stats.js 之后引入）
+    const SRS = (window.EnglishStudyShared && window.EnglishStudyShared.SRS) || null;
     
     // 数据结构
     let vocabData = {
@@ -286,13 +289,15 @@
             return { success: false, error: '单词已存在' };
         }
         
-        notebook.words.push({
+        const newWord = {
             word: trimmedWord,
             meaning: meaning.trim(),
             pos: pos.trim(),
             context: context.trim(),
             timestamp: timestamp
-        });
+        };
+        if (SRS) SRS.initWord(newWord);
+        notebook.words.push(newWord);
         
         saveData();
         return { success: true };
@@ -448,6 +453,33 @@
     function getCurrentNotebookWordCount() {
         const notebook = getCurrentNotebook();
         return notebook ? notebook.words.length : 0;
+    }
+    
+    // 按评级更新单词的 Leitner 调度状态（正确/错误），并持久化
+    function scheduleWord(notebookId, word, correct) {
+        if (!SRS) return null;
+        const notebook = vocabData.notebooks[notebookId];
+        if (!notebook) return null;
+        
+        const wordObj = notebook.words.find(w => w.word.toLowerCase() === word.toLowerCase());
+        if (!wordObj) return null;
+        
+        // 旧词可能缺少 box/interval，交给调度器按 1 处理
+        const result = SRS.schedule(wordObj.box, wordObj.interval, !!correct, Date.now());
+        wordObj.box = result.box;
+        wordObj.interval = result.interval;
+        wordObj.nextReview = result.nextReview;
+        
+        saveData();
+        return wordObj;
+    }
+    
+    // 当前生词本中今日到期待复习的单词数
+    function getDueCount() {
+        if (!SRS) return 0;
+        const notebook = getCurrentNotebook();
+        if (!notebook || !notebook.words) return 0;
+        return SRS.dueCount(notebook.words);
     }
     
     // 导出所有数据
@@ -687,6 +719,8 @@
         updateNotebook,
         getNotebookWordCounts,
         getCurrentNotebookWordCount,
+        scheduleWord,
+        getDueCount,
         renameNotebook,
         exportData,
         exportNotebook,

@@ -187,6 +187,13 @@
                         </svg>
                         <span class="tooltip">复制原文</span>
                     </button>
+                    <button id="exportHandoutBtn" class="icon-only-btn" aria-label="导出讲义" title="导出讲义">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                    </button>
                 </header>
 
                 <div id="originalTextArea" class="original-text">
@@ -248,7 +255,9 @@
     <script src="ui/event_delegation.js"></script>
     <script src="core/shared/sentence_split.js"></script>
     <script src="core/shared/parse_core.js"></script>
+    <script src="core/shared/srs.js"></script>
     <script src="core/shared/study_stats.js"></script>
+    <script src="core/shared/handout.js"></script>
     <script src="features/deep_parse/sentence_analysis/split.js"></script>
     <script src="core/api_request.js"></script>
     <script src="features/deep_parse/sentence_analysis/sentence_card_render.js"></script>

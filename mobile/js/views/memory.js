@@ -15,6 +15,9 @@
   // 共享统计/计划纯计算核心（core/shared/study_stats.js）
   const Shared = global.EnglishStudyShared || {};
   const SStats = Shared.Stats || null;
+  // 共享 SRS / 讲义核心（core/shared/srs.js、core/shared/handout.js，由集成步骤加入 index.html）
+  const SSRS = Shared.SRS || null;
+  const SHandout = Shared.Handout || null;
 
   // 单词标签的 4 个练习模式
   const WORD_MODES = [
@@ -205,11 +208,26 @@
     if (!id) return null;
     return Store.getHistory().find((h) => h.id === id) || null;
   }
-  // 单词练习队列：取当前选定生词本的前 10（桌面端不区分「已掌握」，故不再按 status 排序）
+  // 单词练习队列：SRS 待复习词优先，不足 10 个用剩余词补足（当前生词本）
   function buildWordQueue() {
     // 当前生词本为空时返回空队列，由调用方提示「先去收藏生词」，不再回退演示词
     const vocab = Store.getNotebookWords(Store.getCurrentNotebookId()) || [];
-    return vocab.slice(0, 10);
+    if (!vocab.length) return [];
+    let queue = (SSRS && typeof SSRS.dueWords === 'function') ? SSRS.dueWords(vocab) : [];
+    if (queue.length < 10) {
+      // 剩余词补足：排除已进入队列的词后按原顺序补齐
+      const inQueue = new Set(queue.map((w) => (w.word || '').toLowerCase()));
+      queue = queue.concat(vocab.filter((w) => !inQueue.has((w.word || '').toLowerCase())));
+    }
+    return queue.slice(0, 10);
+  }
+  // 记录逐词复习结果（写 session.results，供 finish 回写 SRS；同一词只记首次判定）
+  function recordResult(word, correct) {
+    if (!session) return;
+    const list = (session.results = session.results || []);
+    const lower = String(word || '').toLowerCase();
+    if (list.some((r) => String(r.word || '').toLowerCase() === lower)) return;
+    list.push({ word, correct: !!correct });
   }
   // 文章「语境填空」队列：取含生词的句子，挖空该生词
   function buildArticleClozeQueue(item) {
@@ -258,6 +276,8 @@
     const curNb = nbs.find((nb) => nb.id === curId) || nbs[0] || null;
     const curName = curNb ? curNb.name : '默认生词本';
     const curCount = curNb ? curNb.wordCount : vocabCount;
+    // 待复习数对齐共享 SRS 数据层（当前生词本内到期待复习词数）
+    const dueCount = Store.getDueCount();
 
     container.innerHTML = `
       <div class="esc-page">
@@ -291,7 +311,7 @@
             </div>
           </div>
           <div class="esc-grid-3" style="margin-top:14px">
-            <div class="esc-stat"><div class="esc-num">${esc(p.reviewDue)}</div><div class="esc-label">待复习</div></div>
+            <div class="esc-stat"><div class="esc-num">${esc(dueCount)}</div><div class="esc-label">待复习</div></div>
             <div class="esc-stat"><div class="esc-num is-success">${esc(p.masteredCount)}</div><div class="esc-label">已掌握</div></div>
             <div class="esc-stat"><div class="esc-num is-foreground">${esc(p.correctRate)}<span style="font-size:12px">%</span></div><div class="esc-label">正确率</div></div>
           </div>
@@ -753,7 +773,7 @@
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
       // 全文语境填空：整篇文章由 renderArticleCloze 自行分段落渲染与结算
-      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false, results: [] };
       openOverlay();
       step();
       return;
@@ -761,14 +781,14 @@
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
       // 逐句精读：整篇文章由 renderArticleSentence 自行管理逐句导航
-      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false, results: [] };
       openOverlay();
       step();
       return;
     } else if (mode === 'review') {
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
-      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false };
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: false, results: [] };
       openOverlay();
       step();
       return;
@@ -776,7 +796,7 @@
       const item = getArticle(ctx.articleId);
       if (!item) { UI.toast('请先在文章标签选择一篇文章'); return; }
       // 生词检验：整篇文章挖空 + 词库拖拽选词（对齐网页端），全屏渲染
-      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: true };
+      session = { mode, ctx, queue: [item], idx: 0, correct: 0, total: 0, graded: true, results: [] };
       openOverlay();
       step();
       return;
@@ -784,7 +804,7 @@
       return;
     }
 
-    session = { mode, ctx, queue, idx: 0, correct: 0, total: 0, graded: true };
+    session = { mode, ctx, queue, idx: 0, correct: 0, total: 0, graded: true, results: [] };
     openOverlay();
     step();
   }
@@ -845,10 +865,11 @@
       Store.recordWordsLearned(session.total);
       Store.recordWordsMastered(session.correct);
       Store.recordModuleActivity(MODULE_MAP[session.mode] || session.mode, session.total);
-      Store.updateProgress({
-        correctRate: acc || p.correctRate,
-        reviewDue: Math.max(0, p.reviewDue - session.correct)
-      });
+      // SRS 复习结果写回：逐个调用 Store.applyReview（不再维护移动端 reviewDue 字段）
+      if (session.results && session.results.length) {
+        session.results.forEach((r) => { try { Store.applyReview(r.word, r.correct); } catch (e) { console.warn('[memory] applyReview fail', r.word, e); } });
+      }
+      Store.updateProgress({ correctRate: acc || p.correctRate });
       // 闪卡：展示评级分布（已掌握/模糊/不认识），对齐网页版本轮总结
       const lv = session.levels || {};
       const lvMeta = [
@@ -1047,6 +1068,8 @@
         if (rating === 'known') session.correct++;
         // 累计评级分布（用于结束总结卡分项展示，对齐网页版）
         (session.levels = session.levels || { known: 0, vague: 0, unknown: 0 })[rating]++;
+        // 记录逐词复习结果（known/vague 记为正确，unknown 记为错误；防同一词重复记录）
+        recordResult(w.word, rating !== 'unknown');
         // 即时反馈
         const map = {
           known: ['✓', '已掌握', 'var(--study-success)'],
@@ -1178,6 +1201,8 @@
         session.total++;
         const ok = b.dataset.correct === '1';
         if (ok) session.correct++;
+        // 记录逐词复习结果（防同一词重复记录）
+        recordResult(w.word, ok);
         b.classList.add(ok ? 'is-correct' : 'is-wrong');
         b.classList.add('picked');
         if (!ok) body.querySelector('.choice-opt[data-correct="1"]').classList.add('is-correct');
@@ -1374,6 +1399,8 @@
       const ok = gridApi.slots.join('') === word;
       session.total++;
       if (ok) session.correct++;
+      // 记录逐词复习结果
+      recordResult(w.word, ok);
       resultEl.innerHTML = ok
         ? '<span class="fill-correct">✓ 正确！</span>'
         : `<span class="fill-wrong">✗ 正确答案：<strong>${esc(word)}</strong></span>`;
@@ -1497,6 +1524,8 @@
       const ok = gridApi.slots.join('') === word;
       session.total++;
       if (ok) session.correct++;
+      // 记录逐词复习结果
+      recordResult(w.word, ok);
       resultEl.innerHTML = ok
         ? '<span class="fill-correct">✓ 正确！</span>'
         : `<span class="fill-wrong">✗ 正确答案：<strong>${esc(word)}</strong></span>`;
@@ -2901,6 +2930,9 @@
           <button class="rv-mag-tts-btn" title="朗读全文">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
           </button>
+          <button class="rv-mag-back-btn rv-mag-export-btn" title="导出讲义">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </button>
         </div>
         <div class="rv-mag-masthead">
           <div class="rv-mag-masthead-title">THE ENGLISH READER</div>
@@ -3007,6 +3039,36 @@
     if (exportBtn) exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       openExportSheet(originalText, reviewVocabMap, item.fullTranslation, item.title);
+    });
+
+    // 导出讲义：聚合文章生词 → 生成可打印 HTML 并直接下载（移动端不弹窗）。
+    // 依赖共享 Handout 核心（core/shared/handout.js），无深度解析结果时提示先解析。
+    const handoutBtn = body.querySelector('.rv-mag-export-btn');
+    if (handoutBtn) handoutBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const article = Store.getHistoryItem(item.id);
+      if (!article) { UI.toast('未找到文章数据'); return; }
+      const hasSd = article.sentenceData && typeof article.sentenceData === 'object' && Object.keys(article.sentenceData).length > 0;
+      if (!hasSd) { UI.toast('请先完成深度解析'); return; }
+      if (!SHandout || typeof SHandout.collectWords !== 'function') { UI.toast('讲义功能暂不可用'); return; }
+      try {
+        const all = Store.getVocab();
+        const words = SHandout.collectWords(article, {
+          getMeaning: (w) => {
+            const hit = all.find((x) => String(x.word || '').toLowerCase() === String(w || '').toLowerCase());
+            return hit ? (hit.meaning || '') : '';
+          }
+        });
+        const html = SHandout.buildHandout({
+          title: item.title || 'English Handout',
+          text: article.originalText || article.text || '',
+          fullTranslation: article.fullTranslation || '',
+          words
+        });
+        const safeName = ((item.title || 'handout').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60)) || 'handout';
+        SHandout.downloadHandout(safeName + '.html', html);
+        UI.toast('讲义已导出');
+      } catch (err) { UI.toast('导出失败：' + ((err && err.message) || err)); }
     });
 
     // 完成：取消朗读并关闭
@@ -3140,6 +3202,8 @@
         blankEl.classList.add('correct');
         blankEl.dataset.filledWord = word;
         chipEl.classList.add('used');
+        // 记录逐词复习结果：填对
+        recordResult(targetWord, true);
         const entry = blankEntries.find((e) => e.id === blankId);
         if (entry) { entry.filled = true; entry.filledWord = word; }
         quizStreakCount++;
@@ -3154,6 +3218,8 @@
         blankEl.classList.add('incorrect', 'shake');
         quizStreakCount = 0;
         quizWrongCount++;
+        // 记录逐词复习结果：填错
+        recordResult(targetWord, false);
         updateStreak();
         setTimeout(() => {
           blankEl.classList.remove('incorrect', 'shake', 'filled');
@@ -3189,6 +3255,10 @@
       Store.recordWordsLearned(quizTotal);
       Store.recordWordsMastered(quizCorrectCount);
       Store.recordModuleActivity(MODULE_MAP.vocabQuiz || 'vocabQuiz', quizTotal);
+      // SRS 复习结果写回（与 finish 一致，逐词 applyReview）
+      if (session.results && session.results.length) {
+        session.results.forEach((r) => { try { Store.applyReview(r.word, r.correct); } catch (e) { console.warn('[memory] applyReview fail', r.word, e); } });
+      }
       const p = Store.getProgress();
       Store.updateProgress({ correctRate: rate || p.correctRate });
 
@@ -3541,7 +3611,8 @@
       </div>
       ${moduleList('word')}
       ${s.notebooks.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('layout-grid')}<span>生词本分布</span></div>${notebookDonut(s.notebooks)}</div>` : ''}
-      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>学习趋势</span></div>${miniChart('word')}</div>`;
+      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>学习趋势</span></div>${miniChart('word')}</div>
+      ${buildHeatmap()}`;
   }
 
   function buildStatsArticle() {
@@ -3558,7 +3629,49 @@
       </div>
       ${moduleList('article')}
       ${s.recent.length ? `<div class="esc-stats-card"><div class="esc-stats-title">${icon('clock')}<span>最近阅读的文章</span></div><div class="esc-article-list">${s.recent.map((a) => `<div class="esc-article-item"><span class="esc-article-item-title">${esc(a.title)}</span><span class="esc-article-item-meta">${a.wordCount} 词 · ${esc((a.savedAt || '').slice(0, 10))}</span></div>`).join('')}</div></div>` : ''}
-      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>阅读趋势</span></div>${miniChart('article')}</div>`;
+      <div class="esc-stats-card"><div class="esc-stats-title">${icon('trending-up')}<span>阅读趋势</span></div>${miniChart('article')}</div>
+      ${buildHeatmap()}`;
+  }
+
+  // 坚持热力图：GitHub 风格 12 列周 × 7 行（周一~周日），委托共享层 Stats.heatmap(12)。
+  // heatmap 返回 { days, max }：days 为 {date, value} 平铺数组或 [周][日] 二维数组；
+  // 0 值淡色，1 / 2-3 / 4-6 / 7+ 分档递增；空数据（max<=0）显示占位文案。
+  function buildHeatmap() {
+    const hm = (SStats && typeof SStats.heatmap === 'function') ? SStats.heatmap(12) : null;
+    const max = (hm && hm.max) || 0;
+    if (!hm || !hm.days || !hm.days.length || max <= 0) {
+      return `<div class="esc-stats-card"><div class="esc-stats-title">${icon('flame')}<span>坚持热力图</span></div><div class="esc-heatmap-empty">${icon('flame')}<span>完成学习后点亮坚持地图</span></div></div>`;
+    }
+    // 归一化为 12 列 × 7 行：兼容平铺数组（每 7 项一列）与 [周][日] 二维数组
+    let weeks = [];
+    if (Array.isArray(hm.days[0])) weeks = hm.days;
+    else { for (let c = 0; c < 12; c++) weeks.push(hm.days.slice(c * 7, c * 7 + 7)); }
+    const level = (v) => (v <= 0 ? 0 : v === 1 ? 1 : v <= 3 ? 2 : v <= 6 ? 3 : 4);
+    const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
+    const colHtml = weeks.map((week) =>
+      '<div class="esc-heatmap-col">' + week.map((d) => {
+        const value = (d && d.value != null) ? d.value : ((d && d.count != null) ? d.count : 0);
+        const date = (d && (d.date || d.dateStr)) || '';
+        return `<span class="esc-heatmap-cell level-${level(value)}" title="${esc(date)}：${value}次"></span>`;
+      }).join('') + '</div>'
+    ).join('');
+    return `
+      <div class="esc-stats-card">
+        <div class="esc-stats-title">${icon('flame')}<span>坚持热力图</span></div>
+        <div class="esc-heatmap">
+          <div class="esc-heatmap-rows">${dayLabels.map((l) => `<span class="esc-heatmap-row-label">${l}</span>`).join('')}</div>
+          <div class="esc-heatmap-grid">${colHtml}</div>
+        </div>
+        <div class="esc-heatmap-legend">
+          <span>少</span>
+          <span class="esc-heatmap-cell level-0"></span>
+          <span class="esc-heatmap-cell level-1"></span>
+          <span class="esc-heatmap-cell level-2"></span>
+          <span class="esc-heatmap-cell level-3"></span>
+          <span class="esc-heatmap-cell level-4"></span>
+          <span>多</span>
+        </div>
+      </div>`;
   }
 
   // 待复习文章数（委托共享层 pendingReview，与桌面端一致）

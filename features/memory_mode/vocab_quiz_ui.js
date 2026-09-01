@@ -283,6 +283,20 @@
                 return null;
             }
 
+            // Leitner 间隔重复调度：在选中的生词本中查找包含该词的第一个生词本并调度，未找到则跳过
+            function scheduleTargetWord(word, correct) {
+                if (!window.VocabData || typeof window.VocabData.scheduleWord !== 'function') return;
+                const allNotebooks = window.VocabData.getAllNotebooks() || {};
+                const ids = selectedNotebookIds ? Array.from(selectedNotebookIds) : [];
+                for (const id of ids) {
+                    const nb = allNotebooks[id];
+                    if (nb && nb.words && nb.words.some(w => w.word.toLowerCase() === word.toLowerCase())) {
+                        window.VocabData.scheduleWord(id, word, correct);
+                        return;
+                    }
+                }
+            }
+
             function fillBlank(blankEl, chipEl, word) {
                 const blankId = blankEl.dataset.blankId;
                 const targetWord = blankEl.dataset.targetWord;
@@ -295,6 +309,8 @@
                     blankEl.dataset.filledWord = word;
                     chipEl.classList.add('used');
                     chipEl.draggable = false;
+
+                    scheduleTargetWord(targetWord, true);
 
                     quizStreakCount++;
                     if (quizStreakCount > quizMaxStreak) quizMaxStreak = quizStreakCount;
@@ -322,6 +338,8 @@
                     quizStreakCount = 0;
                     quizWrongCount++;
                     updateStreak();
+
+                    scheduleTargetWord(targetWord, false);
 
                     setTimeout(() => {
                         blankEl.classList.remove('incorrect', 'shake', 'filled');

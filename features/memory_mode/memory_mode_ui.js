@@ -192,6 +192,15 @@
 
             wordContent.appendChild(notebookSelector);
 
+            // 今日待复习轻量提示（复用现有 class，不破坏布局）
+            const dueCount = window.VocabData && typeof window.VocabData.getDueCount === 'function'
+                ? window.VocabData.getDueCount() : 0;
+            const dueHint = document.createElement('div');
+            dueHint.className = 'mode-card-stat';
+            dueHint.style.margin = '0 0 8px 2px';
+            dueHint.textContent = '今日待复习 ' + dueCount + ' 词';
+            wordContent.appendChild(dueHint);
+
             const modeTitle = document.createElement('h4');
             modeTitle.innerText = '选择记忆模式';
             wordContent.appendChild(modeTitle);

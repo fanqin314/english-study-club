@@ -124,6 +124,10 @@
             const savedEnableReminder = localStorage.getItem('enableReminder') === 'true';
             const savedReminderTime = localStorage.getItem('reminderTime') || '09:00';
 
+            // 今日到期待复习的单词数（构建面板时读取）
+            const dueCount = window.VocabData && typeof window.VocabData.getDueCount === 'function'
+                ? window.VocabData.getDueCount() : 0;
+
             const dailyGoalCard = document.createElement('div');
             dailyGoalCard.className = 'plan-section-card stats-animate-in';
             dailyGoalCard.style.animationDelay = '0.05s';
@@ -159,9 +163,28 @@
             `;
             panel.appendChild(dailyGoalCard);
 
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'plan-section-card stats-animate-in';
+            reviewCard.style.animationDelay = '0.15s';
+            reviewCard.innerHTML = `
+                <h4>
+                    <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    今日待复习
+                </h4>
+                <div class="plan-review-info">
+                    <div class="plan-review-item">
+                        <span class="review-item-label">待复习单词</span>
+                        <span class="review-item-value">${dueCount} 词</span>
+                    </div>
+                </div>
+            `;
+            panel.appendChild(reviewCard);
+
             const remindCard = document.createElement('div');
             remindCard.className = 'plan-section-card stats-animate-in';
-            remindCard.style.animationDelay = '0.15s';
+            remindCard.style.animationDelay = '0.25s';
             remindCard.innerHTML = `
                 <h4>
                     <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

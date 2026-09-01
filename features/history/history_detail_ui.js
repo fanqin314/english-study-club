@@ -29,6 +29,9 @@
         
         // 绑定返回按钮点击事件
         bindBackButton();
+        
+        // 绑定导出讲义按钮
+        bindExportHandoutButton();
     }
     
     // 绑定返回按钮事件
@@ -51,6 +54,111 @@
         // 调用 MainButtonManager 的 showHistoryMode 方法
         if (window.MainButtonManager && window.MainButtonManager.switchMode) {
             window.MainButtonManager.switchMode('history');
+        }
+    }
+    
+    // 绑定导出讲义按钮
+    function bindExportHandoutButton() {
+        const exportBtn = document.getElementById('exportHandoutBtn');
+        if (!exportBtn) return;
+        // 移除可能存在的旧事件监听器，避免重复绑定
+        exportBtn.removeEventListener('click', handleExportHandout);
+        exportBtn.addEventListener('click', handleExportHandout);
+    }
+    
+    // 显示提示消息
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+    }
+    
+    // 从所有生词本构建 word -> { meaning, pos } 查找表（按小写匹配）
+    function buildVocabLookup() {
+        const map = {};
+        try {
+            const nbs = window.VocabData && window.VocabData.getAllNotebooks ? window.VocabData.getAllNotebooks() : null;
+            if (nbs) {
+                Object.keys(nbs).forEach(function(id) {
+                    const nb = nbs[id];
+                    const words = nb && nb.words ? nb.words : [];
+                    words.forEach(function(w) {
+                        if (w && w.word) {
+                            const key = String(w.word).toLowerCase();
+                            if (!map[key]) {
+                                map[key] = { word: w.word, meaning: w.meaning || '', pos: w.pos || '' };
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (e) {
+            console.warn('[HistoryDetail] 读取生词本失败:', e);
+        }
+        return map;
+    }
+    
+    // 处理导出讲义
+    async function handleExportHandout(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        
+        // 文章无解析数据（无 sentenceData）时提示先完成深度解析
+        if (!currentHistoryItem || !currentHistoryItem.sentenceData || Object.keys(currentHistoryItem.sentenceData).length === 0) {
+            showToast('请先完成深度解析');
+            return;
+        }
+        
+        const Handout = window.EnglishStudyShared && window.EnglishStudyShared.Handout;
+        if (!Handout) {
+            showToast('讲义导出模块未加载，请刷新页面重试');
+            return;
+        }
+        
+        const article = {
+            originalText: currentHistoryItem.originalText || '',
+            fullTranslation: currentHistoryItem.fullTranslation || '',
+            sentences: currentHistoryItem.sentences || [],
+            sentenceData: currentHistoryItem.sentenceData || {}
+        };
+        const vocabMap = buildVocabLookup();
+        
+        try {
+            // 聚合生词：从生词本查 meaning，查不到返回 ''
+            let words = await Handout.collectWords(article, {
+                getMeaning: function(word) {
+                    const nb = vocabMap[String(word).toLowerCase()];
+                    return nb ? nb.meaning : '';
+                }
+            });
+            // 若生词本中有该词，则取生词本的 pos/meaning 覆盖（词性优先用标注值）
+            words = words.map(function(w) {
+                const nb = vocabMap[String(w.word).toLowerCase()];
+                if (nb) {
+                    return Object.assign({}, w, {
+                        pos: nb.pos || w.pos,
+                        meaning: nb.meaning || w.meaning
+                    });
+                }
+                return w;
+            });
+            
+            const rawTitle = (currentHistoryItem.originalText || '').split('\n')[0].trim() || '英语学习讲义';
+            const title = (currentHistoryItem.title || rawTitle).substring(0, 40);
+            const html = Handout.buildHandout({
+                title: title,
+                text: article.originalText,
+                fullTranslation: article.fullTranslation,
+                words: words
+            });
+            
+            Handout.openHandout(html);
+            showToast('已生成讲义，可在新窗口直接打印');
+        } catch (err) {
+            console.error('导出讲义失败:', err);
+            showToast('导出讲义失败: ' + ((err && err.message) || '未知错误'));
         }
     }
     

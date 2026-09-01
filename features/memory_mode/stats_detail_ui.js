@@ -303,6 +303,85 @@
             return wrap;
         }
 
+        // 坚持热力图（GitHub 贡献网格，12 周 = 84 天）
+        function buildHeatmap() {
+            const EnglishStudyShared = window.EnglishStudyShared || {};
+            const SStats = EnglishStudyShared.Stats;
+            const series = (SStats && SStats.heatmap) ? SStats.heatmap(12) : { days: [], max: 0 };
+            const days = series.days || [];
+            const max = series.max || 0;
+
+            // 空数据占位
+            if (max <= 0) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'trend-chart-placeholder';
+                placeholder.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 10px;opacity:0.35;">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    完成学习后点亮坚持地图
+                `;
+                return placeholder.outerHTML;
+            }
+
+            // 分档着色：0 / 1 / 2-3 / 4-6 / 7+（var(--accent) + opacity）
+            const tiers = [
+                { top: 0, opacity: 0, empty: true },
+                { top: 1, opacity: 0.22 },
+                { top: 3, opacity: 0.45 },
+                { top: 6, opacity: 0.70 },
+                { top: Infinity, opacity: 1 }
+            ];
+            function tierOf(value) {
+                for (const t of tiers) {
+                    if (value <= t.top) return t;
+                }
+                return tiers[tiers.length - 1];
+            }
+            function cellStyle(t) {
+                if (t.empty) return 'background:var(--btn-bg);box-shadow:inset 0 0 0 1px var(--border);';
+                return `background:var(--accent);opacity:${t.opacity};`;
+            }
+            function fmtDate(dateStr) {
+                const d = new Date(dateStr);
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${d.getFullYear()}/${mm}/${dd}`;
+            }
+
+            const WEEKS = 12;
+            const ROWS = 7;
+            let html = '<div class="stats-heatmap-body">';
+            html += '<div class="stats-heatmap-rows"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>';
+            html += '<div class="stats-heatmap-grid">';
+
+            for (let w = 0; w < WEEKS; w++) {
+                html += '<div class="stats-heatmap-col">';
+                for (let r = 0; r < ROWS; r++) {
+                    const day = days[w * ROWS + r];
+                    const value = day ? day.value : 0;
+                    const t = tierOf(value);
+                    const title = day ? `${fmtDate(day.dateStr)}：${value}次` : '';
+                    html += `<span class="stats-heatmap-cell" style="${cellStyle(t)}" title="${title}"></span>`;
+                }
+                html += '</div>';
+            }
+
+            html += '</div></div>';
+
+            // 图例（少 → 多）
+            html += '<div class="stats-heatmap-legend"><span>少</span>';
+            tiers.forEach(t => {
+                html += `<span class="stats-heatmap-cell" style="${cellStyle(t)}"></span>`;
+            });
+            html += '<span>多</span></div>';
+
+            return html;
+        }
+
         function buildNotebookDonut(notebookStats) {
             const total = notebookStats.reduce((sum, nb) => sum + nb.count, 0);
             if (total === 0) return '';
@@ -414,6 +493,22 @@
             `;
             trendCard.appendChild(buildMiniChart('word'));
             wordStatsPanel.appendChild(trendCard);
+
+            const heatmapCard = document.createElement('div');
+            heatmapCard.className = 'stats-section-card stats-animate-in';
+            heatmapCard.style.animationDelay = '0.45s';
+            heatmapCard.innerHTML = `
+                <h4>
+                    <svg class="stats-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    坚持热力图
+                </h4>
+            ` + buildHeatmap();
+            wordStatsPanel.appendChild(heatmapCard);
         }
 
         function buildArticleStatsPanel() {

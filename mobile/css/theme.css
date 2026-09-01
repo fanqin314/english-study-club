@@ -2707,3 +2707,52 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
   .sent-vocab-panel { animation: none; }
 }
 
+/* ============================================================
+   坚持热力图（学习统计 · GitHub 风格 12 列周 × 7 行）
+   · 行标签（周一~周日）在左，右侧 12 列方块网格
+   · 分档用 var(--study-primary) 配 opacity（0 值淡色 / 1 / 2-3 / 4-6 / 7+ 递增）
+   ============================================================ */
+.esc-heatmap {
+  display: flex; align-items: flex-start; gap: 8px;
+  overflow-x: auto; padding-bottom: 2px;
+}
+/* 行标签列（周一~周日） */
+.esc-heatmap-rows {
+  display: flex; flex-direction: column; gap: 3px;
+  flex: 0 0 auto;
+}
+.esc-heatmap-row-label {
+  width: 12px; height: 11px; font-size: 9px; line-height: 11px;
+  text-align: center; color: var(--study-muted-foreground); user-select: none;
+}
+/* 12 列周网格 */
+.esc-heatmap-grid { display: flex; gap: 3px; }
+.esc-heatmap-col { display: flex; flex-direction: column; gap: 3px; }
+.esc-heatmap-cell {
+  width: 10px; height: 10px; border-radius: 2px;
+  background: var(--study-muted);
+  transition: transform .15s var(--study-ease);
+}
+.esc-heatmap-cell.level-0 { background: var(--study-muted); }
+.esc-heatmap-cell.level-1 { background: var(--study-primary); opacity: .25; }
+.esc-heatmap-cell.level-2 { background: var(--study-primary); opacity: .45; }
+.esc-heatmap-cell.level-3 { background: var(--study-primary); opacity: .7; }
+.esc-heatmap-cell.level-4 { background: var(--study-primary); opacity: 1; }
+.esc-heatmap-cell:hover { transform: scale(1.25); }
+/* 图例 */
+.esc-heatmap-legend {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 10px; font-size: 10px; color: var(--study-muted-foreground);
+}
+.esc-heatmap-legend .esc-heatmap-cell { display: inline-block; width: 9px; height: 9px; }
+/* 空数据占位 */
+.esc-heatmap-empty {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  padding: 22px 0; color: var(--study-muted-foreground); font-size: 12px;
+}
+/* 减少动态：关闭动画/过渡 */
+@media (prefers-reduced-motion: reduce) {
+  .esc-heatmap-cell { transition: none !important; }
+  .esc-heatmap-cell:hover { transform: none; }
+}
+
