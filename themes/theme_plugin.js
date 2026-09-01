@@ -15,16 +15,21 @@
   'use strict';
 
   const KEY = 'themePlugin';
+  // 主题 CSS 缓存版本基准：具体版本以主题清单中的 version 字段为准（见 versionFor），
+  // 避免浏览器命中旧缓存。仅当某主题未声明 version 时回退此常量。
+  const DEFAULT_CACHE_VER = '0';
 
-  // 内置主题清单（与 themes/index.json 保持同步）
-  const THEMES = global.THEME_PLUGIN_THEMES || [
-    {
-      id: 'brutal-comic',
-      name: '硬边漫画 Brutal Comic',
-      path: 'brutal-comic',
-      css: 'theme.css'
-    }
-  ];
+  // 主题清单单一来源：由入口页在 window.THEME_PLUGIN_THEMES 注入（与 themes/index.json 同源）。
+  // 本加载器保持「主题无关」，不内置任何主题，避免清单在多处漂移。
+  // 元素形如 { id, name, path, css, version }；css 省略时默认 'theme.css'，version 用于缓存刷新。
+  const THEMES = Array.isArray(global.THEME_PLUGIN_THEMES) ? global.THEME_PLUGIN_THEMES : [];
+
+  // 缓存版本唯一来源：以当前主题在清单中声明的 version 作为 CSS 的 ?v= 参数。
+  // 修改主题 CSS 后只需 bump 主题 version，桌面 + 移动两端 CSS 即自动失效刷新。
+  function versionFor(theme) {
+    const v = theme && theme.version ? String(theme.version) : DEFAULT_CACHE_VER;
+    try { return encodeURIComponent(v); } catch (e) { return DEFAULT_CACHE_VER; }
+  }
 
   let base = global.THEME_PLUGIN_BASE || 'themes/';
   let active = null;
@@ -38,21 +43,52 @@
   function find(id) {
     return THEMES.find((t) => t.id === id) || null;
   }
-  function resolvePath(theme) {
+  function themeHrefs(theme) {
     const b = (base || '').replace(/\/+$/, '');
-    return b + '/' + theme.path + '/' + (theme.css || 'theme.css');
+    const generic = b + '/' + theme.path + '/' + (theme.css || 'theme.css');
+    // 桌面端只需共享 theme.css；移动端需共享 theme.css + theme.mobile.css
+    const isMobile = !!global.document.documentElement.getAttribute('data-platform');
+    return isMobile ? [generic, generic.replace(/(\.css)$/i, '.mobile$1')] : [generic];
   }
 
-  // 注入/移除主题样式 <link>（幂等，用 data-theme-plugin-css 标记）
-  function injectCss(href) {
-    global.document.querySelectorAll('link[data-theme-plugin-css]').forEach((l) => l.remove());
-    if (!href) return null;
-    const link = global.document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = href;
-    link.setAttribute('data-theme-plugin-css', '1');
-    global.document.head.appendChild(link);
-    return link;
+  // 注入/排他替换主题样式 <link>（幂等，用 data-theme-plugin-css 标记）。
+  // hrefs 为 theme.css（必须）可能外加的平台化文件（如 theme.mobile.css，可选）。
+  // onready(olds) 存在时由调用方决定旧 link 的移除时机（用于切换防闪回）；缺失时全部加载完即移除。
+  // theme.css 本身 404 才自愈回退默认；平台化辅助文件缺失则忽略（仍保留 theme.css）。
+  function replaceThemeCss(hrefs, theme, onready) {
+    const olds = Array.from(global.document.querySelectorAll('link[data-theme-plugin-css]'));
+    if (!theme || !hrefs || !hrefs.length) { olds.forEach((l) => l.remove()); return; }
+    const root = global.document.documentElement;
+    const b = (base || '').replace(/\/+$/, '');
+    const primary = b + '/' + theme.path + '/' + (theme.css || 'theme.css');
+
+    let pending = hrefs.length;
+    let settled = false;
+    const fatal = () => {
+      olds.forEach((l) => l.remove());
+      root.removeAttribute('data-theme-plugin');
+      active = null;
+      setSelected('');
+      // 回退默认后重放自定义配色（若存在）
+      if (global.applyThemeColors) global.applyThemeColors();
+    };
+    const settle = () => {
+      if (--pending <= 0 && !settled) { settled = true; if (typeof onready === 'function') onready(olds); else olds.forEach((l) => l.remove()); }
+    };
+
+    hrefs.forEach((h) => {
+      const link = global.document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = h + '?v=' + versionFor(theme);
+      link.setAttribute('data-theme-plugin-css', '1');
+      link.onload = settle;
+      link.onerror = () => {
+        link.remove();
+        if (h === primary) fatal();      // 主 css 缺失 → 自愈
+        else settle();                    // 平台辅助文件缺失 → 忽略，仍以 theme.css 生效
+      };
+      global.document.head.appendChild(link);
+    });
   }
 
   // 直接应用主题（不持久化）
@@ -61,13 +97,23 @@
     const theme = id ? find(id) : null;
     if (!theme) {
       root.removeAttribute('data-theme-plugin');
-      injectCss(null);
+      replaceThemeCss(null, null);
       active = null;
       return;
     }
-    root.setAttribute('data-theme-plugin', theme.id);
-    injectCss(resolvePath(theme));
-    active = theme;
+    if (active && active.id !== theme.id) {
+      // 主题间切换：先加载新 css，onload 后再切属性并移除旧 link，避免闪回默认样式
+      replaceThemeCss(themeHrefs(theme), theme, (olds) => {
+        root.setAttribute('data-theme-plugin', theme.id);
+        olds.forEach((l) => l.remove());
+        active = theme;
+      });
+    } else {
+      // 首次应用：立即设属性，让 css 边下载边生效（避免首屏默认闪烁）
+      root.setAttribute('data-theme-plugin', theme.id);
+      replaceThemeCss(themeHrefs(theme), theme);
+      active = theme;
+    }
   }
 
   // 启用主题并持久化；id 为空字符串或非法时回退默认并清除选择

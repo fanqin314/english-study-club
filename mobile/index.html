@@ -35,6 +35,14 @@
   <link rel="stylesheet" href="css/views-quiz.css?v=20260830f">
   <link rel="stylesheet" href="css/views-cloze.css?v=20260830f">
   <link rel="stylesheet" href="css/views-sent.css?v=20260830f">
+  <!-- 主题插件：清单 + base + 加载器（head 内同步执行，首屏即主题色，避免闪烁） -->
+  <script>
+    window.THEME_PLUGIN_THEMES = [
+      { id: 'brutal-comic', name: '硬边漫画 Brutal Comic', path: 'brutal-comic', css: 'theme.css', version: '1.0.0' }
+    ];
+    window.THEME_PLUGIN_BASE = '../themes/';
+  </script>
+  <script src="../themes/theme_plugin.js"></script>
 </head>
 <body>
   <div class="esc-app">
@@ -472,9 +480,6 @@
   <!-- 模块按依赖顺序加载：先基础，后视图，最后引导 -->
   <script src="js/ui.js"></script>
   <script src="js/store.js?v=20260826g"></script>
-  <!-- 主题插件加载器（移动端相对路径 ../themes/） -->
-  <script>window.THEME_PLUGIN_BASE = '../themes/';</script>
-  <script src="../themes/theme_plugin.js"></script>
   <script src="js/foldersync.js"></script>
   <script src="../core/shared/sentence_split.js"></script>
   <script src="../core/shared/parse_core.js"></script>

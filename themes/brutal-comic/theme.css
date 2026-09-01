@@ -816,202 +816,25 @@ html[data-theme-plugin="brutal-comic"] #memoryModeInterface {
 }
 
 /* ============================================================
-   18. 移动端叠加层（brutal-comic · 统一插件 / 同一份 theme.css）
+   19. 减少动态偏好（prefers-reduced-motion）
    ------------------------------------------------------------
-   移动端组件类为 .esc-*，全部以 html[data-theme-plugin="brutal-comic"]
-   为前缀，作用域隔离；变量层加 [data-platform="mobile"]，仅在移动平台
-   覆盖桌面裸变量块（桌面端 html 无 data-platform，自然只匹配桌面块）。
-   全局零圆角已由第 16.1 节统一处理，此处仅作移动专属补充。
+   系统开启「减少动态」时，关掉主题的所有动画与位移过渡
+   （卡片弹入、hover 抬起/按下位移、阴影变化），保持静态可读。
    ============================================================ */
-
-/* 18.0 移动端变量层（浅色 / 暖纸） */
-html[data-theme-plugin="brutal-comic"][data-platform="mobile"] {
-  --brutal-ink: #1A1A1A;
-  --brutal-soft: #F0EADB;
-  --brutal-yellow: #FFD23F;
-  --brutal-yellow-hi: #FFE27A;
-  --brutal-red: #E23D3D;
-  --brutal-blue: #2D6CDF;
-  --brutal-green: #2E9E5B;
-
-  /* —— 配色覆盖为漫画三原色 + 墨黑 —— */
-  --study-background: #FAF6EA;
-  --study-foreground: #1A1A1A;
-  --study-card: #FFFDF5;
-  --study-card-foreground: #1A1A1A;
-  --study-popover: #FFFDF5;
-  --study-popover-foreground: #1A1A1A;
-  --study-primary: var(--brutal-blue);
-  --study-primary-foreground: #FFFFFF;
-  --study-accent: var(--brutal-yellow);
-  --study-accent-foreground: #1A1A1A;
-  --study-accent-hover: var(--brutal-yellow-hi);
-  --study-muted: #EFE9DA;
-  --study-muted-foreground: #5A5750;
-  --study-border: var(--brutal-ink);
-  --study-input: #FFFDF5;
-  --study-ring: var(--brutal-ink);
-  --study-success: var(--brutal-green);
-  --study-warning: #E8A33D;
-  --study-danger: var(--brutal-red);
-  --study-error: var(--brutal-red);
-  --study-info: var(--brutal-blue);
-
-  /* —— 零圆角 —— */
-  --study-radius-sm: 0px;
-  --study-radius-md: 0px;
-  --study-radius-lg: 0px;
-
-  /* —— 偏移硬阴影（替代软模糊阴影） —— */
-  --study-shadow-sm: 3px 3px 0 var(--brutal-ink);
-  --study-shadow-md: 5px 5px 0 var(--brutal-ink);
-  --study-shadow-lg: 8px 8px 0 var(--brutal-ink);
-}
-
-/* 18.0 深色（漫画暗纸） */
-html[data-theme-plugin="brutal-comic"][data-theme="dark"][data-platform="mobile"] {
-  --brutal-ink: #F3EEDD;
-  --brutal-soft: #2A2519;
-  --brutal-yellow: #FFD23F;
-  --brutal-yellow-hi: #FFE27A;
-  --brutal-red: #FF6B6B;
-  --brutal-blue: #6FA0FF;
-  --brutal-green: #5FC28C;
-  --study-background: #14110C;
-  --study-foreground: #F3EEDD;
-  --study-card: #1F1B14;
-  --study-card-foreground: #F3EEDD;
-  --study-popover: #1F1B14;
-  --study-popover-foreground: #F3EEDD;
-  --study-primary: var(--brutal-blue);
-  --study-primary-foreground: #14110C;
-  --study-accent: var(--brutal-yellow);
-  --study-accent-foreground: #14110C;
-  --study-accent-hover: var(--brutal-yellow-hi);
-  --study-muted: #2A2519;
-  --study-muted-foreground: #B9B0A0;
-  --study-border: var(--brutal-ink);
-  --study-input: #1F1B14;
-  --study-ring: var(--brutal-ink);
-  --study-success: var(--brutal-green);
-  --study-warning: #C9A25C;
-  --study-danger: var(--brutal-red);
-  --study-error: var(--brutal-red);
-  --study-info: var(--brutal-blue);
-  --study-shadow-sm: 3px 3px 0 #000000;
-  --study-shadow-md: 5px 5px 0 #000000;
-  --study-shadow-lg: 8px 8px 0 #000000;
-}
-
-/* 18.1 spinner 例外：保留圆形旋转指示（全局已清零圆角，否则方块旋转怪异） */
-html[data-theme-plugin="brutal-comic"] .esc-pl-spin,
-html[data-theme-plugin="brutal-comic"] .esc-pl-spin::after {
-  border-radius: 999px !important;
-}
-
-/* 18.2 粗黑描边（漫画核心；原硬写 1px → 3px ink） */
-html[data-theme-plugin="brutal-comic"] .esc-card,
-html[data-theme-plugin="brutal-comic"] .esc-header,
-html[data-theme-plugin="brutal-comic"] .esc-btn,
-html[data-theme-plugin="brutal-comic"] .esc-btn-ghost,
-html[data-theme-plugin="brutal-comic"] .esc-input,
-html[data-theme-plugin="brutal-comic"] .esc-textarea,
-html[data-theme-plugin="brutal-comic"] .esc-badge,
-html[data-theme-plugin="brutal-comic"] .esc-pill,
-html[data-theme-plugin="brutal-comic"] .esc-pill-row,
-html[data-theme-plugin="brutal-comic"] .esc-tab,
-html[data-theme-plugin="brutal-comic"] .esc-stat,
-html[data-theme-plugin="brutal-comic"] .esc-sentence,
-html[data-theme-plugin="brutal-comic"] .esc-spanel,
-html[data-theme-plugin="brutal-comic"] .esc-nav,
-html[data-theme-plugin="brutal-comic"] .esc-nb-delete,
-html[data-theme-plugin="brutal-comic"] .esc-progress {
-  border: 3px solid var(--brutal-ink) !important;
-}
-/* 删除按钮：硬边 + 硬阴影（原软发光） */
-html[data-theme-plugin="brutal-comic"] .esc-nb-delete {
-  box-shadow: 4px 4px 0 var(--brutal-ink) !important;
-}
-/* 输入框聚焦：黑边 + 硬阴影环（替代软 focus ring） */
-html[data-theme-plugin="brutal-comic"] .esc-input:focus,
-html[data-theme-plugin="brutal-comic"] .esc-textarea:focus {
-  border-color: var(--brutal-ink) !important;
-  box-shadow: 4px 4px 0 var(--brutal-ink) !important;
-}
-/* 句子卡左侧蓝条加粗 */
-html[data-theme-plugin="brutal-comic"] .esc-sentence {
-  border-left: 6px solid var(--study-primary) !important;
-}
-
-/* 18.3 撞色分区（不同视图顶栏粗色条 + 卡片色条） */
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="home"] .esc-header { border-top: 6px solid var(--brutal-blue) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="vocab"] .esc-header { border-top: 6px solid var(--brutal-blue) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="history"] .esc-header { border-top: 6px solid var(--brutal-yellow) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="memory"] .esc-header { border-top: 6px solid var(--brutal-red) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] .esc-header { border-top: 6px solid var(--brutal-ink) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="detail"] .esc-header { border-top: 6px solid var(--brutal-ink) !important; }
-
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="vocab"] .esc-card { border-left: 8px solid var(--brutal-blue) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="history"] .esc-card { border-left: 8px solid var(--brutal-yellow) !important; }
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="memory"] .esc-card { border-top: 6px solid var(--brutal-red) !important; }
-
-/* 18.4 主 CTA 黄填充高亮 + 按压动效 */
-html[data-theme-plugin="brutal-comic"] .esc-btn-primary {
-  background: var(--brutal-yellow) !important;
-  color: var(--brutal-ink) !important;
-  border-color: var(--brutal-ink) !important;
-}
-html[data-theme-plugin="brutal-comic"] .esc-btn-primary:hover {
-  background: var(--brutal-yellow-hi) !important;
-}
-/* 重写原 scale(.96) 为真实按下位移（漫画印章感） */
-html[data-theme-plugin="brutal-comic"] .esc-btn:active {
-  transform: translate(2px, 2px) !important;
-  box-shadow: 1px 1px 0 var(--brutal-ink) !important;
-}
-/* 选中态 tab / pill 硬边高亮 */
-html[data-theme-plugin="brutal-comic"] .esc-tab.is-active,
-html[data-theme-plugin="brutal-comic"] .esc-pill.is-active {
-  background: var(--brutal-yellow) !important;
-  color: var(--brutal-ink) !important;
-  border-color: var(--brutal-ink) !important;
-}
-/* 底部导航选中：黄色方块高亮片（原淡色圆片 → 硬边方块） */
-html[data-theme-plugin="brutal-comic"] .esc-nav-item.is-active::before {
-  background: var(--brutal-yellow) !important;
-  opacity: 1 !important;
-}
-/* 生词本筛选 tab 选中态（类为 .esc-nb-tab，而非 .esc-tab） */
-html[data-theme-plugin="brutal-comic"] .esc-nb-tab.is-active {
-  background: var(--brutal-yellow) !important;
-  color: var(--brutal-ink) !important;
-  border-color: var(--brutal-ink) !important;
-}
-/* 设置页选项选中态（限定 settings 视图，避免污染底部导航） */
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] .is-active,
-html[data-theme-plugin="brutal-comic"] .esc-view[data-view="settings"] button.is-active {
-  background: var(--brutal-yellow) !important;
-  color: var(--brutal-ink) !important;
-  border-color: var(--brutal-ink) !important;
-}
-
-/* 18.5 彩色徽章（实心三原色） + 数字强调 */
-html[data-theme-plugin="brutal-comic"] .esc-badge {
-  background: var(--brutal-yellow) !important;
-  color: var(--brutal-ink) !important;
-  font-weight: 700;
-}
-html[data-theme-plugin="brutal-comic"] .esc-stat .esc-num { color: var(--brutal-blue) !important; }
-
-/* 18.6 网点纹理（印刷感，不抢眼） */
-html[data-theme-plugin="brutal-comic"] .esc-app,
-html[data-theme-plugin="brutal-comic"] .esc-page,
-html[data-theme-plugin="brutal-comic"] .esc-main {
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--brutal-ink) 6%, transparent) 1px, transparent 1.4px);
-  background-size: 24px 24px;
-}
-/* 标题漫画粗体 */
-html[data-theme-plugin="brutal-comic"] .esc-header h1 {
-  font-weight: 900;
-  letter-spacing: .5px;
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-plugin="brutal-comic"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* 卡片/按钮去掉位移，仅保留颜色反馈 */
+  html[data-theme-plugin="brutal-comic"] .sentence-card:hover,
+  html[data-theme-plugin="brutal-comic"] .vocab-card:hover,
+  html[data-theme-plugin="brutal-comic"] .history-card:hover,
+  html[data-theme-plugin="brutal-comic"] .word-item:hover,
+  html[data-theme-plugin="brutal-comic"] .mode-card:hover,
+  html[data-theme-plugin="brutal-comic"] button:hover,
+  html[data-theme-plugin="brutal-comic"] button:active,
+  html[data-theme-plugin="brutal-comic"] .esc-btn:active {
+    transform: none !important;
+  }
 }

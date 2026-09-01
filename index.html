@@ -35,6 +35,14 @@
     <link rel="stylesheet" href="features/deep_parse/pos_highlight/pos_highlight.css">
     <link rel="stylesheet" href="assets/css/features/flashcard_mode.css">
     <link rel="stylesheet" href="assets/css/features/file-upload.css">
+    <!-- 主题插件：清单 + base + 加载器（head 内同步执行，首屏即主题色，避免闪烁） -->
+    <script>
+      window.THEME_PLUGIN_THEMES = [
+        { id: 'brutal-comic', name: '硬边漫画 Brutal Comic', path: 'brutal-comic', css: 'theme.css', version: '1.0.0' }
+      ];
+      window.THEME_PLUGIN_BASE = 'themes/';
+    </script>
+    <script src="themes/theme_plugin.js"></script>
 </head>
 <body>
     <!-- 设置滑动面板（对齐设计稿 sidebar-v5） -->
@@ -230,9 +238,6 @@
     <script src="core/service_registration.js"></script>
     <script src="core/local_file_storage.js"></script>
     <script src="modules/dictionary/dict.js"></script>
-    <!-- 主题插件加载器（桌面端根路径 themes/） -->
-    <script>window.THEME_PLUGIN_BASE = 'themes/';</script>
-    <script src="themes/theme_plugin.js"></script>
     <script src="ui/settings/settings_ui.js"></script>
     <script src="ui/settings/api_config.js"></script>
     <script src="ui/settings/dark_mode.js"></script>
