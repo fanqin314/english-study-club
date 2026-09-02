@@ -125,6 +125,9 @@
         if (typeof window.fillLocalStorageSettings === 'function') {
             window.fillLocalStorageSettings(contentEl);
         }
+        if (typeof window.fillBackupSettings === 'function') {
+            window.fillBackupSettings(contentEl);
+        }
         if (typeof window.fillSaveSettings === 'function') {
             window.fillSaveSettings(contentEl);
         }

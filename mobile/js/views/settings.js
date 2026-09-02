@@ -171,6 +171,7 @@
         <div class="esc-list">
           <div class="esc-row esc-clickable" data-act="folder"><div class="esc-row-left">${icon('folder-open')}<span class="esc-row-label">设定数据文件夹</span></div><span class="esc-row-right" id="m-folder-state">${FolderSync.hasFolder && FolderSync.hasFolder() ? esc(FolderSync.getFolderName()) : '未设置'}</span></div>
           <div class="esc-row esc-clickable" data-act="export"><div class="esc-row-left">${icon('download')}<span class="esc-row-label">导出学习数据</span></div>${icon('chevron-right')}</div>
+          <div class="esc-row esc-clickable" data-act="backup"><div class="esc-row-left">${icon('archive')}<span class="esc-row-label">备份 / 恢复</span></div>${icon('chevron-right')}</div>
           <div class="esc-row esc-clickable" data-act="clear"><div class="esc-row-left">${icon('trash-2')}<span class="esc-row-label">清除缓存</span></div>${icon('chevron-right')}</div>
           <div class="esc-row esc-clickable" data-act="reset"><div class="esc-row-left">${icon('alert-triangle')}<span class="esc-row-label esc-danger">重置所有数据</span></div>${icon('chevron-right')}</div>
         </div>
@@ -371,6 +372,7 @@
       });
     });
     root.querySelector('[data-act="export"]').addEventListener('click', previewExport);
+    root.querySelector('[data-act="backup"]').addEventListener('click', openBackupMenu);
     root.querySelector('[data-act="clear"]').addEventListener('click', () => {
       if (UI.confirmDialog('确定清除生词本与历史记录缓存？（设置会保留）')) { Store.clearCache(); UI.toast('缓存已清除'); }
     });
@@ -514,6 +516,83 @@
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function getBackup() {
+    return global.EnglishStudyShared && global.EnglishStudyShared.Backup;
+  }
+
+  function backupDateStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // 备份/恢复：整包导出 + 导入恢复（复用 core/shared/backup.js）
+  function openBackupMenu() {
+    const Backup = getBackup();
+    if (!Backup || !Backup.build || !Backup.serialize || !Backup.parse || !Backup.restore) {
+      UI.toast('备份功能未加载'); return;
+    }
+    UI.bottomSheet(`
+      <div class="esc-bsheet-title"><span class="esc-bsheet-tit-ico">${icon('archive')}</span>备份 / 恢复</div>
+      <div style="font-size:13px;color:var(--study-muted-foreground);line-height:1.6;margin-bottom:4px;">整包备份生词本、历史、统计、设置与主题选择为 JSON 文件，换浏览器或清缓存前可留档，之后导入即可整体恢复。</div>
+      <div class="esc-bsheet-row" data-act="bk-export">${icon('download')}<span>导出整包备份</span></div>
+      <div class="esc-bsheet-row" data-act="bk-import">${icon('upload')}<span>从备份恢复</span></div>
+      <div class="esc-bsheet-row" data-act="bk-cancel">${icon('x')}<span>取消</span></div>`,
+      {
+        onOpen(sheet, close) {
+          sheet.querySelector('[data-act="bk-export"]').addEventListener('click', () => {
+            try {
+              const pack = Backup.build();
+              const text = Backup.serialize(pack);
+              downloadText(`english-study-backup-${backupDateStr()}.json`, text, 'application/json;charset=utf-8');
+              UI.toast(`备份已导出（${Object.keys(pack.data || {}).length} 项）`);
+            } catch (e) {
+              console.error('导出备份失败', e);
+              UI.toast('导出备份失败，请重试');
+            }
+            close();
+          });
+          sheet.querySelector('[data-act="bk-import"]').addEventListener('click', () => {
+            close();
+            importBackup();
+          });
+          sheet.querySelector('[data-act="bk-cancel"]').addEventListener('click', close);
+        }
+      }
+    );
+  }
+
+  function importBackup() {
+    const Backup = getBackup();
+    if (!Backup) { UI.toast('备份功能未加载'); return; }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = Backup.parse(reader.result);
+        if (!result.ok) { UI.toast(result.reason); return; }
+        const count = Object.keys(result.pack.data || {}).length;
+        if (!UI.confirmDialog(`将用备份覆盖当前 ${count} 项数据（含生词本、历史、统计、设置、主题选择）。确定恢复吗？`)) return;
+        const restored = Backup.restore(result.pack.data);
+        if (restored.ok) {
+          UI.toast(`恢复完成，已写入 ${restored.applied} 项`);
+          setTimeout(() => location.reload(), 800);
+        } else {
+          UI.toast(restored.reason);
+        }
+      };
+      reader.onerror = () => UI.toast('读取备份文件失败');
+      reader.readAsText(file);
+    });
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
   }
 
   // 导出前预览：数据概览 + 格式选择（生词本/历史记录 JSON·TXT·MD）+ 实时示例预览 + 复制/导出
