@@ -1072,6 +1072,9 @@
             });
 
             fillNotebookSelect();
+
+            // 挂载弹层到文档，使其可见
+            document.body.appendChild(overlay);
         }
 
         // ========== 词汇量自测弹层（四选一，阶梯式跳档） ==========
