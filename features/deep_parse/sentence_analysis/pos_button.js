@@ -33,8 +33,31 @@
             };
         }
         
+        // 词根/搭配/同反义展示区块（C4）：AI 字段优先，无则本地词根规则降级；全无数据返回空串（隐藏）
+        function buildInsightHTML(word, detailObj) {
+            const d = detailObj || {};
+            let root = Array.isArray(d.wordRoot) ? d.wordRoot.join(' / ') : '';
+            const coll = Array.isArray(d.collocations) ? d.collocations.slice(0, 4).join(' · ') : '';
+            const syn = Array.isArray(d.synonyms) ? d.synonyms.slice(0, 5).join(' · ') : '';
+            const ant = Array.isArray(d.antonyms) ? d.antonyms.slice(0, 5).join(' · ') : '';
+            if (!root && window.VocabDetail && window.VocabDetail.localRoot) {
+                try {
+                    const lr = window.VocabDetail.localRoot(word);
+                    if (lr) root = lr.affixes.map((a) => (a.type === 'prefix' ? a.value + '…' : '…' + a.value)).join(' ') + ' → ' + lr.root;
+                } catch (e) { /* 静默 */ }
+            }
+            if (!root && !coll && !syn && !ant) return '';
+            const esc = (t) => Security.escapeHtml(String(t == null ? '' : t));
+            const row = (label, val) => val
+                ? '<div style="display:flex;gap:8px;font-size:12px;line-height:1.5;margin:2px 0"><b style="color:var(--study-muted,#6b7280);flex-shrink:0">' + esc(label) + '</b><span style="color:var(--study-text,#374151);word-break:break-word">' + esc(val) + '</span></div>'
+                : '';
+            return '<div style="margin:6px 0 4px;padding:8px 10px;border:1px solid var(--study-border,#e5e7eb);border-radius:10px;background:var(--study-bg,#f8fafc);display:flex;flex-direction:column;gap:2px">'
+                + row('词根', root) + row('搭配', coll) + row('同义', syn) + row('反义', ant)
+                + '</div>';
+        }
+
         // 打开添加单词气泡
-        function openAddWordBubble(word, pos, meaning, targetElement) {
+        function openAddWordBubble(word, pos, meaning, targetElement, detailObj) {
             // 关闭已存在的气泡（会自动清除之前的高亮）
             closeCurrentBubble();
             
@@ -90,11 +113,15 @@
             bubble.className = 'word-bubble';
             bubble.id = 'addWordBubble';
             
+            // 精读洞察（C4）：AI 词根/搭配/同反义优先，无则本地词根规则降级；全无则隐藏
+            const detailHTML = buildInsightHTML(word, detailObj);
+
             // 构建气泡内容（安全方式）
             const bubbleHTML = `
                 <div class="bubble-arrow"></div>
                 <div class="bubble-inner">
                     <div class="bubble-title">添加到生词本</div>
+                    ${detailHTML}
                     <div class="bubble-notebooks">
                         ${Object.entries(notebooks).map(([id, nb]) => `
                             <button class="bubble-nb-btn" data-id="${Security.escapeHtml(id)}" data-name="${Security.escapeHtml(nb.name)}">${Security.escapeHtml(nb.name)}</button>
@@ -612,7 +639,7 @@
                     e.stopPropagation();
                     
                     // 打开气泡（高亮逻辑已在 openAddWordBubble 中处理）
-                    openAddWordBubble(p.word, p.pos, p.meaning || '', badge);
+                    openAddWordBubble(p.word, p.pos, p.meaning || '', badge, p);
                 });
                 
                 return badge;

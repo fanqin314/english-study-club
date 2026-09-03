@@ -106,6 +106,84 @@
   VocabLibrary.getLevel = getLevel;
   VocabLibrary.importToNotebook = importToNotebook;
 
+  /* ---- 词汇量自测（纯算法，供两端 UI 驱动） ---- */
+  var Q_PER_LEVEL = 10;                        // 每档抽样题数
+  var LEVEL_BASE = [4000, 8000, 12000, 18000]; // 各档词汇量代表值（按档位顺序）
+
+  function shuffleArr(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function distinctMeanings(levels) {
+    var pool = [];
+    levels.forEach(function (lv) {
+      lv.words.forEach(function (w) {
+        var m = w && w.meaning;
+        if (m && pool.indexOf(m) < 0) pool.push(m);
+      });
+    });
+    return pool;
+  }
+
+  /**
+   * 预生成自测题目集（低→高档位顺序）。每档抽样 Q_PER_LEVEL 词，
+   * 每题含四选一释义选项（正确答案随机插入）。
+   * @param {Array} [levelsParam] 可选；缺省用当前已加载档位
+   * @returns {Array<{levelId,name,cefr,questions:Array<{word,pos,meaning,options:string[],answer:number}>}>}
+   */
+  VocabLibrary.prepareQuiz = function (levelsParam) {
+    var levels = levelsParam || (_data ? _data.levels : []);
+    if (!levels.length) return [];
+    var pool = distinctMeanings(levels);
+    return levels.map(function (lv) {
+      var words = shuffleArr(lv.words.filter(function (w) { return w && w.meaning; })).slice(0, Q_PER_LEVEL);
+      var questions = words.map(function (w) {
+        var correct = w.meaning;
+        var distractors = shuffleArr(pool.filter(function (m) { return m !== correct; })).slice(0, 3);
+        var options = distractors.slice();
+        var answer = Math.floor(Math.random() * (options.length + 1));
+        options.splice(answer, 0, correct);
+        return { word: w.word, pos: w.pos || '', meaning: correct, options: options, answer: answer };
+      });
+      return { levelId: lv.id, name: lv.name, cefr: lv.cefr, questions: questions };
+    });
+  };
+
+  function cefrOf(vocab) {
+    if (vocab < 4000) return { label: 'A1', level: '入门', advice: '可优先掌握高频基础词，扎实词汇地基' };
+    if (vocab < 7000) return { label: 'A2', level: '基础', advice: '具备日常高频交流词汇，可逐步接触短文' };
+    if (vocab < 10000) return { label: 'B1', level: '独立', advice: '能独立阅读常见文章，可向精读进阶' };
+    if (vocab < 14000) return { label: 'B2', level: '进阶', advice: '足以应付留学生活与工作阅读' };
+    if (vocab < 18000) return { label: 'C1', level: '熟练', advice: '接近母语学习者阅读水平' };
+    return { label: 'C2', level: '精通', advice: '具备学术与专业阅读能力' };
+  }
+
+  /**
+   * 依据各档作答结果估算词汇量并映射 CEFR
+   * @param {Array<{correct:number,total:number}>} results 低→高档位作答统计
+   * @returns {{vocab:number,cefr:string,level:string,advice:string}}
+   */
+  VocabLibrary.estimateVocabulary = function (results) {
+    results = results || [];
+    var vocab = 0;
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      var total = r && r.total > 0 ? r.total : 1;
+      var ratio = ((r && r.correct) || 0) / total;
+      var base = LEVEL_BASE[i] || 6000;
+      if (ratio >= 0.8) { vocab += base; }
+      else { vocab += Math.round(base * ratio); break; }
+    }
+    vocab = Math.max(0, Math.round(vocab / 100) * 100);
+    var c = cefrOf(vocab);
+    return { vocab: vocab, cefr: c.label, level: c.level, advice: c.advice };
+  };
+
   // 桌面端便捷别名；移动端另外在 Mobile 命名空间引用同一对象
   if (!global.VocabLibrary) global.VocabLibrary = VocabLibrary;
   if (global.Mobile) global.Mobile.VocabLibrary = VocabLibrary;

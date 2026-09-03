@@ -19,7 +19,6 @@
     // 模块名称前缀映射
     const modulePrefixes = {
         'EventBus': '[EventBus]',
-        'DIContainer': '[DI]',
         'PosButton': '[PosBtn]',
         'VocabUI': '[Vocab]',
         'EventDelegation': '[EventDel]',

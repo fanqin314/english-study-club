@@ -136,6 +136,34 @@
             // 按钮事件已由事件委托处理，此处无需重复绑定
             console.log('[DeepParse] panelToggleBtn 事件由 event_delegation.js 统一处理');
         }
+
+        // 文章难度徽标（B2）：解析后本地计算 Flesch 分数并展示；数据缺失/原文空白时优雅隐藏
+        function renderReadabilityBadge(text, container) {
+            const badgeId = 'deepParseReadability';
+            const old = document.getElementById(badgeId);
+            if (old && old.parentNode) old.parentNode.removeChild(old);
+
+            let data = null;
+            const Stats = window.EnglishStudyShared && window.EnglishStudyShared.Stats;
+            if (Stats && Stats.estimateReadability) {
+                try { data = Stats.estimateReadability(text); } catch (e) { data = null; }
+            }
+            if (!data || !data.score) return;
+
+            const parent = (container && container.parentNode) || document.getElementById('contentArea');
+            if (!parent) return;
+
+            const tone = data.score >= 60 ? '#10b981' : (data.score >= 40 ? '#f59e0b' : '#ef4444');
+            const badge = document.createElement('div');
+            badge.id = badgeId;
+            badge.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;border:1px solid var(--study-border,#e5e7eb);border-radius:12px;background:var(--study-card,#fff);font-size:13px;color:var(--study-muted,#6b7280);line-height:1.5;';
+            badge.innerHTML =
+                '<span style="font-weight:600;color:var(--study-text,#1f2937)">难度 · <b style="color:' + tone + '">' + String(data.level) + '</b></span>' +
+                '<span>Flesch ' + String(data.score) + '</span>' +
+                '<span style="color:var(--study-accent,#2563eb);font-weight:600">' + String(data.cefr || '') + '</span>' +
+                '<span style="flex:1;min-width:140px">' + String(data.advice || '') + '</span>';
+            parent.insertBefore(badge, container || parent.firstChild);
+        }
         
         function deepParse() {
             return ErrorHandler.wrapAsyncFunction(async function() {
@@ -178,6 +206,9 @@
                 }
                 window.SentenceRenderer.setSentencesData(sentences, {});
                 window.SentenceRenderer.renderAll();
+
+                // 文章难度徽标（B2）：在句子列表上方展示难度等级 + Flesch 分数 + CEFR
+                renderReadabilityBadge(text, container);
 
                 // 显示右栏（句子卡片）
                 const twoColumnContainer = document.querySelector('.two-column-container');

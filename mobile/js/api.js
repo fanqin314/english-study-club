@@ -407,7 +407,6 @@
   Mobile.API = {
     parse, hasKey, computeStats, DEFAULT_MODEL, SAMPLE_SENTENCES,
     requestPerSentence, requestFullText,
-    split: Shared.splitSentences,            // 分句骨架（本地，毫秒级）
     scaffold: Shared.fallbackParse,          // 本地启发式骨架（含空详情，供「边加载边显示」首屏渲染）
     parseStream,                             // 流式逐句：回调 onSentence(idx, fullSentence)
     refetch,                                 // 单项补拉：refetch(en, act) -> Partial<句子对象>

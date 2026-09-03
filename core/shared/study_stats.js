@@ -291,4 +291,52 @@
     });
     return count;
   };
+
+  /* ---------------- 文章难度预估（本地 Flesch，不依赖 AI） ---------------- */
+  // 音节数近似：元音串计数，去尾部不发音 e
+  function countSyllables(word) {
+    var w = String(word).toLowerCase().replace(/[^a-z]/g, '');
+    if (!w) return 1;
+    w = w.replace(/e$/, '');
+    var groups = w.match(/[aeiouy]{1,2}/gi);
+    return Math.max(1, groups ? groups.length : 1);
+  }
+
+  /**
+   * 估算英文文本可读性难度（Flesch Reading Ease，0–100）
+   * @param {string} text 英文原文
+   * @returns {{score:number,level:string,cefr:string,advice:string,
+   *           words:number,sentences:number,avgWordsPerSentence:number}|null}
+   *          无有效文本时返回 null
+   */
+  Stats.estimateReadability = function (text) {
+    if (!text || !String(text).trim()) return null;
+    var raw = String(text);
+    var words = raw.split(/[^A-Za-z']+/).filter(function (w) { return w.length > 0; });
+    var wordCount = words.length;
+    if (!wordCount) return null;
+    var sentences = raw.split(/[.!?]+[\s"]?/).filter(function (s) { return s.trim().length > 0; }).length;
+    var sCount = Math.max(1, sentences || 1);
+    var syllables = 0;
+    words.forEach(function (w) { syllables += countSyllables(w); });
+
+    var score = 206.835 - (1.015 * (wordCount / sCount)) - (84.6 * (syllables / wordCount));
+    score = Math.max(0, Math.min(100, Math.round(score * 10) / 10));
+
+    var level, cefr, advice;
+    if (score >= 90) { level = '容易'; cefr = 'A1–A2'; advice = '适合英语初学者阅读'; }
+    else if (score >= 60) { level = '适中'; cefr = 'B1'; advice = '适合中级学习者循序渐进阅读'; }
+    else if (score >= 30) { level = '较难'; cefr = 'B2–C1'; advice = '适合进阶学习者挑战'; }
+    else { level = '很难'; cefr = 'C2'; advice = '接近母语阅读难度，适合高阶挑战'; }
+
+    return {
+      score: score,
+      level: level,
+      cefr: cefr,
+      advice: advice,
+      words: wordCount,
+      sentences: sCount,
+      avgWordsPerSentence: Math.round((wordCount / sCount) * 10) / 10
+    };
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

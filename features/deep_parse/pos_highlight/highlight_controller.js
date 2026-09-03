@@ -249,20 +249,6 @@
         }
     }
     
-    // 注册到 DI 容器
-    if (window.DIContainer) {
-        window.DIContainer.registerSingleton('HighlightController',
-            (highlightService, eventBus) => {
-                const controller = new HighlightController(highlightService, eventBus);
-                // 自动初始化
-                setTimeout(() => controller.init(), 0);
-                return controller;
-            },
-            ['HighlightService', 'EventBus']
-        );
-        console.log('[HighlightController] 已注册到 DI 容器');
-    }
-    
     // 导出类供直接使用
     window.HighlightController = HighlightController;
 })();

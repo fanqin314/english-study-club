@@ -201,14 +201,23 @@
             dueHint.textContent = '今日待复习 ' + dueCount + ' 词';
             wordContent.appendChild(dueHint);
 
-            // 内置词库入口：一键导入分级词库到生词本
-            const vocabLibBtn = document.createElement('button');
-            vocabLibBtn.type = 'button';
-            vocabLibBtn.className = 'section-btn vocab-library-btn';
-            vocabLibBtn.style.margin = '0 0 10px 2px';
-            vocabLibBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>内置词库';
-            vocabLibBtn.onclick = () => { showVocabLibraryModal(memoryModeDiv); };
-            wordContent.appendChild(vocabLibBtn);
+            // 功能入口：内置词库 + 词汇量自测
+            const libRow = document.createElement('div');
+            libRow.style.cssText = 'display:flex;gap:8px;margin:0 0 10px 2px;';
+            const makeEntryBtn = (label, iconSvg, onClick) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'section-btn vocab-library-btn';
+                b.style.cssText = 'flex:1;cursor:pointer;';
+                b.innerHTML = iconSvg + label;
+                b.onclick = onClick;
+                return b;
+            };
+            const libIcon = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+            const quizIcon = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+            libRow.appendChild(makeEntryBtn('内置词库', libIcon, () => { showVocabLibraryModal(memoryModeDiv); }));
+            libRow.appendChild(makeEntryBtn('词汇量自测', quizIcon, () => { showVocabularyQuizModal(); }));
+            wordContent.appendChild(libRow);
 
             const modeTitle = document.createElement('h4');
             modeTitle.innerText = '选择记忆模式';
@@ -1063,6 +1072,213 @@
             });
 
             fillNotebookSelect();
+        }
+
+        // ========== 词汇量自测弹层（四选一，阶梯式跳档） ==========
+        function trackModuleCount(key, delta) {
+            try {
+                const data = JSON.parse(localStorage.getItem('stats_module_data') || '{}');
+                const today = new Date().toDateString();
+                data[today] = data[today] || {};
+                data[today][key] = (data[today][key] || 0) + (delta || 1);
+                localStorage.setItem('stats_module_data', JSON.stringify(data));
+            } catch (e) { /* 静默 */ }
+        }
+
+        function showVocabularyQuizModal() {
+            const library = window.VocabLibrary;
+            if (!library) { _showToast('词库模块未加载'); return; }
+
+            // 弹层骨架
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;padding:16px;';
+            const panel = document.createElement('div');
+            panel.style.cssText = 'width:500px;max-width:94vw;max-height:88vh;overflow:auto;background:var(--study-card,#fff);border-radius:14px;padding:20px 22px;font-family:var(--study-font-sans,sans-serif);color:var(--study-text,#1f2937);box-shadow:0 18px 50px rgba(0,0,0,.25);line-height:1.5;';
+            const head = document.createElement('div');
+            head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;';
+            const title = document.createElement('h3');
+            title.style.cssText = 'font-size:17px;font-weight:600;margin:0;color:var(--study-text,#1f2937);';
+            title.textContent = '词汇量自测';
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.style.cssText = 'cursor:pointer;border:none;background:transparent;color:var(--study-text,#1f2937);padding:4px;display:flex;';
+            closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            head.appendChild(title);
+            head.appendChild(closeBtn);
+            const body = document.createElement('div');
+            body.style.cssText = 'color:var(--study-text,#1f2937);';
+            panel.appendChild(head);
+            panel.appendChild(body);
+            overlay.appendChild(panel);
+            document.body.appendChild(overlay);
+
+            function close() { document.removeEventListener('keydown', onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+            function onKey(e) { if (e.key === 'Escape') close(); }
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+            closeBtn.addEventListener('click', close);
+            document.addEventListener('keydown', onKey);
+
+            // 状态
+            let quiz = [];
+            let levelIdx = 0;
+            let qIdx = 0;
+            const results = [];
+            const wrongWords = [];
+
+            function esc(t) {
+                return String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            }
+
+            function renderQuestion() {
+                const level = quiz[levelIdx];
+                const q = level.questions[qIdx];
+                const levelLabel = (levelIdx + 1) + '/' + quiz.length + ' · ' + level.name + (level.cefr ? ' (' + level.cefr + ')' : '');
+                body.innerHTML = '';
+                const prog = document.createElement('div');
+                prog.style.cssText = 'font-size:12px;color:var(--study-muted,#6b7280);margin-bottom:14px;';
+                prog.textContent = '第 ' + levelLabel + ' · 本题 ' + (qIdx + 1) + '/' + level.questions.length;
+                body.appendChild(prog);
+                const wordEl = document.createElement('div');
+                wordEl.style.cssText = 'font-size:24px;font-weight:600;color:var(--study-text,#111827);margin:4px 0 2px;';
+                wordEl.textContent = q.word + (q.pos ? '  ' + q.pos : '');
+                body.appendChild(wordEl);
+                const hint = document.createElement('div');
+                hint.style.cssText = 'font-size:12px;color:var(--study-muted,#6b7280);margin-bottom:12px;';
+                hint.textContent = '请选择正确的释义';
+                body.appendChild(hint);
+                q.options.forEach((opt, i) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin:6px 0;border:1px solid var(--study-border,#e5e7eb);border-radius:10px;background:var(--study-bg,#fff);cursor:pointer;font-size:14px;color:var(--study-text,#1f2937);font-family:inherit;';
+                    b.textContent = opt;
+                    body.appendChild(b);
+                });
+                // 绑定选项点击：即答即反馈
+                const optBtns = body.querySelectorAll('button');
+                optBtns.forEach((b, i) => {
+                    b.addEventListener('click', () => {
+                        optBtns.forEach(o => o.disabled = true);
+                        const isCorrect = (i === q.answer);
+                        if (isCorrect) b.style.borderColor = '#22c55e'; else { b.style.borderColor = '#ef4444'; }
+                        optBtns[q.answer].style.borderColor = '#22c55e';
+                        if (!isCorrect) wrongWords.push({ level: quiz[levelIdx].levelId, word: q.word, pos: q.pos, meaning: q.meaning });
+                        setTimeout(() => advance(), 650);
+                    });
+                });
+            }
+
+            function advance() {
+                qIdx++;
+                const level = quiz[levelIdx];
+                if (qIdx < level.questions.length) { renderQuestion(); return; }
+                // 答完一档：本档正确数 = 总数 - 本档答错数
+                const total = level.questions.length;
+                const levelWrong = wrongWords.filter(w => w.level === level.levelId).length;
+                const correct = total - levelWrong;
+                results.push({ levelId: level.levelId, correct: correct, total: total });
+                // 跳档：本档正确率 ≥80% 升入更高档，否则视为接临档位，结束测验
+                const ratio = total > 0 ? correct / total : 0;
+                if (ratio >= 0.8 && levelIdx < quiz.length - 1) {
+                    levelIdx++;
+                    qIdx = 0;
+                    renderQuestion();
+                } else {
+                    renderResult();
+                }
+            }
+
+            // 结束页：估算词汇量 + CEFR 建议 + 认错词导入生词本 + 记录学习活动
+            function renderResult() {
+                const estimate = library.estimateVocabulary(results);
+                let activeNbId = null;
+                const nbs = (window.VocabData && window.VocabData.getAllNotebooks) ? window.VocabData.getAllNotebooks() : {};
+                if (window.VocabData && window.VocabData.getCurrentNotebookId) {
+                    activeNbId = window.VocabData.getCurrentNotebookId();
+                }
+                if (!activeNbId) { const ids = Object.keys(nbs); if (ids.length) activeNbId = ids[0]; }
+
+                body.innerHTML = '';
+                const result = document.createElement('div');
+                result.style.cssText = 'text-align:center;padding:6px 2px;';
+
+                const voc = document.createElement('div');
+                voc.style.cssText = 'font-size:34px;font-weight:700;color:var(--study-accent,#2563eb);line-height:1.1;';
+                voc.textContent = '约 ' + estimate.vocab + ' 词';
+                result.appendChild(voc);
+
+                const cefr = document.createElement('div');
+                cefr.style.cssText = 'display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--study-accent,#2563eb);border:1px solid currentColor;border-radius:6px;padding:2px 8px;';
+                cefr.textContent = 'CEFR ' + (estimate.cefr || '—');
+                result.appendChild(cefr);
+
+                const advice = document.createElement('div');
+                advice.style.cssText = 'font-size:13px;color:var(--study-muted,#6b7280);margin-top:12px;';
+                advice.textContent = estimate.advice || '';
+                result.appendChild(advice);
+
+                body.appendChild(result);
+
+                // 认错词清单
+                if (wrongWords.length) {
+                    const wTitle = document.createElement('div');
+                    wTitle.style.cssText = 'margin:18px 0 6px;font-size:14px;font-weight:600;color:var(--study-text,#1f2937);';
+                    wTitle.textContent = '本次认错的词（' + wrongWords.length + '）';
+                    body.appendChild(wTitle);
+                    const chipWrap = document.createElement('div');
+                    chipWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;';
+                    wrongWords.forEach(w => {
+                        const chip = document.createElement('span');
+                        chip.textContent = w.word + (w.pos ? ' ' + w.pos : '');
+                        chip.style.cssText = 'font-size:12px;padding:3px 9px;border:1px solid var(--study-border,#e5e7eb);border-radius:999px;background:var(--study-bg,#fff);color:var(--study-text,#374151);';
+                        chipWrap.appendChild(chip);
+                    });
+                    body.appendChild(chipWrap);
+
+                    // 一键导入生词本
+                    if (window.VocabData && activeNbId) {
+                        const nbName = (nbs[activeNbId] && nbs[activeNbId].name) || activeNbId;
+                        const impBtn = document.createElement('button');
+                        impBtn.type = 'button';
+                        impBtn.style.cssText = 'width:100%;cursor:pointer;border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:600;color:#fff;background:var(--study-accent,#2563eb);';
+                        impBtn.textContent = '一键加入生词本（' + nbName + '）';
+                        impBtn.addEventListener('click', () => {
+                            if (impBtn.disabled) return;
+                            impBtn.disabled = true;
+                            let added = 0, skipped = 0;
+                            wrongWords.forEach(w => {
+                                const r = window.VocabData.addWord(activeNbId, { word: w.word, pos: w.pos, meaning: w.meaning });
+                                if (r && r.success) added++; else skipped++;
+                            });
+                            _showToast('已加入生词本：新增 ' + added + ' 词，跳过 ' + skipped + ' 词');
+                            impBtn.textContent = '已加入 ' + added + ' 词';
+                        });
+                        body.appendChild(impBtn);
+                    }
+                } else {
+                    const okEl = document.createElement('div');
+                    okEl.style.cssText = 'margin-top:18px;font-size:13px;color:#10b981;';
+                    okEl.textContent = '全部答对，太棒了！';
+                    body.appendChild(okEl);
+                }
+
+                // 记录一次自测学习活动，供热力图/统计展示
+                try {
+                    if (window.StatsTracker && window.StatsTracker.recordModuleActivity) {
+                        window.StatsTracker.recordModuleActivity('vocabQuiz', 1);
+                    } else {
+                        trackModuleCount('vocabQuiz', 1);
+                    }
+                } catch (e) { /* 静默 */ }
+            }
+
+            // 载入词库并开始
+            body.innerHTML = '<div style="padding:18px 4px;color:var(--study-muted,#6b7280);">正在加载词库…</div>';
+            library.load().then((res) => {
+                if (!res || !res.ok) { _showToast('词库加载失败'); close(); return; }
+                quiz = library.prepareQuiz();
+                if (!quiz.length) { _showToast('词库为空'); close(); return; }
+                renderQuestion();
+            }).catch(() => { _showToast('词库加载失败'); close(); });
         }
 
         function init(utils) {

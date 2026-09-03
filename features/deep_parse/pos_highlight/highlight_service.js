@@ -352,17 +352,6 @@
         }
     }
     
-    // 注册到 DI 容器
-    if (window.DIContainer) {
-        window.DIContainer.registerSingleton('HighlightService', 
-            (cacheService, apiService, eventBus) => {
-                return new HighlightService(cacheService, apiService, eventBus);
-            }, 
-            ['CacheService', 'ApiService', 'EventBus']
-        );
-        console.log('[HighlightService] 已注册到 DI 容器');
-    }
-    
     // 导出类供直接使用
     window.HighlightService = HighlightService;
 })();

@@ -232,7 +232,12 @@
         return {
           word: w.word || '',
           pos: w.pos || '',
-          zh: w.zh || w.meaning || ''
+          zh: w.zh || w.meaning || '',
+          // 精读洞察（C2/C3）：透传 AI 解析的词根/搭配/同反义字段，无则留空数组
+          wordRoot: Array.isArray(w.wordRoot) ? w.wordRoot : (w.root ? [].concat(w.root) : []),
+          collocations: Array.isArray(w.collocations) ? w.collocations : [],
+          synonyms: Array.isArray(w.synonyms) ? w.synonyms : [],
+          antonyms: Array.isArray(w.antonyms) ? w.antonyms : []
         };
       }) : [],
       grammar: Array.isArray(s.grammar) ? s.grammar : [],
@@ -253,11 +258,18 @@
    */
   function computeStats(text) {
     var s = text || '';
-    return {
+    var out = {
       words: (s.trim().match(/[A-Za-z']+/g) || []).length,
       sentences: (s.trim().match(/[.!?。！？]+(?:\s|$)/gm) || []).length || 1,
       minutes: Math.max(1, Math.round(s.trim().match(/[A-Za-z']+/g) ? (s.trim().match(/[A-Za-z']+/g).length / 200) : 0))
     };
+    // 难度预估：共享 study_stats 模块提供 estimateReadability；缺失/空白时该字段为 null，展示端优雅隐藏
+    if (Shared.Stats && Shared.Stats.estimateReadability) {
+      out.readability = Shared.Stats.estimateReadability(s);
+    } else {
+      out.readability = null;
+    }
+    return out;
   }
 
   /* ---------- 导出 ---------- */

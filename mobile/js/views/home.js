@@ -303,7 +303,21 @@
         <div class="esc-stat"><div class="esc-num is-foreground">${esc(stats.words)}</div><div class="esc-label">单词数</div></div>
         <div class="esc-stat"><div class="esc-num is-foreground">${esc(stats.sentences)}</div><div class="esc-label">句子数</div></div>
         <div class="esc-stat"><div class="esc-num is-foreground">${esc(stats.minutes)}<span style="font-size:12px"> min</span></div><div class="esc-label">阅读时间</div></div>
-      </div>`;
+      </div>
+      ${readabilityHTML(stats)}`;
+  }
+
+  // 难度徽标（解析后展示 Flesch 分数 / 等级 / CEFR；无数据时优雅隐藏）
+  function readabilityHTML(stats) {
+    const r = stats && stats.readability;
+    if (!r || !r.score) return '';
+    const tone = r.score >= 60 ? '#10b981' : (r.score >= 40 ? '#f59e0b' : '#ef4444');
+    return `<div class="esc-readability" style="margin-top:10px;border:1px solid var(--study-border);border-radius:12px;padding:9px 12px;font-size:12px;color:var(--study-muted-foreground);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-weight:600;color:var(--study-foreground)">难度 · <i style="font-style:normal;color:${tone}">${esc(r.level)}</i></span>
+      <span>Flesch ${esc(r.score)}</span>
+      <span style="color:var(--study-primary);font-weight:600">${esc(r.cefr || '')}</span>
+      <span style="flex:1;min-width:120px">${esc(r.advice || '')}</span>
+    </div>`;
   }
 
   // 词性面板：word [pos] · meaning（点按单词可发音）
@@ -393,14 +407,25 @@
     const en = s.en || '';
     const wordMap = {};
     (s.words || []).forEach((w) => {
-      wordMap[(w.word || '').toLowerCase()] = { pos: w.pos || '', zh: w.zh || w.meaning || '' };
+      wordMap[(w.word || '').toLowerCase()] = {
+        pos: w.pos || '',
+        zh: w.zh || w.meaning || '',
+        root: (w.wordRoot || []).join(' / '),
+        coll: (w.collocations || []).slice(0, 4).join(' · '),
+        syn: (w.synonyms || []).slice(0, 5).join(' · '),
+        ant: (w.antonyms || []).slice(0, 5).join(' · ')
+      };
     });
     const tokens = en.match(/[A-Za-z][A-Za-z'’-]*|[0-9]+|[^A-Za-z0-9\s]+|\s+/g) || [en];
     return tokens.map((t) => {
       if (/^[A-Za-z]/.test(t)) {
         const info = wordMap[t.toLowerCase()] || { pos: '', zh: '' };
         const phrCls = isPhrase(info.pos) ? ' esc-sw--phr' : '';
-        return `<span class="esc-sw${phrCls}" data-word="${esc(t)}" data-pos="${esc(info.pos)}" data-meaning="${esc(info.zh)}">${esc(t)}</span>`;
+        let attrs = `data-word="${esc(t)}" data-pos="${esc(info.pos)}" data-meaning="${esc(info.zh)}"`;
+        if (info.root || info.coll || info.syn || info.ant) {
+          attrs += ` data-detail="${esc(JSON.stringify({ root: info.root, coll: info.coll, syn: info.syn, ant: info.ant }))}"`;
+        }
+        return `<span class="esc-sw${phrCls}" ${attrs}>${esc(t)}</span>`;
       }
       return esc(t);
     }).join('');
@@ -417,10 +442,34 @@
   }
   // 轻点单词：指向单词的气泡（popover）——对齐网页端「点单词弹字典气泡」体验，
   // 不再用底部上滑抽屉；去掉例句（网页版无此展示）。气泡带小三角指向单词，点击空白/滚动关闭。
+  // 词根/搭配/同反义展示区块（C4）：AI 字段优先，无则本地词根规则降级；全无数据返回空串（隐藏）
+  function buildInsightHTML(word, detail) {
+    let root = (detail && detail.root) || '';
+    const coll = (detail && detail.coll) || '';
+    const syn = (detail && detail.syn) || '';
+    const ant = (detail && detail.ant) || '';
+    // 本地词根规则降级（无 AI 词根时）
+    if (!root && Mobile.VocabDetail && Mobile.VocabDetail.localRoot) {
+      try {
+        const lr = Mobile.VocabDetail.localRoot(word);
+        if (lr) root = lr.affixes.map((a) => (a.type === 'prefix' ? a.value + '…' : '…' + a.value)).join(' ') + ' → ' + lr.root;
+      } catch (e) {}
+    }
+    if (!root && !coll && !syn && !ant) return '';
+    const row = (label, val) => val
+      ? `<div style="display:flex;gap:8px;font-size:12px;line-height:1.5"><b style="color:var(--study-muted-foreground);flex-shrink:0">${esc(label)}</b><span style="color:var(--study-foreground);word-break:break-word">${esc(val)}</span></div>`
+      : '';
+    return `<div style="margin:6px 0 2px;padding:8px 10px;border:1px solid var(--study-border);border-radius:10px;background:var(--study-surface,transparent);display:flex;flex-direction:column;gap:4px">${row('词根', root)}${row('搭配', coll)}${row('同义', syn)}${row('反义', ant)}</div>`;
+  }
+
   function openWordPopover(word, sp, pos, meaning, phon) {
     closeWordSheet();
     const word0 = (word || '').trim();
     if (!word0) return;
+    // 精读洞察（C4）：读取 AI 解析的词根/搭配/同反义；无则本地词根规则降级
+    let detail = null;
+    try { if (sp && sp.getAttribute('data-detail')) detail = JSON.parse(sp.getAttribute('data-detail')); } catch (e) { detail = null; }
+    const insightHTML = buildInsightHTML(word0, detail);
     const pop = document.createElement('div');
     pop.className = 'esc-wordpop';
     const notebooks = Store.getNotebooks();
@@ -443,6 +492,7 @@
           ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
         </div>
         ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
+        ${insightHTML}
         <div class="esc-wordpop-actions">
           <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
           <button class="esc-btn esc-btn-primary" data-act="add">${icon('bookmark-plus')}<span>加入生词本</span></button>
