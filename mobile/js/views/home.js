@@ -462,7 +462,7 @@
     return `<div style="margin:6px 0 2px;padding:8px 10px;border:1px solid var(--study-border);border-radius:10px;background:var(--study-surface,transparent);display:flex;flex-direction:column;gap:4px">${row('词根', root)}${row('搭配', coll)}${row('同义', syn)}${row('反义', ant)}</div>`;
   }
 
-  function openWordPopover(word, sp, pos, meaning, phon) {
+  function openWordPopover(word, sp, pos, meaning, phon, ex, exCn) {
     closeWordSheet();
     const word0 = (word || '').trim();
     if (!word0) return;
@@ -492,6 +492,8 @@
           ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
         </div>
         ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
+        ${ex ? `<p class="esc-word-ex">${esc(ex)}</p>` : ''}
+        ${exCn ? `<p class="esc-word-excn">${esc(exCn)}</p>` : ''}
         ${insightHTML}
         <div class="esc-wordpop-actions">
           <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
@@ -891,15 +893,20 @@
       sp.addEventListener('mouseup', cancelLp);
       sp.addEventListener('mouseleave', cancelLp);
       // 轻点：打开查词弹层（含音标/释义/例句/发音/加词）
-      sp.addEventListener('click', (ev) => {
+      sp.addEventListener('click', async (ev) => {
         if (lp.fired) { lp.fired = false; ev.stopPropagation(); return; }
         ev.stopPropagation();
         cancelLp();
         pulseEl(sp);
         pulseLinked(el, word, '.esc-pos-badge'); // 联动：对应词性徽章一起提示
-        // 点词：若 AI 未给出释义，回退到本地词表（基础词免 AI）
-        const localHit = Mobile.LocalLexicon && Mobile.LocalLexicon.lookup(word);
-        openWordPopover(word, sp, pos, meaning || (localHit && localHit.zh) || '', localHit && localHit.ph);
+        // 本地词典优先、AI 兜底：命中本地（核心词/热缓存/分片）不再走 AI
+        let d = null;
+        try { if (Mobile.DictLookup && typeof Mobile.DictLookup.lookup === 'function') d = await Mobile.DictLookup.lookup(word); } catch (e) { d = null; }
+        const localHit = (!d) && Mobile.LocalLexicon ? Mobile.LocalLexicon.lookup(word) : null;
+        const ph = (d && d.phonetic) || (localHit && localHit.ph) || '';
+        const gloss = (d && d.meaning) || meaning || (localHit && localHit.zh) || '';
+        const pos2 = (d && d.pos) || pos || '';
+        openWordPopover(word, sp, pos2, gloss, ph, (d && d.example) || '', (d && d.exampleCn) || '');
       });
     });
     // 中文翻译：点击折叠头展开/收起（grid 行高过渡动效）

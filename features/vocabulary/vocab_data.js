@@ -303,6 +303,43 @@
         return { success: true };
     }
     
+    // 批量添加单词到生词本（词库整档导入专用：Set 查重 + 仅保存一次，避免逐词保存卡死）
+    function addWordsBulk(notebookId, words) {
+        const notebook = vocabData.notebooks[notebookId];
+        if (!notebook) {
+            return { success: false, added: 0, skipped: 0, error: '生词本不存在' };
+        }
+        if (!Array.isArray(words)) {
+            return { success: false, added: 0, skipped: 0, error: '参数错误' };
+        }
+        const existing = new Set(notebook.words.map(w => w.word.toLowerCase()));
+        let added = 0, skipped = 0;
+        const toAdd = [];
+        for (let i = 0; i < words.length; i++) {
+            const wd = words[i] || {};
+            const word = String(wd.word || '').trim();
+            if (!word) { skipped++; continue; }
+            const lower = word.toLowerCase();
+            if (existing.has(lower)) { skipped++; continue; }
+            const newWord = {
+                word: word,
+                meaning: String(wd.meaning || '').trim(),
+                pos: String(wd.pos || '').trim(),
+                context: String(wd.context || '').trim(),
+                timestamp: Date.now()
+            };
+            if (SRS) SRS.initWord(newWord);
+            existing.add(lower);
+            toAdd.push(newWord);
+            added++;
+        }
+        if (toAdd.length) {
+            notebook.words.push(...toAdd);
+            saveData();
+        }
+        return { success: true, added: added, skipped: skipped };
+    }
+    
     // 删除单词
     function deleteWord(notebookId, word) {
         const notebook = vocabData.notebooks[notebookId];
@@ -709,6 +746,7 @@
         createNotebook,
         deleteNotebook,
         addWord,
+        addWordsBulk,
         deleteWord,
         updateWord,
         getWords,

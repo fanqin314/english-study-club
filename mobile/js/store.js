@@ -386,6 +386,32 @@
     emit('vocab', getVocab());
     return { success: true, added: true };
   }
+  // 批量加入指定生词本（词库整档导入专用：Set 查重 + 仅保存一次，避免逐词保存/广播导致卡死）
+  function addWordsBulk(notebookId, words) {
+    const d = _getVocabData();
+    const nb = d.notebooks[notebookId];
+    if (!nb) return { success: false, added: 0, skipped: 0, error: '生词本不存在' };
+    if (!Array.isArray(words)) return { success: false, added: 0, skipped: 0, error: '参数错误' };
+    const existing = new Set((nb.words || []).map((x) => (x.word || '').toLowerCase()));
+    const toAdd = [];
+    let added = 0, skipped = 0;
+    for (let i = 0; i < words.length; i++) {
+      const wd = words[i] || {};
+      const word = String(wd.word || '').trim();
+      if (!word) { skipped++; continue; }
+      const lower = word.toLowerCase();
+      if (existing.has(lower)) { skipped++; continue; }
+      toAdd.push({ word, meaning: String(wd.meaning || ''), pos: String(wd.pos || ''), context: String(wd.context || ''), phonetic: String(wd.phonetic || ''), timestamp: Date.now() });
+      existing.add(lower);
+      added++;
+    }
+    if (toAdd.length) {
+      nb.words = toAdd.concat(nb.words || []);
+      _saveVocabData(d);
+      emit('vocab', getVocab());
+    }
+    return { success: true, added: added, skipped: skipped };
+  }
   // 判断某词是否已在该生词本（供底部弹层打勾）
   function isWordInNotebook(notebookId, word) {
     const d = _getVocabData();
@@ -764,7 +790,7 @@
     on, off, emit,
     uid, todayStr,
     getVocab, addWord, removeWord, updateWord, getWord,
-    getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, isWordInNotebook,
+    getNotebooks, getCurrentNotebookId, getNotebookWords, createNotebook, addWordToNotebook, addWordsBulk, isWordInNotebook,
     applyReview, getDueCount, getReviewQueue,
     setCurrentNotebook, renameNotebook, updateNotebookColor, mergeNotebooks, deleteNotebook,
     NOTEBOOK_COLORS,

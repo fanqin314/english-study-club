@@ -969,7 +969,7 @@
                 importBar.style.display = 'flex';
             }
 
-            addBtn.addEventListener('click', () => {
+            addBtn.addEventListener('click', async () => {
                 if (!currentLevelId) { _showToast('请先选择一个词表档位'); return; }
                 const notebookId = nbSelect.value;
                 if (!notebookId) { _showToast('请先选择目标生词本'); return; }
@@ -977,8 +977,8 @@
                 loading = true;
                 const prev = addBtn.textContent;
                 addBtn.textContent = '导入中…';
-                const r = library.importToNotebook(currentLevelId, (wd) => {
-                    return window.VocabData.addWord(notebookId, wd);
+                const r = await library.importToNotebook(currentLevelId, (words) => {
+                    return window.VocabData.addWordsBulk(notebookId, words);
                 });
                 loading = false;
                 addBtn.textContent = prev;

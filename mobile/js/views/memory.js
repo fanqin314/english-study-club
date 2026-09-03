@@ -840,17 +840,14 @@
     importBar.appendChild(addBtn);
     body.appendChild(importBar);
 
-    addBtn.addEventListener('click', () => {
+    addBtn.addEventListener('click', async () => {
       if (!selLevel) { UI.toast('请先选择一个词表档位'); return; }
       const nbId = sel.value;
       if (!nbId) { UI.toast('请先创建生词本'); return; }
       addBtn.disabled = true;
       const prev = addBtn.textContent;
       addBtn.textContent = '导入中…';
-      const r = library.importToNotebook(selLevel, (wd) => {
-        const res = Store.addWordToNotebook(nbId, wd);
-        return { success: !!(res && res.added) };
-      });
+      const r = await library.importToNotebook(selLevel, (words) => Store.addWordsBulk(nbId, words));
       addBtn.disabled = false;
       addBtn.textContent = prev;
       UI.toast(`导入完成：新增 ${r.added} 词，跳过 ${r.skipped} 词`);

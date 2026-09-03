@@ -1,8 +1,10 @@
 /* ============================================================
    shared/vocab_library.js — 内置分级词库共享加载器（桌面/移动两端复用）
-   · 职责：读取 data/vocab_library.json、schema 校验、档位枚举、整档导入。
-   · 设计：与 vocab_data.js / store.js 解耦，只负责数据读取与校验；
-     导入动作委托调用端注入的 addWord 语义（桌面 VocabData.addWord / 移动 Store.addWordToNotebook）。
+   · 职责：读取 data/vocab_library.json、schema 校验、档位枚举、整档导入、词汇量自测算法。
+   · 数据模型：单一去重词表 { version, words:[{word,pos,meaning,tags,cefr}] }
+     tags 为多考试标签（exam-cet4|cet6|kaoyan|toefl|sat），「选中某档」= tags ⊇ {该档} 的累计并集。
+   · 档位元数据（名称/CEFR/描述）为静态常量，词量由标签聚合实时计算。
+   · 导入动作委托调用端注入的 addWord 语义（桌面 VocabData.addWord / 移动 Store.addWordToNotebook）。
    · 挂载：window.EnglishStudyShared.VocabLibrary（桌面可用 window.VocabLibrary 别名，移动挂 Mobile.VocabLibrary）
    · 依赖：无（fetch 由浏览器提供）
    ============================================================ */
@@ -15,7 +17,16 @@
   // 默认数据相对路径：桌面 index.html（根）→ data/；移动 mobile/index.html → ../data/
   var DEFAULT_URL = global.Mobile ? '../data/vocab_library.json' : 'data/vocab_library.json';
 
-  var _data = null;       // 已解析的词库 { version, levels[] }
+  // 档位元数据（静态），词量由 tags 聚合实时派生
+  var LEVEL_META = [
+    { id: 'exam-cet4',   name: '大学英语四级 CET-4', cefr: 'B1-B2', description: '四六级核心词汇，覆盖大学基础阶段高频词，难度约 B1–B2' },
+    { id: 'exam-cet6',   name: '大学英语六级 CET-6', cefr: 'B2-C1', description: '六级进阶词汇，在四级基础上扩展学术与深度用词，难度约 B2–C1' },
+    { id: 'exam-kaoyan', name: '考研英语',           cefr: 'B2-C1', description: '考研核心词汇，覆盖阅读/翻译/写作高频学术词，难度约 B2–C1' },
+    { id: 'exam-toefl',  name: '托福 TOEFL',         cefr: 'B2-C2', description: '托福学术词汇，覆盖听力/阅读/写作高频学科词，难度约 B2–C2' },
+    { id: 'exam-sat',    name: 'SAT',                cefr: 'C1-C2', description: 'SAT 高阶词汇，覆盖阅读/写作精深词汇，难度约 C1–C2' }
+  ];
+
+  var _data = null;       // 已解析的词库 { version, words[] }
   var _status = 'idle';   // idle | loading | ready | error
 
   /**
@@ -78,58 +89,83 @@
   /** schema 校验：返回 { ok, reason? } */
   function validate(data) {
     if (!data || typeof data !== 'object') return { ok: false, reason: '词库不是对象' };
-    if (!Array.isArray(data.levels)) return { ok: false, reason: '缺少 levels 数组' };
-    for (var i = 0; i < data.levels.length; i++) {
-      var lv = data.levels[i];
-      if (!lv || typeof lv !== 'object') return { ok: false, reason: 'levels[' + i + '] 不是对象' };
-      if (!lv.id || typeof lv.id !== 'string') return { ok: false, reason: 'levels[' + i + '] 缺少 id' };
-      if (!Array.isArray(lv.words)) return { ok: false, reason: 'level(' + lv.id + ') 缺少 words 数组' };
-      for (var w = 0; w < lv.words.length; w++) {
-        var word = lv.words[w];
-        if (!word || !word.word) return { ok: false, reason: 'level(' + lv.id + ') 第' + w + '词缺少 word' };
-      }
+    if (!Array.isArray(data.words)) return { ok: false, reason: '缺少 words 数组' };
+    for (var i = 0; i < data.words.length; i++) {
+      var w = data.words[i];
+      if (!w || !w.word) return { ok: false, reason: 'words[' + i + '] 缺少 word' };
+      if (w.tags !== undefined && !Array.isArray(w.tags)) return { ok: false, reason: 'words[' + i + '] tags 应为数组' };
     }
     return { ok: true };
   }
 
-  /** 档位枚举（含词量），返回副本避免外部篡改内部 */
+  /** 档位枚举（含按标签聚合的词量），返回副本避免外部篡改内部 */
   function listLevels() {
     if (!_data) return [];
-    return _data.levels.map(function (lv) {
-      return { id: lv.id, name: lv.name, cefr: lv.cefr, description: lv.description, count: lv.words.length };
+    return LEVEL_META.map(function (m) {
+      return {
+        id: m.id,
+        name: m.name,
+        cefr: m.cefr,
+        description: m.description,
+        count: countByTag(m.id)
+      };
     });
   }
 
-  /** 取某档原始数据 { id,name,words[] }，不存在返回 null */
+  /** 拥有某标签的词数 */
+  function countByTag(tag) {
+    if (!_data) return 0;
+    var n = 0;
+    for (var i = 0; i < _data.words.length; i++) {
+      if (hasTag(_data.words[i], tag)) n++;
+    }
+    return n;
+  }
+
+  /** 词是否命中标签（tags 含 tag 或为空数组时视为不属于任何档） */
+  function hasTag(w, tag) {
+    var t = w && w.tags;
+    return !!t && t.indexOf(tag) >= 0;
+  }
+
+  /**
+   * 取某档聚合视图 { id,name,cefr,description,words[] }
+   * words 为该标签累计并集（tags ⊇ {id}），不存在元数据时返回 null
+   */
   function getLevel(id) {
     if (!_data) return null;
-    for (var i = 0; i < _data.levels.length; i++) {
-      if (_data.levels[i].id === id) return _data.levels[i];
+    for (var i = 0; i < LEVEL_META.length; i++) {
+      if (LEVEL_META[i].id === id) {
+        var words = [];
+        for (var j = 0; j < _data.words.length; j++) {
+          if (hasTag(_data.words[j], id)) words.push(_data.words[j]);
+        }
+        return { id: LEVEL_META[i].id, name: LEVEL_META[i].name, cefr: LEVEL_META[i].cefr, description: LEVEL_META[i].description, words: words };
+      }
     }
     return null;
   }
 
-  /** 整档导入到指定生词本
+  /** 整档导入到指定生词本（批量写入，避免逐词触发数据层保存导致大数据量卡死主线程）
    * @param {string} levelId 档位 id
-   * @param {function} addFn (word) => {success:boolean} 单词写入回调（调用端注入，内置查重）
-   * @returns {{ok:boolean, added:number, skipped:number, reason?:string}}
+   * @param {function} bulkFn (words[]) => Promise<{added:number,skipped:number}> 批量写入回调
+   *        （调用端注入：桌面 VocabData.addWordsBulk / 移动 Store.addWordsBulk，
+   *         内部 Set 查重 + 仅保存一次，规避 O(n²) 逐词序列化）
+   * @returns {Promise<{ok:boolean, added:number, skipped:number, reason?:string}>}
    */
-  function importToNotebook(levelId, addFn) {
+  async function importToNotebook(levelId, bulkFn) {
     if (!_data) return { ok: false, added: 0, skipped: 0, reason: '词库未加载' };
-    if (typeof addFn !== 'function') return { ok: false, added: 0, skipped: 0, reason: '缺少写入回调' };
+    if (typeof bulkFn !== 'function') return { ok: false, added: 0, skipped: 0, reason: '缺少写入回调' };
     var lv = getLevel(levelId);
     if (!lv) return { ok: false, added: 0, skipped: 0, reason: '档位不存在：' + levelId };
-    var added = 0, skipped = 0;
-    var words = lv.words;
-    for (var i = 0; i < words.length; i++) {
-      var w = words[i];
-      var wordData = { word: w.word, pos: w.pos || '', meaning: w.meaning || '', context: '' };
-      var r;
-      try { r = addFn(wordData); }
-      catch (e) { skipped++; continue; }
-      if (r && r.success) added++; else skipped++;
-    }
-    return { ok: true, added: added, skipped: skipped };
+    var words = lv.words.map(function (w) {
+      return { word: w.word, pos: w.pos || '', meaning: w.meaning || '', context: '' };
+    });
+    var r;
+    try { r = await bulkFn(words); }
+    catch (e) { return { ok: false, added: 0, skipped: words.length, reason: e && e.message ? e.message : String(e) }; }
+    r = r || {};
+    return { ok: true, added: r.added || 0, skipped: r.skipped || 0 };
   }
 
   VocabLibrary.load = load;
@@ -137,6 +173,25 @@
   VocabLibrary.listLevels = listLevels;
   VocabLibrary.getLevel = getLevel;
   VocabLibrary.importToNotebook = importToNotebook;
+
+  /**
+   * 在核心词表中二分查找单词（words 已按大小写不敏感排序）
+   * @param {string} word 任意大小写
+   * @returns {object|null} 词条目（含 word/pos/meaning/tags/cefr/可含 phonetic/example）或 null
+   */
+  VocabLibrary.findWord = function (word) {
+    if (!_data || !word) return null;
+    var key = String(word).toLowerCase();
+    var lo = 0, hi = _data.words.length - 1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      var wk = _data.words[mid].word.toLowerCase();
+      if (wk < key) lo = mid + 1;
+      else if (wk > key) hi = mid - 1;
+      else return _data.words[mid];
+    }
+    return null;
+  };
 
   /* ---- 词汇量自测（纯算法，供两端 UI 驱动） ---- */
   var Q_PER_LEVEL = 10;                        // 每档抽样题数
@@ -165,11 +220,11 @@
   /**
    * 预生成自测题目集（低→高档位顺序）。每档抽样 Q_PER_LEVEL 词，
    * 每题含四选一释义选项（正确答案随机插入）。
-   * @param {Array} [levelsParam] 可选；缺省用当前已加载档位
+   * @param {Array} [levelsParam] 可选；缺省用当前已加载档位的聚合视图（标签累计并集）
    * @returns {Array<{levelId,name,cefr,questions:Array<{word,pos,meaning,options:string[],answer:number}>}>}
    */
   VocabLibrary.prepareQuiz = function (levelsParam) {
-    var levels = levelsParam || (_data ? _data.levels : []);
+    var levels = levelsParam || (_data ? LEVEL_META.map(function (m) { return getLevel(m.id); }).filter(Boolean) : []);
     if (!levels.length) return [];
     var pool = distinctMeanings(levels);
     return levels.map(function (lv) {

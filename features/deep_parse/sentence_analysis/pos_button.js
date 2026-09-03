@@ -57,9 +57,22 @@
         }
 
         // 打开添加单词气泡
-        function openAddWordBubble(word, pos, meaning, targetElement, detailObj) {
+        async function openAddWordBubble(word, pos, meaning, targetElement, detailObj) {
             // 关闭已存在的气泡（会自动清除之前的高亮）
             closeCurrentBubble();
+
+            // 本地词典优先、AI 兜底：命中本地（核心词/热缓存/分片）用本地释义/音标/例句
+            let dict = null;
+            try {
+                if (window.DictLookup && typeof window.DictLookup.lookup === 'function') {
+                    dict = await window.DictLookup.lookup(word);
+                }
+            } catch (e) { dict = null; }
+            const gloss = (dict && dict.meaning) || meaning || '';
+            const phon = (dict && dict.phonetic) || '';
+            const pos2 = (dict && dict.pos) || pos || '';
+            const ex = (dict && dict.example) || '';
+            const exCn = (dict && dict.exampleCn) || '';
             
             // 从点击的元素向上遍历找到句子卡片，获取正确的句子索引
             let sentenceIndex = null;
@@ -117,10 +130,19 @@
             const detailHTML = buildInsightHTML(word, detailObj);
 
             // 构建气泡内容（安全方式）
+            const defBlock = (gloss || ex)
+                ? `<div class="bubble-def">
+                      <div class="bubble-def-head"><b>${Security.escapeHtml(word)}</b>${phon ? ' <span style="color:var(--study-muted,#6b7280)">/' + Security.escapeHtml(phon) + '/</span>' : ''}${pos2 ? ' <span style="color:#3b82f6">[' + Security.escapeHtml(pos2) + ']</span>' : ''}</div>
+                      ${gloss ? '<div class="bubble-def-gloss">' + Security.escapeHtml(gloss) + '</div>' : ''}
+                      ${ex ? '<div class="bubble-def-ex">' + Security.escapeHtml(ex) + '</div>' : ''}
+                      ${exCn ? '<div class="bubble-def-excn">' + Security.escapeHtml(exCn) + '</div>' : ''}
+                  </div>`
+                : '';
             const bubbleHTML = `
                 <div class="bubble-arrow"></div>
                 <div class="bubble-inner">
                     <div class="bubble-title">添加到生词本</div>
+                    ${defBlock}
                     ${detailHTML}
                     <div class="bubble-notebooks">
                         ${Object.entries(notebooks).map(([id, nb]) => `
