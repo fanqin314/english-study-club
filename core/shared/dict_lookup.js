@@ -30,6 +30,7 @@
 
   var _index = null;        // { n, map:{word:shard} }；null 表示未加载/加载失败
   var _indexStatus = 'idle'; // idle | loading | ready | error
+  var _coreReady = false;   // 核心词表是否已尝试加载（惰性 init，幂等）
   var _shards = {};         // 内存分片缓存 { shardIndex: { words } }
   var _hot = new Map();     // 内存热缓存 word -> entry（LRU）
   var _counts = {};         // 内存查询计数 word -> n（防抖批量写 IndexedDB）
@@ -214,6 +215,11 @@
    */
   DictLookup.lookup = async function (word) {
     if (!word) return null;
+    // 惰性确保核心词表已加载（VocabLibrary.load 内部幂等防重）
+    // 仅在成功后才置位 _coreReady，失败时下次查询自动重试，避免一次瞬态失败导致永久跳过核心词表
+    if (!_coreReady) {
+      try { await DictLookup.init(); _coreReady = true; } catch (e) { /* 忽略，下次重试 */ }
+    }
     var key = String(word).toLowerCase();
     // 1) 核心词表（内存二分查找）
     if (VocabLibrary && typeof VocabLibrary.findWord === 'function') {

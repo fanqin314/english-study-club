@@ -322,6 +322,10 @@
                 } catch (error) {
                     console.error('初始化模块时出错:', error);
                 }
+                // 显式接线：initializeAll 只执行 factory，不调用实例的 init()。
+                // ErrorHandler.init() 挂载全局错误监听；CacheManager.init() 从 localStorage 恢复解析缓存。
+                try { if (window.ErrorHandler && typeof window.ErrorHandler.init === 'function') window.ErrorHandler.init(); } catch (error) { console.error('初始化 ErrorHandler 时出错:', error); }
+                try { if (window.CacheManager && typeof window.CacheManager.init === 'function') window.CacheManager.init(); } catch (error) { console.error('初始化 CacheManager 时出错:', error); }
             }
 
             if (window.MainButtonManager) {
