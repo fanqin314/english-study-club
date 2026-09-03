@@ -25,6 +25,12 @@
   async function load(url) {
     if (_status === 'ready' && url == null) return { ok: true, status: _status };
     _status = 'loading';
+    // 优先使用已注入的内联数据（避免重复 fetch/动态加载）
+    if (!url && global.__VOCAB_LIBRARY_DATA__ && validate(global.__VOCAB_LIBRARY_DATA__).ok) {
+      _data = global.__VOCAB_LIBRARY_DATA__;
+      _status = 'ready';
+      return { ok: true, status: _status, levels: listLevels() };
+    }
     try {
       const res = await fetch(url || DEFAULT_URL);
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -36,10 +42,36 @@
       _status = 'ready';
       return { ok: true, status: _status, levels: listLevels() };
     } catch (e) {
+      // fetch 失败（如 file:// 协议下 CORS 阻止）→ 尝试动态加载内联数据 JS 兜底
+      if (!url && await loadInlineData()) {
+        return { ok: true, status: _status, levels: listLevels() };
+      }
       _data = null;
       _status = 'error';
       console.warn('[VocabLibrary] 加载失败：', (e && e.message) ? e.message : String(e));
       return { ok: false, status: _status, reason: e && e.message ? e.message : String(e) };
+    }
+  }
+
+  /**
+   * 动态加载 data/vocab_library.data.js（<script> 不走 fetch CORS，file:// 下可用）
+   * 成功且校验通过 → 置 _data/_status 为 ready；否则置 error
+   * @returns {Promise<boolean>}
+   */
+  function loadInlineData() {
+    return new Promise(function (resolve) {
+      if (global.__VOCAB_LIBRARY_DATA__) { finalize(); resolve(finalize.ok); return; }
+      var s = document.createElement('script');
+      s.src = DEFAULT_URL.replace(/vocab_library\.json$/, 'vocab_library.data.js');
+      s.onload = function () { finalize(); resolve(finalize.ok); };
+      s.onerror = function () { _status = 'error'; resolve(false); };
+      document.head.appendChild(s);
+    });
+    function finalize() {
+      var v = validate(global.__VOCAB_LIBRARY_DATA__);
+      finalize.ok = !!v.ok;
+      if (v.ok) { _data = global.__VOCAB_LIBRARY_DATA__; _status = 'ready'; }
+      else { _data = null; _status = 'error'; }
     }
   }
 
