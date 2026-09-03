@@ -1925,8 +1925,6 @@ body.esc-sub-view .esc-page { padding-bottom: 24px; }
 .esc-word-phon { font-size: 14px; color: var(--study-muted-foreground); }
 .esc-word-pos { font-size: 11px; font-weight: 600; color: var(--study-primary); background: color-mix(in srgb, var(--study-primary) 12%, transparent); padding: 2px 8px; border-radius: 999px; }
 .esc-word-gloss { font-size: 15px; color: var(--study-foreground); margin: 12px 0 0; line-height: 1.6; }
-.esc-word-ex { font-size: 13px; font-style: italic; color: var(--study-muted-foreground); margin: 10px 0 0; line-height: 1.6; border-left: 2px solid var(--study-primary); padding-left: 8px; }
-.esc-word-excn { font-size: 13px; color: var(--study-foreground); margin: 4px 0 0 10px; line-height: 1.5; }
 .esc-wordpop-actions { display: flex; gap: 10px; margin-top: 16px; }
 .esc-wordpop-actions .esc-btn { flex: 1; justify-content: center; }
 /* 通用（高亮设置弹层复用） */

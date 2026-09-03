@@ -11,6 +11,7 @@ global.indexedDB = null; // 走纯内存降级路径
 const files = {
   'data/dict/index.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/index.json'), 'utf8')),
   'data/dict/shard_000.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/shard_000.json'), 'utf8')),
+  'data/dict/shard_008.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/shard_008.json'), 'utf8')),
 };
 global.fetch = async (url) => {
   const clean = String(url).split('?')[0];
@@ -54,6 +55,17 @@ require(path.join(root, 'core/shared/dict_lookup.js'));
   // 3) 分片词（world 在 shard_000）
   const shardHit = await DL.lookup('world');
   ok(shardHit && shardHit.source === 'shard', '分片词命中 shard');
+
+  // 3.1) 分片词缺失独立 pos 时从释义前缀解析（the → pos=art, meaning 剥离前缀）
+  const theHit = await DL.lookup('the');
+  ok(theHit && theHit.pos === 'art', '分片词 pos 前缀解析(the)');
+  ok(theHit && theHit.meaning === '那', '分片词释义前缀剥离(the)');
+
+  // 3.2) 补丁分片（be 变形等高频缺词）
+  const isHit = await DL.lookup('is');
+  ok(isHit && isHit.source === 'shard' && isHit.pos === 'v' && !!isHit.meaning, '补丁分片命中(is)');
+  const areHit = await DL.lookup('are');
+  ok(areHit && areHit.pos === 'v', '补丁分片命中(are)');
 
   // 4) 未命中 → null
   const miss = await DL.lookup('zzzqqqzzz');

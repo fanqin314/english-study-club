@@ -19,7 +19,7 @@
   var DictLookup = (Shared.DictLookup = Shared.DictLookup || {});
   var VocabLibrary = Shared.VocabLibrary || global.VocabLibrary;
 
-  var DICT_VERSION = 1;   // 词库结构版本，变化时使 IndexedDB 缓存整体失效
+  var DICT_VERSION = 2;   // 词库结构版本，变化时使 IndexedDB 缓存整体失效
   var INDEX_URL = global.Mobile ? '../data/dict/index.json' : 'data/dict/index.json';
   var SHARD_PREFIX = global.Mobile ? '../data/dict/shard_' : 'data/dict/shard_';
 
@@ -105,6 +105,8 @@
     // 2) IndexedDB 缓存（校验版本）
     var cached = await idbGet('meta', 'index');
     if (cached && cached.v === DICT_VERSION) { _index = cached.data; _indexStatus = 'ready'; return _index; }
+    // 缓存缺失或版本不匹配：清空旧分片缓存，避免与新索引错配（分片缓存不带版本，须随索引整体失效）
+    if (cached) { try { await idbClear('shards'); } catch (e) { /* 清理失败不影响主流程 */ } }
     // 3) fetch
     try {
       var res = await fetch(INDEX_URL + '?v=' + DICT_VERSION);
@@ -123,23 +125,51 @@
     }
   }
 
-  /* ---------- 分片拉取（内存 → IndexedDB → fetch） ---------- */
-  async function getShard(n) {
-    if (_shards[n]) return _shards[n];
-    var cached = await idbGet('shards', n);
-    if (cached && cached.words) { _shards[n] = cached; return cached; }
-    try {
-      var res = await fetch(SHARD_PREFIX + String(n).padStart(3, '0') + '.json');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      var data = await res.json();
-      if (!data || !data.words) throw new Error('分片结构异常');
-      _shards[n] = data;
-      idbPut('shards', data);
-      return data;
-    } catch (e) {
-      console.warn('[DictLookup] 分片 ' + n + ' 加载失败：', (e && e.message) ? e.message : String(e));
-      return null;
+  /* ---------- 分片拉取（内存 → IndexedDB → fetch；并发去重） ---------- */
+  var _shardLoading = {}; // shardIndex -> Promise，同一分片并发只拉一次
+  function getShard(n) {
+    if (_shards[n]) return Promise.resolve(_shards[n]);
+    if (_shardLoading[n]) return _shardLoading[n];
+    var p = (async () => {
+      var cached = await idbGet('shards', n);
+      if (cached && cached.words) { _shards[n] = cached; return cached; }
+      try {
+        var res = await fetch(SHARD_PREFIX + String(n).padStart(3, '0') + '.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        if (!data || !data.words) throw new Error('分片结构异常');
+        _shards[n] = data;
+        idbPut('shards', data);
+        return data;
+      } catch (e) {
+        console.warn('[DictLookup] 分片 ' + n + ' 加载失败：', (e && e.message) ? e.message : String(e));
+        return null;
+      }
+    })();
+    _shardLoading[n] = p;
+    var done = function () { if (_shardLoading[n] === p) delete _shardLoading[n]; };
+    p.then(done, done);
+    return p;
+  }
+
+  /* ---------- 词性前缀解析 ----------
+     ECDICT 部分词条 pos 列为空，词性缩写嵌在释义前缀（如 "n. 苹果"、"art. 那"）。
+     分片词缺失独立 pos 时，从释义前缀解析并剥离，供气泡单独展示词性。
+     仅认白名单内的词性缩写，避免 "vs."/"pl." 等非词性前缀被误判。 */
+  var POS_WHITELIST = {
+    n: 1, v: 1, vt: 1, vi: 1, aux: 1, vbl: 1, ving: 1, vpast: 1,
+    pron: 1, adj: 1, a: 1, adv: 1, ad: 1, prep: 1, conj: 1,
+    interj: 1, int: 1, art: 1, num: 1, det: 1, abbr: 1, pl: 1, pp: 1
+  };
+  var POS_RE = /^([a-z]{2,8})\.\s*/i;
+  function splitPos(m) {
+    if (!m) return { pos: '', meaning: '' };
+    var s = String(m);
+    var mm = s.match(POS_RE);
+    if (mm && POS_WHITELIST[mm[1].toLowerCase()]) {
+      return { pos: mm[1].toLowerCase(), meaning: s.slice(mm[0].length) };
     }
+    return { pos: '', meaning: s };
   }
 
   /* ---------- 热度升温 ---------- */
@@ -151,6 +181,7 @@
   function promote(word, entry) {
     if (_hot.has(word)) _hot.delete(word);
     _hot.set(word, entry);
+    delete _counts[word]; // 已升温进热缓存，清除计数避免 _counts 无界累积
     if (_hot.size > HOT_CAP) {
       var oldest = _hot.keys().next().value;
       if (oldest != null) _hot.delete(oldest);
@@ -195,7 +226,6 @@
     if (_hot.has(key)) {
       var he = _hot.get(key);
       _hot.delete(key); _hot.set(key, he); // 触达末尾
-      touch(key);
       return he;
     }
     // 3) 分片（需索引）
@@ -206,7 +236,14 @@
         var shard = await getShard(sn);
         var se = shard && shard.words ? shard.words[key] : null;
         if (se) {
-          var entry = { word: se.w, pos: se.pos, meaning: se.m, phonetic: se.p, example: se.ex, exampleCn: se.exCn, source: 'shard' };
+          // 分片词 pos 可能为空，从释义前缀解析并剥离（ECDICT "n. 苹果" → pos=n, meaning=苹果）
+          var sp = splitPos(se.m);
+          var entry = {
+            word: se.w,
+            pos: se.pos || sp.pos,
+            meaning: sp.pos ? sp.meaning : se.m,
+            phonetic: se.p, example: se.ex, exampleCn: se.exCn, source: 'shard'
+          };
           touch(key);
           if (_counts[key] >= HOT_THRESHOLD) promote(key, entry);
           return entry;

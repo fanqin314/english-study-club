@@ -71,8 +71,6 @@
             const gloss = (dict && dict.meaning) || meaning || '';
             const phon = (dict && dict.phonetic) || '';
             const pos2 = (dict && dict.pos) || pos || '';
-            const ex = (dict && dict.example) || '';
-            const exCn = (dict && dict.exampleCn) || '';
             
             // 从点击的元素向上遍历找到句子卡片，获取正确的句子索引
             let sentenceIndex = null;
@@ -130,12 +128,10 @@
             const detailHTML = buildInsightHTML(word, detailObj);
 
             // 构建气泡内容（安全方式）
-            const defBlock = (gloss || ex)
+            const defBlock = gloss
                 ? `<div class="bubble-def">
                       <div class="bubble-def-head"><b>${Security.escapeHtml(word)}</b>${phon ? ' <span style="color:var(--study-muted,#6b7280)">/' + Security.escapeHtml(phon) + '/</span>' : ''}${pos2 ? ' <span style="color:#3b82f6">[' + Security.escapeHtml(pos2) + ']</span>' : ''}</div>
                       ${gloss ? '<div class="bubble-def-gloss">' + Security.escapeHtml(gloss) + '</div>' : ''}
-                      ${ex ? '<div class="bubble-def-ex">' + Security.escapeHtml(ex) + '</div>' : ''}
-                      ${exCn ? '<div class="bubble-def-excn">' + Security.escapeHtml(exCn) + '</div>' : ''}
                   </div>`
                 : '';
             const bubbleHTML = `
@@ -183,7 +179,7 @@
                     e.stopPropagation();
                     const notebookId = btn.dataset.id;
                     const notebookName = btn.dataset.name;
-                    handleAddToNotebook(notebookId, notebookName, word, pos, meaning, btn, bubble);
+                    handleAddToNotebook(notebookId, notebookName, word, pos2, gloss, btn, bubble);
                 });
             });
             
@@ -265,8 +261,8 @@
                         // 自动添加单词
                         const addResult = vocabData.addWord(newNotebookId, {
                             word: word,
-                            pos: pos,
-                            meaning: meaning,
+                            pos: pos2,
+                            meaning: gloss,
                             context: '',
                             timestamp: Date.now()
                         });

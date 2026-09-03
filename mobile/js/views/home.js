@@ -462,7 +462,7 @@
     return `<div style="margin:6px 0 2px;padding:8px 10px;border:1px solid var(--study-border);border-radius:10px;background:var(--study-surface,transparent);display:flex;flex-direction:column;gap:4px">${row('词根', root)}${row('搭配', coll)}${row('同义', syn)}${row('反义', ant)}</div>`;
   }
 
-  function openWordPopover(word, sp, pos, meaning, phon, ex, exCn) {
+  function openWordPopover(word, sp, pos, meaning, phon) {
     closeWordSheet();
     const word0 = (word || '').trim();
     if (!word0) return;
@@ -492,8 +492,6 @@
           ${pos ? `<span class="esc-word-pos">${esc(pos)}</span>` : ''}
         </div>
         ${meaning ? `<p class="esc-word-gloss">${esc(meaning)}</p>` : ''}
-        ${ex ? `<p class="esc-word-ex">${esc(ex)}</p>` : ''}
-        ${exCn ? `<p class="esc-word-excn">${esc(exCn)}</p>` : ''}
         ${insightHTML}
         <div class="esc-wordpop-actions">
           <button class="esc-btn esc-btn-ghost" data-act="speak">${icon('volume-2')}<span>发音</span></button>
@@ -906,7 +904,7 @@
         const ph = (d && d.phonetic) || (localHit && localHit.ph) || '';
         const gloss = (d && d.meaning) || meaning || (localHit && localHit.zh) || '';
         const pos2 = (d && d.pos) || pos || '';
-        openWordPopover(word, sp, pos2, gloss, ph, (d && d.example) || '', (d && d.exampleCn) || '');
+        openWordPopover(word, sp, pos2, gloss, ph);
       });
     });
     // 中文翻译：点击折叠头展开/收起（grid 行高过渡动效）
