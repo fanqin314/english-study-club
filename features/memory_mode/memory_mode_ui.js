@@ -201,6 +201,15 @@
             dueHint.textContent = '今日待复习 ' + dueCount + ' 词';
             wordContent.appendChild(dueHint);
 
+            // 内置词库入口：一键导入分级词库到生词本
+            const vocabLibBtn = document.createElement('button');
+            vocabLibBtn.type = 'button';
+            vocabLibBtn.className = 'section-btn vocab-library-btn';
+            vocabLibBtn.style.margin = '0 0 10px 2px';
+            vocabLibBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>内置词库';
+            vocabLibBtn.onclick = () => { showVocabLibraryModal(memoryModeDiv); };
+            wordContent.appendChild(vocabLibBtn);
+
             const modeTitle = document.createElement('h4');
             modeTitle.innerText = '选择记忆模式';
             wordContent.appendChild(modeTitle);
@@ -846,6 +855,214 @@
         function showPlanDetailInterface(container) {
             const PlanDetailUI = ModuleRegistry.get('PlanDetailUI');
             if (PlanDetailUI) { PlanDetailUI.show(container); }
+        }
+
+        // ========== 内置分级词库弹层 ==========
+        function showVocabLibraryModal(memoryModeDiv) {
+            const library = window.VocabLibrary;
+            if (!library) { _showToast('词库模块未加载'); return; }
+
+            let currentLevelId = null;
+            let loading = false;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'vocab-library-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            const panel = document.createElement('div');
+            panel.className = 'vocab-library-panel';
+            panel.style.cssText = 'width:520px;max-width:94vw;max-height:88vh;overflow:auto;background:hsl(var(--study-card) / var(--study-card-alpha,1));background:var(--study-card,#fff);border-radius:14px;padding:20px 22px;font-family:var(--study-font-sans,sans-serif);color:var(--study-text,#1f2937);box-shadow:0 18px 50px rgba(0,0,0,.25);line-height:1.5;';
+
+            // 头部
+            const head = document.createElement('div');
+            head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
+            const title = document.createElement('h3');
+            title.style.cssText = 'font-size:17px;font-weight:600;margin:0;color:var(--study-text,#1f2937);';
+            title.textContent = '内置分级词库';
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.style.cssText = 'cursor:pointer;border:none;background:transparent;color:var(--study-text,#1f2937);padding:4px;display:flex;';
+            closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            head.appendChild(title);
+            head.appendChild(closeBtn);
+            panel.appendChild(head);
+
+            const sub = document.createElement('div');
+            sub.style.cssText = 'font-size:13px;color:var(--study-muted,#6b7280);margin-bottom:12px;';
+            sub.textContent = '按 CEFR / 考试档位选择词表，一键导入到指定生词本，配合间隔重复与记忆模式系统学习';
+            panel.appendChild(sub);
+
+            // 状态容器
+            const status = document.createElement('div');
+            status.style.cssText = 'font-size:14px;padding:18px 4px;color:var(--study-muted,#6b7280);';
+            panel.appendChild(status);
+
+            // 档位列表
+            const list = document.createElement('div');
+            list.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+            panel.appendChild(list);
+
+            // 导入区
+            const importBar = document.createElement('div');
+            importBar.style.cssText = 'display:none;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--study-border,#e5e7eb);flex-wrap:wrap;';
+            const importLabel = document.createElement('span');
+            importLabel.style.cssText = 'font-size:13px;color:var(--study-muted,#6b7280);';
+            importLabel.textContent = '导入到：';
+            const nbSelect = document.createElement('select');
+            nbSelect.style.cssText = 'flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--study-border,#d1d5db);border-radius:8px;font-size:13px;background:var(--study-bg,#fff);color:var(--study-text,#1f2937);';
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.style.cssText = 'cursor:pointer;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:500;color:#fff;background:var(--study-accent,#2563eb);';
+            addBtn.textContent = '导入生词本';
+            importBar.appendChild(importLabel);
+            importBar.appendChild(nbSelect);
+            importBar.appendChild(addBtn);
+            panel.appendChild(importBar);
+
+            function closeAndRemove() {
+                document.removeEventListener('keydown', onKey);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }
+            function onKey(e) {
+                if (e.key === 'Escape') closeAndRemove();
+            }
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeAndRemove(); });
+            closeBtn.addEventListener('click', closeAndRemove);
+            document.addEventListener('keydown', onKey);
+
+            // 填充目标生词本下拉
+            function fillNotebookSelect() {
+                const notebooks = (window.VocabData && window.VocabData.getAllNotebooks) ? window.VocabData.getAllNotebooks() : {};
+                const ids = Object.keys(notebooks);
+                if (!ids.length) {
+                    nbSelect.innerHTML = '<option value="">无生词本，请先创建</option>';
+                    return;
+                }
+                const cur = window.VocabData.getCurrentNotebookId ? window.VocabData.getCurrentNotebookId() : null;
+                const opts = ids.map(id => {
+                    const o = document.createElement('option');
+                    o.value = id;
+                    o.textContent = notebooks[id].name || id;
+                    if (id === cur) o.selected = true;
+                    return o;
+                });
+                nbSelect.innerHTML = '';
+                opts.forEach(o => nbSelect.appendChild(o));
+            }
+
+            function selectLevel(levelId) {
+                currentLevelId = levelId;
+                list.querySelectorAll('.vl-level').forEach(el => {
+                    const on = el.dataset.levelId === levelId;
+                    el.style.borderColor = on ? 'var(--study-accent,#2563eb)' : 'var(--study-border,#e5e7eb)';
+                    el.style.background = on ? 'var(--study-accent,#2563eb)18' : '';
+                });
+                importBar.style.display = 'flex';
+            }
+
+            addBtn.addEventListener('click', () => {
+                if (!currentLevelId) { _showToast('请先选择一个词表档位'); return; }
+                const notebookId = nbSelect.value;
+                if (!notebookId) { _showToast('请先选择目标生词本'); return; }
+                if (loading) return;
+                loading = true;
+                const prev = addBtn.textContent;
+                addBtn.textContent = '导入中…';
+                const r = library.importToNotebook(currentLevelId, (wd) => {
+                    return window.VocabData.addWord(notebookId, wd);
+                });
+                loading = false;
+                addBtn.textContent = prev;
+                _showToast(`导入完成：新增 ${r.added} 词，跳过 ${r.skipped} 词`);
+                // 刷新今日待复习提示
+                if (memoryModeDiv) {
+                    const hint = memoryModeDiv.querySelector('.mode-card-stat');
+                    if (hint && window.VocabData && window.VocabData.getDueCount) {
+                        hint.textContent = '今日待复习 ' + window.VocabData.getDueCount() + ' 词';
+                    }
+                }
+            });
+
+            // 加载词库
+            status.textContent = '正在加载词库…';
+            library.load().then(res => {
+                if (!res || !res.ok) {
+                    status.textContent = '词库加载失败，请稍后重试';
+                    return;
+                }
+                status.remove();
+                const levels = library.listLevels();
+                if (!levels.length) {
+                    status.textContent = '词库为空';
+                    return;
+                }
+                levels.forEach(lv => {
+                    const item = document.createElement('div');
+                    item.className = 'vl-level';
+                    item.dataset.levelId = lv.id;
+                    item.setAttribute('role', 'button');
+                    item.setAttribute('tabindex', '0');
+                    item.style.cssText = 'cursor:pointer;border:1px solid var(--study-border,#e5e7eb);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:border-color .15s,background .15s;';
+                    const left = document.createElement('div');
+                    left.style.cssText = 'flex:1;min-width:0;';
+                    const nameLine = document.createElement('div');
+                    nameLine.style.cssText = 'font-size:14px;font-weight:600;color:var(--study-text,#1f2937);';
+                    const badge = lv.cefr ? ' <span style="font-size:11px;font-weight:600;color:var(--study-accent,#2563eb);border:1px solid currentColor;border-radius:6px;padding:0 5px;margin-left:6px;vertical-align:1px;">' + lv.cefr + '</span>' : '';
+                    nameLine.innerHTML = lv.name + badge;
+                    const descP = document.createElement('div');
+                    descP.style.cssText = 'font-size:12px;color:var(--study-muted,#6b7280);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'+ 'margin-top:2px;';
+                    descP.textContent = lv.description + (lv.count ? ' · ' + lv.count + ' 词' : '');
+                    left.appendChild(nameLine);
+                    left.appendChild(descP);
+                    const chevron = document.createElement('span');
+                    chevron.style.cssText = 'color:var(--study-muted,#9ca3af);flex-shrink:0;';
+                    chevron.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>';
+                    item.appendChild(left);
+                    item.appendChild(chevron);
+
+                    // 预览面板
+                    const preview = document.createElement('div');
+                    preview.style.cssText = 'display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--study-border,#e5e7eb);grid-column:1/-1;';
+                    const wl = library.getLevel(lv.id);
+                    const words = (wl && wl.words) ? wl.words.slice(0, 24) : [];
+                    const ws = document.createElement('div');
+                    ws.style.cssText = 'max-height:180px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;';
+                    words.forEach(wd => {
+                        const it = document.createElement('div');
+                        it.style.cssText = 'font-size:12px;color:var(--study-text,#374151);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                        const m = (wd.meaning || '').length > 16 ? (wd.meaning.slice(0, 16) + '…') : (wd.meaning || '');
+                        it.textContent = wd.word + (wd.pos ? ' ' + wd.pos : '') + ' ' + m;
+                        ws.appendChild(it);
+                    });
+                    const more = document.createElement('div');
+                    more.style.cssText = 'font-size:12px;color:var(--study-muted,#6b7280);margin-top:6px;';
+                    more.textContent = wl && wl.words && wl.words.length > 24 ? '仅展示前 24 词，导入将加入全部 ' + wl.words.length + ' 词' : (wl && wl.words ? '共 ' + wl.words.length + ' 词' : '');
+                    preview.appendChild(ws);
+                    preview.appendChild(more);
+                    // 放入 item
+                    item.appendChild(preview);
+
+                    const togglePreview = () => {
+                        const isOpen = preview.style.display === 'grid';
+                        if (isOpen) { preview.style.display = 'none'; }
+                        else { preview.style.display = 'grid'; }
+                        selectLevel(lv.id);
+                    };
+                    item.addEventListener('click', (e) => {
+                        if (preview.contains(e.target)) return;
+                        togglePreview();
+                    });
+                    item.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePreview(); }
+                    });
+
+                    list.appendChild(item);
+                });
+            }).catch(() => {
+                status.textContent = '词库加载失败，请稍后重试';
+            });
+
+            fillNotebookSelect();
         }
 
         function init(utils) {
