@@ -992,6 +992,10 @@
                 }
             });
 
+            // 先挂载弹层到文档，保证点击后立即可见（后续异步加载/填充即便异常也不至于无反馈）
+            overlay.appendChild(panel);
+            document.body.appendChild(overlay);
+
             // 加载词库
             status.textContent = '正在加载词库…';
             library.load().then(res => {
@@ -1072,9 +1076,6 @@
             });
 
             fillNotebookSelect();
-
-            // 挂载弹层到文档，使其可见
-            document.body.appendChild(overlay);
         }
 
         // ========== 词汇量自测弹层（四选一，阶梯式跳档） ==========
