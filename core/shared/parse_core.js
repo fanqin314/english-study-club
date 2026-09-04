@@ -283,22 +283,30 @@
   async function localPosLookup(sentence, dictLookup) {
     var hits = [];
     var missing = [];
-    var seen = {};
     if (!sentence || typeof sentence !== 'string' || typeof dictLookup !== 'function') {
       return { hits: hits, missing: missing };
     }
     var tokens = sentence.match(/[A-Za-z]+(?:['’-][A-Za-z]+)?/g) || [];
+    // 去重并保持首次出现顺序（词性列表顺序与原文一致）
+    var seen = {};
+    var uniq = [];
     for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
-      var key = token.toLowerCase();
-      if (seen[key]) continue; // 去重，保持首次出现顺序
-      seen[key] = true;
-      var dict = null;
-      try { dict = await dictLookup(token); } catch (e) { dict = null; }
+      var k = tokens[i].toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = true;
+      uniq.push(tokens[i]);
+    }
+    // 并行查询：DictLookup 内部已对同一分片做 in-flight 去重，多词并发触发分片加载可复用同一次请求，
+    // 冷启动时分片并发拉取，避免逐词串行 await 把各分片下载时间累加
+    var results = await Promise.all(uniq.map(function (token) {
+      return dictLookup(token).catch(function () { return null; });
+    }));
+    for (var j = 0; j < uniq.length; j++) {
+      var dict = results[j];
       if (dict && dict.pos) {
-        hits.push({ word: token, pos: dict.pos, meaning: dict.meaning || '' });
+        hits.push({ word: uniq[j], pos: dict.pos, meaning: dict.meaning || '' });
       } else {
-        missing.push(token);
+        missing.push(uniq[j]);
       }
     }
     return { hits: hits, missing: missing };

@@ -199,6 +199,12 @@
                     window.CacheManager.setOriginalText(text);
                 }
                 
+                // 词典后台预热：提前把本文涉及的分片拉入内存/IndexedDB，
+                // 让用户点击「词性分析」时零等待（冷启动 ~1s 转移到阅读期间，fire-and-forget）
+                if (window.DictLookup && typeof window.DictLookup.warmupForText === 'function') {
+                    window.DictLookup.warmupForText(text);
+                }
+                
                 // 深度解析模式：使用新的容器
                 let container = document.getElementById('deepParseSentencesContainer');
                 if (!container) {

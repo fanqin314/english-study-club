@@ -452,6 +452,38 @@
     await idbClear('meta');
   };
 
+  /**
+   * 后台预热：把文本中所有去重单词涉及的分片提前拉入内存/IndexedDB。
+   * 供文章解析时调用，把词性分析（requestPos）的冷启动成本转移到用户阅读期间。
+   * fire-and-forget：不阻塞主流程，任一分片失败静默忽略；分片已有则零开销。
+   * @param {string} text
+   */
+  DictLookup.warmupForText = function (text) {
+    var tokens = (typeof text === 'string' && text)
+      ? text.match(/[A-Za-z]+(?:['’‘][A-Za-z]+)?/g) || []
+      : [];
+    if (tokens.length === 0) return;
+    var seen = {}, uniq = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var k = tokens[i].toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = true;
+      uniq.push(k);
+    }
+    // 分批后台执行：每批 12 词（file:// 下约 1~3 个分片脚本注入），批间 50ms 防主线程阻塞；
+    // DictLookup.lookup 内部对同一分片做 in-flight 去重，同批并发只拉一次
+    var idx = 0;
+    var BATCH = 12;
+    (function next() {
+      var slice = uniq.slice(idx, idx + BATCH);
+      idx += BATCH;
+      if (slice.length === 0) return;
+      Promise.all(slice.map(function (w) {
+        return DictLookup.lookup(w).catch(function () { return null; });
+      })).then(function () { setTimeout(next, 50); });
+    })();
+  };
+
   if (!global.DictLookup) global.DictLookup = DictLookup;
   if (global.Mobile) global.Mobile.DictLookup = DictLookup;
 

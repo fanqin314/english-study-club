@@ -318,6 +318,22 @@
             return Shared.localPosLookup(sentence, lookupFn);
         }
 
+        // AI 补测失败词的短时记忆：无 AI/慢 AI 时，近期失败过的词不再重复触发网络等待，
+        // 同一批缺词在 TTL 内再次查询直接返回本地命中部分（incomplete），避免每次点击都卡在 AI 往返上
+        const AI_FAIL_TTL = 30000;  // 30s
+        let aiFailWords = {};       // word(lower) -> timestamp
+        function rememberAiFail(words) {
+            const now = Date.now();
+            (words || []).forEach(w => { if (w) aiFailWords[String(w).toLowerCase()] = now; });
+        }
+        function isRecentlyFailed(word) {
+            const key = String(word).toLowerCase();
+            const t = aiFailWords[key];
+            if (!t) return false;
+            if (Date.now() - t > AI_FAIL_TTL) { delete aiFailWords[key]; return false; }
+            return true;
+        }
+
         /**
          * 请求词性分析（词库优先 + AI 兜底难词）
          * @param {string} sentence - 待分析的句子
@@ -341,6 +357,12 @@
             // 所有词均命中本地词典，直接返回，无需调 AI（词性列表顺序与原文一致）
             if (missing.length === 0) {
                 return { pos: hits };
+            }
+
+            // AI 失败短时记忆：缺词在 TTL 内刚 AI 补测失败过 → 不再触发 AI 网络往返，
+            // 直接返回本地命中部分（incomplete），避免无 AI/慢 AI 时每次点击都卡在 AI 超时等待
+            if (missing.some(isRecentlyFailed)) {
+                return { pos: hits, incomplete: true };
             }
 
             // 使用缓存（缓存键基于整句，AI 结果与本地结果合并后整体缓存）
@@ -396,6 +418,9 @@
                     throw new Error('AI 未返回词性数据');
                 });
             } catch (error) {
+                // AI 补测失败：记入短时记忆，TTL 内同批缺词直接走本地命中部分，
+                // 不再重复触发网络等待（无 AI/慢 AI 场景的关键提速点）
+                rememberAiFail(missing);
                 ErrorHandler.handleApiError(error);
             }
             // 即便 AI 失败，本地已命中的词性也应返回；但存在本地未命中且 AI 未补测到的词，
