@@ -335,12 +335,8 @@
             restoreCachedContent() {
                 if (!window.CacheManager) return;
 
-                // 恢复原始文本
-                const originalText = window.CacheManager.getOriginalText();
-                const textarea = document.getElementById('articleInput');
-                if (textarea && originalText) {
-                    textarea.value = originalText;
-                }
+                // 不自动回填原文到输入框：避免刷新/重进界面时默认带出上次文章内容。
+                // 解析结果（句子卡片等）仍会恢复，满足"应用未退出时切换界面保留解析数据"。
 
                 // 恢复句子解析结果
                 const sentences = window.CacheManager.getSentences();

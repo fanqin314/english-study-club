@@ -272,6 +272,38 @@
     return out;
   }
 
+  /**
+   * 词库优先的词性预填（两端复用）：将句子切分为单词，逐词查询本地词典。
+   * @param {string} sentence
+   * @param {Function} dictLookup - 传入各端已绑定的词典查询函数（async: word -> {pos, meaning} | null）
+   * @returns {Promise<{hits: Array, missing: Array}>}
+   *   hits: 本地命中 [{word,pos,meaning}]（按原词序、去重）
+   *   missing: 未命中需交 AI 的单词（保留原词形）
+   */
+  async function localPosLookup(sentence, dictLookup) {
+    var hits = [];
+    var missing = [];
+    var seen = {};
+    if (!sentence || typeof sentence !== 'string' || typeof dictLookup !== 'function') {
+      return { hits: hits, missing: missing };
+    }
+    var tokens = sentence.match(/[A-Za-z]+(?:['’-][A-Za-z]+)?/g) || [];
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      var key = token.toLowerCase();
+      if (seen[key]) continue; // 去重，保持首次出现顺序
+      seen[key] = true;
+      var dict = null;
+      try { dict = await dictLookup(token); } catch (e) { dict = null; }
+      if (dict && dict.pos) {
+        hits.push({ word: token, pos: dict.pos, meaning: dict.meaning || '' });
+      } else {
+        missing.push(token);
+      }
+    }
+    return { hits: hits, missing: missing };
+  }
+
   /* ---------- 导出 ---------- */
   Shared.POS_LIST = POS_LIST;
   Shared.STRUCTURES = STRUCTURES;
@@ -288,4 +320,5 @@
   Shared.extractJSON = extractJSON;
   Shared.normalizeSentence = normalizeSentence;
   Shared.computeStats = computeStats;
+  Shared.localPosLookup = localPosLookup;
 })(typeof window !== 'undefined' ? window : globalThis);

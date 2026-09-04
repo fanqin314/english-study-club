@@ -192,18 +192,33 @@
   // 与桌面端 sentence_card_render 分批(每批3句)逐句调用的行为对齐。
 
   function doRequestPos(sentence) {
+    // 词库优先：先本地查词，仅未命中的难词才交给 AI 补测（省 token、更快）
     return cachedRequest(generateCacheKey('pos', sentence), async () => {
-      const { messages, maxTokens, temperature } = Shared.buildPosPrompt(sentence);
+      const DL = (global.Mobile && global.Mobile.DictLookup) || global.DictLookup;
+      const lookupFn = (DL && typeof DL.lookup === 'function') ? function (w) { return DL.lookup(w); } : null;
+      const { hits, missing } = await Shared.localPosLookup(sentence, lookupFn);
+      // 全部命中本地词典，直接返回，无需调 AI
+      if (missing.length === 0) return hits;
+
+      const missingMessages = [
+        {
+          role: 'system',
+          content:
+            '你是英语词典助手。请对下面给出的每个单词返回词性。返回JSON格式：\n{"pos": [{"word": "单词", "pos": "n/v/adj/adv/pron/prep/conj/interj/art/num", "meaning": "中文释义"}]}\n只返回JSON，不要其他文字，顺序与输入一致。'
+        },
+        { role: 'user', content: '为以下单词标注词性（按给定顺序，逐词给出）：' + missing.join(', ') }
+      ];
+
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const content = await chatOnce(messages, { maxTokens, temperature });
+          const content = await chatOnce(missingMessages, { maxTokens: 1000, temperature: 0 });
           const r = extractJSON(content);
-          if (r && Array.isArray(r.pos)) return r.pos;
+          if (r && Array.isArray(r.pos)) return hits.concat(r.pos);
           if (attempt === 0) { await delay(700); continue; }
-          return [];
-        } catch (e) { if (attempt === 0) { await delay(500); continue; } return []; }
+          return hits;
+        } catch (e) { if (attempt === 0) { await delay(500); continue; } return hits; }
       }
-      return [];
+      return hits;
     });
   }
 

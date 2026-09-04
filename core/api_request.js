@@ -304,7 +304,22 @@
         }
 
         /**
-         * 请求词性分析
+         * 词库优先的词性预填：将句子切分为单词，逐词查询本地词典。
+         * @param {string} sentence
+         * @returns {Promise<{hits: Array, missing: Array}>}
+         *   hits: 本地命中 [{word,pos,meaning}]
+         *   missing: 未命中需交 AI 的单词（保留原词形与出现顺序）
+         */
+        function localPosLookup(sentence) {
+            const DL = window.DictLookup;
+            const lookupFn = (DL && typeof DL.lookup === 'function')
+                ? function (w) { return DL.lookup(w); }
+                : null;
+            return Shared.localPosLookup(sentence, lookupFn);
+        }
+
+        /**
+         * 请求词性分析（词库优先 + AI 兜底难词）
          * @param {string} sentence - 待分析的句子
          * @returns {Promise<Object>} 词性分析结果
          */
@@ -321,32 +336,49 @@
                 return { pos: [] }; // 返回空对象而不是null
             }
 
-            // 使用缓存
+            // 词库优先：先本地查词，仅未命中的难词才交给 AI 补测（省 token、更快）
+            const { hits, missing } = await localPosLookup(sentence);
+            // 所有词均命中本地词典，直接返回，无需调 AI（词性列表顺序与原文一致）
+            if (missing.length === 0) {
+                return { pos: hits };
+            }
+
+            // 使用缓存（缓存键基于整句，AI 结果与本地结果合并后整体缓存）
             const cacheKey = generateCacheKey('pos', sentence);
-            return Performance.cacheAPIRequest(cacheKey, async () => {
-                const { messages, maxTokens, temperature } = Shared.buildPosPrompt(sentence);
+            const merged = await Performance.cacheAPIRequest(cacheKey, async () => {
+                // 只让 AI 补测未命中的难词，并强制按原词序返回
+                const missingPrompt = {
+                    messages: [
+                        {
+                            role: 'system',
+                            content:
+                                '你是英语词典助手。请对下面给出的每个单词返回词性。返回JSON格式：\n{"pos": [{"word": "单词", "pos": "n/v/adj/adv/pron/prep/conj/interj/art/num", "meaning": "中文释义"}]}\n只返回JSON，不要其他文字，顺序与输入一致。'
+                        },
+                        { role: 'user', content: '为以下单词标注词性（按给定顺序，逐词给出）：' + missing.join(', ') }
+                    ],
+                    maxTokens: 1000,
+                    temperature: 0
+                };
 
                 // 空结果时自动重试一次（模型可能临时返回空数组）
                 for (let attempt = 0; attempt < 2; attempt++) {
                     try {
-                        const content = await callAPI(messages, { maxTokens, temperature });
+                        const content = await callAPI(missingPrompt.messages, { maxTokens: missingPrompt.maxTokens, temperature: missingPrompt.temperature });
 
                         const result = extractAndParseJSON(content, 'pos');
-                        if (result && result.pos && result.pos.length > 0) {
-                            return result;
+                        const aiPos = (result && Array.isArray(result.pos)) ? result.pos : [];
+                        if (aiPos.length > 0) {
+                            // 合并：本地命中在前，AI 补测难度词在后
+                            return { pos: hits.concat(aiPos) };
                         }
-                        
+
                         if (attempt === 0) {
                             // 第一次返回空结果，短暂延迟后重试
                             if (window.DEBUG_MODE) console.log('[pos] 返回空结果，1秒后重试...');
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             continue;
                         }
-                        
-                        if (!result) {
-                            ErrorHandler.handleApiError(new Error('JSON解析失败'));
-                        }
-                        return { pos: [] };
+                        return { pos: hits };
                     } catch (error) {
                         if (attempt === 0 && error.message === 'MODEL_OVERLOAD') {
                             // 模型过载，延迟后重试
@@ -354,11 +386,13 @@
                             continue;
                         }
                         ErrorHandler.handleApiError(error);
-                        return { pos: [] };
+                        return { pos: hits };
                     }
                 }
-                return { pos: [] };
+                return { pos: hits };
             });
+            // 即便 AI 失败，本地已命中的词性也应返回；missRec 为空则返回空数组提示
+            return merged && Array.isArray(merged.pos) ? merged : { pos: hits };
         });
 
         /**

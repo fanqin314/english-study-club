@@ -37,6 +37,56 @@
   var _countTimer = null;
   var _db = null;           // IndexedDB 实例
 
+  // 内置高频功能词兜底：极小静态表，弥补核心词表（考试词库）漏收的功能词
+  //（如 the/an/is/are 等），确保 file:// 等 fetch 受限场景下查词稳定命中，不依赖分片。
+  // 仅收录高频虚词/功能词及常见缩写（pos 归其为类，如助动词缩写统一 v），格式同核心词表 {pos, meaning}。
+  var _STATIC_WORDS = {
+    the: { pos: 'art', meaning: '这，那（定冠词）' },
+    an: { pos: 'art', meaning: '一个（用于元音音素前）' },
+    be: { pos: 'v', meaning: '是；存在；成为' },
+    am: { pos: 'v', meaning: '是（be 的第一人称单数现在式）' },
+    is: { pos: 'v', meaning: '是（be 的第三人称单数现在式）' },
+    are: { pos: 'v', meaning: '是（be 的复数现在式）' },
+    was: { pos: 'v', meaning: '是（be 的第一/三人称单数过去式）' },
+    were: { pos: 'v', meaning: '是（be 的复数过去式）' },
+    been: { pos: 'v', meaning: 'be 的过去分词' },
+    has: { pos: 'v', meaning: '有（have 的第三人称单数）' },
+    had: { pos: 'v', meaning: '有（have/has 的过去式与过去分词）' },
+    does: { pos: 'v', meaning: '做（do 的第三人称单数）' },
+    doing: { pos: 'v', meaning: '做、干（do 的现在分词）' },
+    did: { pos: 'v', meaning: '做（do 的过去式）' },
+    not: { pos: 'adv', meaning: '不，没有' },
+
+    /* 常见缩写/缩约词（tokenize 会按整词匹配，静态收录以避免 file:// 分片缺失时空白） */
+    "don't": { pos: 'v', meaning: '不（do not 的缩写）' },
+    "doesn't": { pos: 'v', meaning: '不（does not 的缩写）' },
+    "didn't": { pos: 'v', meaning: '不（did not 的缩写）' },
+    "won't": { pos: 'v', meaning: '将不（will not 的缩写）' },
+    "can't": { pos: 'v', meaning: '不能（can not 的缩写）' },
+    "cannot": { pos: 'v', meaning: '不能' },
+    "isn't": { pos: 'v', meaning: '不是（is not 的缩写）' },
+    "aren't": { pos: 'v', meaning: '不是（are not 的缩写）' },
+    "wasn't": { pos: 'v', meaning: '不是（was not 的缩写）' },
+    "weren't": { pos: 'v', meaning: '不是（were not 的缩写）' },
+    "hasn't": { pos: 'v', meaning: '没有（has not 的缩写）' },
+    "haven't": { pos: 'v', meaning: '没有（have not 的缩写）' },
+    "hadn't": { pos: 'v', meaning: '没有（had not 的缩写）' },
+    "i'm": { pos: 'v', meaning: '我是（I am 的缩写）' },
+    "i've": { pos: 'v', meaning: '我已经（I have 的缩写）' },
+    "i'll": { pos: 'v', meaning: '我将要（I will 的缩写）' },
+    "you're": { pos: 'v', meaning: '你是（you are 的缩写）' },
+    "you've": { pos: 'v', meaning: '你已经（you have 的缩写）' },
+    "you'll": { pos: 'v', meaning: '你将（you will 的缩写）' },
+    "we're": { pos: 'v', meaning: '我们是（we are 的缩写）' },
+    "we'll": { pos: 'v', meaning: '我们将（we will 的缩写）' },
+    "they're": { pos: 'v', meaning: '他们是（they are 的缩写）' },
+    "they'll": { pos: 'v', meaning: '他们将（they will 的缩写）' },
+    "it's": { pos: 'v', meaning: '它是（it is 的缩写）' },
+    "that's": { pos: 'v', meaning: '那是（that is 的缩写）' },
+    "there's": { pos: 'v', meaning: '有（there is 的缩写）' },
+    "let's": { pos: 'v', meaning: '让我们（let us 的缩写）' }
+  };
+
   /* ---------- IndexedDB ---------- */
   function idbOpen() {
     return new Promise(function (resolve) {
@@ -221,6 +271,10 @@
       try { await DictLookup.init(); _coreReady = true; } catch (e) { /* 忽略，下次重试 */ }
     }
     var key = String(word).toLowerCase();
+    // 归一化撇号：弯引号 ’‘ 统一为直撇号 '，保证缩约词（don’t/don't/can’t）命中静态表或常规数据
+    if (key.indexOf('\u2019') >= 0 || key.indexOf('\u2018') >= 0) {
+      key = key.replace(/[\u2019\u2018]/g, "'");
+    }
     // 1) 核心词表（内存二分查找）
     if (VocabLibrary && typeof VocabLibrary.findWord === 'function') {
       var cw = VocabLibrary.findWord(key);
@@ -233,6 +287,13 @@
       var he = _hot.get(key);
       _hot.delete(key); _hot.set(key, he); // 触达末尾
       return he;
+    }
+    // 2.5) 内置高频功能词兜底：不依赖网络/IndexedDB，file:// 也稳定命中。
+    // 核心词表明明遗漏 the/an/is/are 等，此表保证此类词始终有词性与释义。
+    // 静态命中不 touch()/不升温：命中即 O(1) 常量，无需热缓存，也避免 _counts 无界累积。
+    var sw = _STATIC_WORDS[key];
+    if (sw && (sw.pos || sw.meaning)) {
+      return { word: key, pos: sw.pos || '', meaning: sw.meaning || '', source: 'static' };
     }
     // 3) 分片（需索引）
     var idx = await ensureIndex();
