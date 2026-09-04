@@ -38,18 +38,6 @@
             };
         }
 
-        // 节流函数
-        function throttle(func, limit = 300) {
-            let inThrottle;
-            return function(...args) {
-                if (!inThrottle) {
-                    func.apply(this, args);
-                    inThrottle = true;
-                    setTimeout(() => inThrottle = false, limit);
-                }
-            };
-        }
-
         // localStorage批量操作
         function batchLocalStorageOperations(operations) {
             const results = {};
@@ -221,92 +209,6 @@
             });
         }
 
-        // 虚拟滚动（用于长列表）
-        function createVirtualScroll(container, itemHeight, renderItem, totalItems) {
-            let scrollTop = 0;
-            let visibleStart = 0;
-            let visibleEnd = 0;
-            let lastRenderedStart = -1;
-            let lastRenderedEnd = -1;
-            
-            function updateVisibleRange() {
-                const containerHeight = container.clientHeight;
-                visibleStart = Math.floor(scrollTop / itemHeight);
-                visibleEnd = Math.min(
-                    visibleStart + Math.ceil(containerHeight / itemHeight) + 2,
-                    totalItems
-                );
-            }
-            
-            function render() {
-                // 只有当可见范围变化时才重新渲染
-                if (visibleStart === lastRenderedStart && visibleEnd === lastRenderedEnd) {
-                    return;
-                }
-                
-                const fragment = document.createDocumentFragment();
-                const totalHeight = totalItems * itemHeight;
-                
-                // 创建占位元素
-                const placeholder = document.createElement('div');
-                placeholder.style.height = `${totalHeight}px`;
-                placeholder.style.position = 'relative';
-                placeholder.style.width = '100%';
-                
-                // 渲染可见项目
-                for (let i = visibleStart; i < visibleEnd; i++) {
-                    const item = renderItem(i);
-                    // renderItem 在实例尚未赋值完成时可能返回 null，需保护
-                    if (!item) continue;
-                    item.style.position = 'absolute';
-                    item.style.top = `${i * itemHeight}px`;
-                    item.style.width = '100%';
-                    item.style.boxSizing = 'border-box';
-                    fragment.appendChild(item);
-                }
-                
-                // 清空容器并添加新内容
-                placeholder.appendChild(fragment);
-                container.innerHTML = '';
-                container.appendChild(placeholder);
-                
-                // 更新渲染范围
-                lastRenderedStart = visibleStart;
-                lastRenderedEnd = visibleEnd;
-            }
-            
-            // 使用节流函数减少滚动事件触发次数
-            container.addEventListener('scroll', throttle(() => {
-                scrollTop = container.scrollTop;
-                updateVisibleRange();
-                render();
-            }, 16));
-            
-            // 初始化渲染
-            updateVisibleRange();
-            render();
-            
-            return {
-                update: (newTotalItems) => {
-                    if (newTotalItems !== undefined) {
-                        totalItems = newTotalItems;
-                    }
-                    updateVisibleRange();
-                    render();
-                },
-                scrollTo: (index) => {
-                    container.scrollTop = index * itemHeight;
-                    // 强制重新渲染
-                    lastRenderedStart = -1;
-                    lastRenderedEnd = -1;
-                },
-                destroy: () => {
-                    // 清理事件监听器
-                    container.removeEventListener('scroll', arguments.callee);
-                }
-            };
-        }
-
         // 图片懒加载
         function setupLazyLoading() {
             const lazyImages = document.querySelectorAll('img[data-src]');
@@ -380,7 +282,6 @@
             createDocumentFragment,
             batchDOMUpdates,
             debounce,
-            throttle,
             batchLocalStorageOperations,
             parallelAPIRequests,
             cacheAPIRequest,
@@ -390,7 +291,6 @@
             addEventListener,
             removeEventListener,
             removeAllEventListeners,
-            createVirtualScroll,
             setupLazyLoading,
             trackAPIRequest,
             trackDOMUpdate,

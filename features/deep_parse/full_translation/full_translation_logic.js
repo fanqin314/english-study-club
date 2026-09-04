@@ -124,6 +124,25 @@
             if (translationArea) translationArea.style.display = 'none';
         }
 
+        // 从 AI 原始输出中提取翻译段：
+        // 模型在长文章翻译时常漏掉部分 [SENTENCE_END]（每段内换行分隔多句），
+        // 按换行进一步拆分可恢复逐句翻译，再交给 alignTranslationsToSentences 对齐。
+        function extractTranslations(rawTranslation) {
+            const DELIMITER = '[SENTENCE_END]';
+            let parts = String(rawTranslation || '').split(DELIMITER)
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+            const finer = [];
+            parts.forEach(p => {
+                p.split(/\n+/).forEach(seg => {
+                    const t = seg.trim();
+                    if (t) finer.push(t);
+                });
+            });
+            if (finer.length > parts.length) parts = finer;
+            return parts;
+        }
+
         const fetchFullTranslation = ErrorHandler.wrapAsyncFunction(async function(text) {
             if (!text || text.trim() === '') {
                 ErrorHandler.handleValidationError('请输入文章内容');
@@ -143,10 +162,8 @@
                     let displayTranslation = rawTranslation;
                     let sentenceTranslations = [];
 
-                    if (rawTranslation.includes(DELIMITER)) {
-                        sentenceTranslations = rawTranslation.split(DELIMITER)
-                            .map(s => s.trim())
-                            .filter(s => s.length > 0);
+                    if (rawTranslation.includes(DELIMITER) || rawTranslation.includes('\n')) {
+                        sentenceTranslations = extractTranslations(rawTranslation);
                         // 对齐到原文句子数：AI 常把分号/冒号子句当句子边界多拆，
                         // 按原文子句数贪婪归并，保证编号列表与逐句翻译和句子卡片对齐
                         const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];

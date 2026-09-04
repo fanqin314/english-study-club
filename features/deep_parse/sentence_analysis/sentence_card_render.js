@@ -4,22 +4,6 @@
         let sentences = [];
         let sentenceData = {};
         let sentencesContainer = null;
-        let virtualScrollInstance = null;
-        let isDestroyed = false;
-        
-        /**
-         * 清理虚拟滚动实例，防止内存泄漏
-         */
-        function cleanupVirtualScroll() {
-            if (virtualScrollInstance) {
-                // 调用销毁方法
-                if (typeof virtualScrollInstance.destroy === 'function') {
-                    virtualScrollInstance.destroy();
-                }
-                // 移除引用
-                virtualScrollInstance = null;
-            }
-        }
 
         function setSentencesData(sentencesArray, dataObject) {
             sentences = sentencesArray;
@@ -105,21 +89,19 @@
                 return;
             }
             
-            // 渲染前清理之前的虚拟滚动实例，防止内存泄漏
-            cleanupVirtualScroll();
-            
             Performance.trackDOMUpdate();
             
-            // 对于大量句子，使用虚拟滚动
-            if (sentences.length > 20) {
-                renderWithVirtualScroll();
-            } else {
-                // 对于少量句子，使用常规渲染
-                renderWithFragment();
-            }
+            // 统一使用普通文档流渲染：
+            // 卡片高度随内容（长句换行/展开面板）自然变化，互不遮挡；
+            // 若改用固定高度虚拟滚动，卡片会压到相邻卡片之上（见历史 bug）。
+            renderWithFragment();
         }
 
         function renderWithFragment() {
+            // 重置容器为普通文档流，避免残留固定高度/内部滚动（旧版虚拟滚动遗留）
+            sentencesContainer.style.height = '';
+            sentencesContainer.style.overflow = '';
+            sentencesContainer.style.position = '';
             // 使用文档片段批量更新DOM
             const fragment = document.createDocumentFragment();
             sentences.forEach((sentence, idx) => {
@@ -132,48 +114,32 @@
             console.log('[render] 常规渲染完成，共', sentences.length, '句');
         }
 
-        function renderWithVirtualScroll() {
-            // 清理之前的虚拟滚动实例（已在 renderAll 中调用，此处为保险起见）
-            cleanupVirtualScroll();
-            
-            // 重置容器样式
-            sentencesContainer.style.height = '600px';
-            sentencesContainer.style.overflow = 'auto';
-            sentencesContainer.style.position = 'relative';
-            
-            // 卡片高度（估计值）
-            const cardHeight = 180;
-            
-            // 创建虚拟滚动
-            virtualScrollInstance = Performance.createVirtualScroll(
-                sentencesContainer,
-                cardHeight,
-                (index) => {
-                    // 仅当容器已被销毁时跳过；注意：实例赋值完成前本回调也会被同步调用，
-                    // 因此不能以 !virtualScrollInstance 作为判空条件，否则会返回 null 导致崩溃。
-                    if (isDestroyed) {
-                        return null;
-                    }
-                    return createSentenceCard(sentences[index], index);
-                },
-                sentences.length
-            );
-            
-            console.log('[render] 虚拟滚动渲染完成，共', sentences.length, '句');
+        // 将句子切分为“词/标点/空白”片段：
+        // 空白原样保留；非空白片段再按连字符/破折号（- – —）切分（与词典分词规则一致），
+        // 避免 "basis—fermenting" 之类被合成 data-word="basisfermenting" 导致查词失败。
+        function tokenizeSentence(sentence) {
+            const tokens = [];
+            sentence.split(/(\s+)/).forEach(part => {
+                if (part.trim() === '') { tokens.push(part); return; }
+                part.split(/([—–-])/).forEach(sub => { if (sub !== '') tokens.push(sub); });
+            });
+            return tokens;
         }
 
         function createSentenceCard(sentence, idx) {
             const card = document.createElement('article');
             card.className = 'sentence-card';
             card.dataset.index = idx;
-            
+
             const originalDiv = document.createElement('div');
             originalDiv.className = 'sentence-text';
             originalDiv.id = `sentence-${idx}`;
-            const words = sentence.split(/(\s+)/).map(part => part.trim() ? part : ' ');
-            originalDiv.innerHTML = words.map(part => {
+            const tokens = tokenizeSentence(sentence);
+            originalDiv.innerHTML = tokens.map(part => {
                 if (part.trim() === '') return ' ';
                 const wordClean = part.replace(/[^\w']/g, '');
+                // 纯标点（破折号/连字符等）作为普通文本，不包裹成可点击的词
+                if (!wordClean) return Security.escapeHtml(part);
                 return `<span class="word-span" data-word="${Security.escapeHtml(wordClean)}">${Security.escapeHtml(part)}</span>`;
             }).join('');
             card.appendChild(originalDiv);
