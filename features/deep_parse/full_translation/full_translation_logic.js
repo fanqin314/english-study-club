@@ -64,7 +64,8 @@
 
         // 将 AI 返回的翻译段对齐到原文句子数：
         // 模型常把分号/冒号子句也当作句子边界多拆（段数 > 句子数），导致逐句翻译错位。
-        // 按每个原文句子的分号/冒号子句数贪婪归并，多拆段并入对应句子，保证与句子卡片逐一对齐。
+        // 优先按原文子句数贪婪归并（分号/冒号场景）；若 AI 任意多拆仍有多余段，
+        // 改为轮转分摊到各句，避免全部塞进最后一条造成异常臃肿（长文章尤为明显）。
         function alignTranslationsToSentences(translations, sentences) {
             const m = sentences.length;
             if (m === 0 || translations.length === m) return translations;
@@ -80,9 +81,13 @@
                 merged.push(translations.slice(p, p + take).join('；'));
                 p += take;
             }
-            // 模型仍多拆的零头并入最后一句
+            // 仍有零头（AI 任意多拆、非分号/冒号场景）：轮转分摊到各条，
+            // 不让最后一条翻译异常臃肿，各句长度大致均衡
             if (p < translations.length && merged.length > 0) {
-                merged[merged.length - 1] += '；' + translations.slice(p).join('；');
+                const leftover = translations.slice(p);
+                for (let j = 0; j < leftover.length; j++) {
+                    merged[j % merged.length] += '；' + leftover[j];
+                }
             }
             return merged;
         }

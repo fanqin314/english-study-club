@@ -15,21 +15,34 @@
   var ABBREVIATIONS =
     'Mr Mrs Ms Dr Prof St Jr Sr etc vs i.e e.g Inc Corp Ltd Co Ave Blvd Rd St Sgt Capt Lt Col Gen Sen Rep Rev Hon Pres Gov Amb Univ Dept'.split(' ');
 
-  var ABBR_PLACEHOLDER = '\u2063'; // 不可见分隔符占位
+  var ABBR_PLACEHOLDER = '\u2063'; // 不可见分隔符占位（缩写点号）
+  var DECIMAL_PLACEHOLDER = '\u2064'; // 不可见分隔符占位（小数点）
 
-  // 将缩写中的点暂时替换为占位符
+  // 将缩写中的点全部替换为占位符
+  // 注意：必须用 replace(/\./g) 替换所有点，否则 e.g. / i.e. 等多点缩写的
+  // 末尾点仍会被当成句号，导致句子被拦腰切断（如 ", every year or so,..." 残缺句）。
   function protectAbbreviations(text) {
     var out = text || '';
     for (var i = 0; i < ABBREVIATIONS.length; i++) {
       var re = new RegExp('\\b' + ABBREVIATIONS[i] + '\\.', 'gi');
-      out = out.replace(re, function (m) { return m.replace('.', ABBR_PLACEHOLDER); });
+      out = out.replace(re, function (m) { return m.replace(/\./g, ABBR_PLACEHOLDER); });
     }
     return out;
+  }
+
+  // 保护小数中的点号（3.5 / 2.0 / 99.9），避免数字被误判为句尾
+  function protectDecimals(text) {
+    return (text || '').replace(/(\d)\.(\d)/g, '$1' + DECIMAL_PLACEHOLDER + '$2');
   }
 
   // 恢复被保护的缩写
   function restoreAbbreviations(text) {
     return (text || '').split(ABBR_PLACEHOLDER).join('.');
+  }
+
+  // 恢复被保护的小数点
+  function restoreDecimals(text) {
+    return (text || '').split(DECIMAL_PLACEHOLDER).join('.');
   }
 
   /**
@@ -39,12 +52,12 @@
    */
   function splitSentences(text) {
     if (!text || typeof text !== 'string') return [];
-    var processed = protectAbbreviations(text);
+    var processed = protectDecimals(protectAbbreviations(text));
     // 按句号/问号/感叹号分割，保留结束符；ok以中文/英文标点结尾的块才进
     var raw = processed.match(/[^.!?。！？]+[.!?。！？]+/g) || [processed];
     var cleaned = [];
     for (var i = 0; i < raw.length; i++) {
-      var s = restoreAbbreviations(raw[i]).trim();
+      var s = restoreDecimals(restoreAbbreviations(raw[i])).trim();
       if (s.length > 0) cleaned.push(s);
     }
     return cleaned;
