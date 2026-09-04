@@ -604,6 +604,30 @@
         });
 
         /**
+         * 全文翻译输出归一化：
+         * 新契约要求模型返回 JSON 数组（逐句翻译按原文顺序排列，数组长度等于句子数）。
+         * 这里解析数组并按行拼接为纯文本，保证所有调用方拿到干净的逐行译文
+         * （避免把 JSON 原样展示给用户）；兼容模型用 ```json 代码块包裹的情况；
+         * 非 JSON 输出则原样返回，由上层继续按分隔符提取。
+         */
+        function normalizeFullTranslation(content) {
+            const raw = String(content || '').trim();
+            if (!raw) return raw;
+            const jsonText = raw
+                .replace(/^```(?:json)?\s*/i, '')
+                .replace(/```\s*$/, '')
+                .trim();
+            try {
+                const parsed = JSON.parse(jsonText);
+                if (Array.isArray(parsed)) {
+                    const lines = parsed.map(s => String(s).trim()).filter(s => s.length > 0);
+                    if (lines.length > 0) return lines.join('\n');
+                }
+            } catch (e) { /* 非 JSON，原样返回 */ }
+            return raw;
+        }
+
+        /**
          * 请求全文翻译
          * @param {string} text - 待翻译的文本
          * @returns {Promise<string>} 翻译结果
@@ -622,13 +646,14 @@
             }
 
             // 使用缓存
-            const cacheKey = generateCacheKey('full_translation', text);
+            // v2：全文翻译输出改为 JSON 数组契约，缓存键升级以绕开旧版按段落连写的缓存
+            const cacheKey = generateCacheKey('full_translation_v2', text);
             return Performance.cacheAPIRequest(cacheKey, async () => {
                 const messages = Shared.buildFullTranslationMessages(text);
 
                 try {
                     const content = await callAPI(messages, { maxTokens: 8000 });
-                    return content;
+                    return normalizeFullTranslation(content);
                 } catch (error) {
                     ErrorHandler.handleApiError(error);
                     throw error; // 重新抛出，让调用方获知真实错误原因

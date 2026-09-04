@@ -168,14 +168,19 @@
                     let displayTranslation = rawTranslation;
                     let sentenceTranslations = [];
 
+                    // requestFullTranslation 已将 JSON 数组契约归一为“每条翻译一行”的纯文本；
+                    // 这里按分隔符提取逐句翻译（兼容换行/中文句末标点/分号分隔）
                     if (rawTranslation.includes(DELIMITER) || rawTranslation.includes('\n') || /[；;。！？]/.test(rawTranslation)) {
                         sentenceTranslations = extractTranslations(rawTranslation);
-                        // 对齐到原文句子数：AI 常把分号/冒号子句当句子边界多拆，
-                        // 按原文子句数贪婪归并，保证编号列表与逐句翻译和句子卡片对齐
-                        const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];
-                        if (alignedSentences.length > 0) {
-                            sentenceTranslations = alignTranslationsToSentences(sentenceTranslations, alignedSentences);
-                        }
+                    }
+
+                    // 统一对齐到原文句子数：AI 常把分号/冒号子句当句子边界多拆，
+                    // 按原文子句数贪婪归并，保证编号列表与逐句翻译和句子卡片对齐
+                    const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];
+                    if (alignedSentences.length > 0 && sentenceTranslations.length > 0) {
+                        sentenceTranslations = alignTranslationsToSentences(sentenceTranslations, alignedSentences);
+                    }
+                    if (sentenceTranslations.length > 0) {
                         displayTranslation = sentenceTranslations.join('\n');
                     }
 
