@@ -147,7 +147,11 @@
                         
                         // 根据状态码提供更具体的错误信息
                         if (response.status === 401) {
-                            throw new Error('API Key 无效');
+                            // 自定义模式下 401 = 用户保存的 Key 无效/过期（最常见的「本地连不上 AI」根因），
+                            // 给出明确操作指引；代理模式 401 则指向代理提供方
+                            throw new Error(useProxy
+                                ? '代理服务鉴权失败（401），请检查代理配置或联系代理提供方'
+                                : 'API Key 无效或已过期（401），请到「设置」更新 Key，或切换回「默认魔搭AI」免费模式');
                         } else if (response.status === 403) {
                             throw new Error('API 权限不足');
                         } else if (response.status === 429) {

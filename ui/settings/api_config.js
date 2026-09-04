@@ -155,7 +155,14 @@
                     }
                 } else {
                     const err = await res.text();
-                    ErrorHandler.handleApiError({ status: res.status, message: err });
+                    // 401 = Key 无效/过期，给出可操作指引（与 api_request.js 保持一致）
+                    if (res.status === 401) {
+                        ErrorHandler.handleApiError(new Error(isDefaultAI
+                            ? '默认魔搭AI 鉴权失败（401），可能是内置免费额度异常，请稍后再试或切换自定义 API'
+                            : 'API Key 无效或已过期（401），请更新 Key，或切换回「默认魔搭AI」免费模式'));
+                    } else {
+                        ErrorHandler.handleApiError({ status: res.status, message: err });
+                    }
                 }
             } catch(e) {
                 clearTimeout(timeoutId);
