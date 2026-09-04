@@ -26,8 +26,32 @@
         // 搜索图标
         const SEARCH_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
         
+        // 加载旋转图标（解析中显示，配合 #parseBtn.is-loading 的 spin 动画）
+        const LOADING_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"></circle><path d="M21 12a9 9 0 0 0-9-9"></path></svg>';
+        
         // 向右箭头图标（收起时显示）
         const BACK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        
+        // 设置解析按钮的加载状态：旋转图标 + 禁用按钮，兼顾防重入与视觉反馈
+        function setParseButtonLoading(isLoading) {
+            const parseBtn = document.getElementById('parseBtn');
+            if (!parseBtn) return;
+            
+            const iconSpan = parseBtn.querySelector('span span:first-child');
+            if (iconSpan) {
+                iconSpan.innerHTML = isLoading ? LOADING_ICON : SEARCH_ICON;
+            }
+            
+            const textSpan = parseBtn.querySelector('span span:last-child');
+            if (textSpan) {
+                textSpan.textContent = isLoading ? '解析中' : '解析';
+            }
+            
+            parseBtn.classList.toggle('is-loading', isLoading);
+            parseBtn.disabled = isLoading;
+            parseBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+            parseBtn.title = isLoading ? '正在解析...' : '解析';
+        }
         
         // 更新解析按钮：始终保持“解析”状态（不再做折叠切换）
         function updateParseButtonIcon() {
@@ -183,64 +207,72 @@
                     throw new Error('渲染模块未加载，请刷新页面重试');
                 }
                 
-                const sentences = window.SentenceSplitter.split(text);
-                console.log('[deepParse] 分句结果:', sentences.length);
+                // 解析中：解析按钮进入加载状态（旋转图标 + 禁用防重入）
+                setParseButtonLoading(true);
                 
-                // 保存句子数据和原始文本到缓存管理器
-                if (window.CacheManager) {
-                    // 换文（新文章）时清除旧文章的逐句分析缓存：sentenceData 按句索引进位缓存，
-                    // 换文后同索引句子会命中上一篇文章的分析数据，导致词性/语法等面板显示残留内容。
-                    // 仅文本变化时清除，保证同一文章的解析结果在界面切换间得以保留。
-                    if (typeof window.CacheManager.getOriginalText === 'function'
-                        && window.CacheManager.getOriginalText() !== text) {
-                        window.CacheManager.clearAllSentenceCache();
+                try {
+                    const sentences = window.SentenceSplitter.split(text);
+                    console.log('[deepParse] 分句结果:', sentences.length);
+                    
+                    // 保存句子数据和原始文本到缓存管理器
+                    if (window.CacheManager) {
+                        // 换文（新文章）时清除旧文章的逐句分析缓存：sentenceData 按句索引进位缓存，
+                        // 换文后同索引句子会命中上一篇文章的分析数据，导致词性/语法等面板显示残留内容。
+                        // 仅文本变化时清除，保证同一文章的解析结果在界面切换间得以保留。
+                        if (typeof window.CacheManager.getOriginalText === 'function'
+                            && window.CacheManager.getOriginalText() !== text) {
+                            window.CacheManager.clearAllSentenceCache();
+                        }
+                        window.CacheManager.setSentences(sentences);
+                        window.CacheManager.setOriginalText(text);
                     }
-                    window.CacheManager.setSentences(sentences);
-                    window.CacheManager.setOriginalText(text);
+                    
+                    // 词典后台预热：提前把本文涉及的分片拉入内存/IndexedDB，
+                    // 让用户点击「词性分析」时零等待（冷启动 ~1s 转移到阅读期间，fire-and-forget）
+                    if (window.DictLookup && typeof window.DictLookup.warmupForText === 'function') {
+                        window.DictLookup.warmupForText(text);
+                    }
+                    
+                    // 深度解析模式：使用新的容器
+                    let container = document.getElementById('deepParseSentencesContainer');
+                    if (!container) {
+                        // 降级处理
+                        container = document.getElementById('sentencesContainer');
+                    }
+                    if (container) {
+                        window.SentenceRenderer.setContainer(container);
+                        container.style.display = '';
+                    } else {
+                        throw new Error('sentencesContainer 元素未找到');
+                    }
+                    window.SentenceRenderer.setSentencesData(sentences, {});
+                    window.SentenceRenderer.renderAll();
+    
+                    // 文章难度徽标（B2）：在句子列表上方展示难度等级 + Flesch 分数 + CEFR
+                    renderReadabilityBadge(text, container);
+    
+                    // 显示右栏（句子卡片）
+                    const twoColumnContainer = document.querySelector('.two-column-container');
+                    if (twoColumnContainer) {
+                        twoColumnContainer.classList.add('show-right', 'has-sentences');
+                        const rightColumn = twoColumnContainer.querySelector('.right-column');
+                        if (rightColumn) rightColumn.classList.add('visible');
+                    }
+    
+                    // 调用全文翻译
+                    if (window.FullTranslation) {
+                        await window.FullTranslation.fetch(text);
+                    }
+                    
+                    // 更新按钮图标为向左箭头
+                    updateParseButtonIcon(true);
+                    
+                    // 绑定折叠按钮事件
+                    bindCollapseButton();
+                } finally {
+                    // 无论成功或失败，都恢复解析按钮状态
+                    setParseButtonLoading(false);
                 }
-                
-                // 词典后台预热：提前把本文涉及的分片拉入内存/IndexedDB，
-                // 让用户点击「词性分析」时零等待（冷启动 ~1s 转移到阅读期间，fire-and-forget）
-                if (window.DictLookup && typeof window.DictLookup.warmupForText === 'function') {
-                    window.DictLookup.warmupForText(text);
-                }
-                
-                // 深度解析模式：使用新的容器
-                let container = document.getElementById('deepParseSentencesContainer');
-                if (!container) {
-                    // 降级处理
-                    container = document.getElementById('sentencesContainer');
-                }
-                if (container) {
-                    window.SentenceRenderer.setContainer(container);
-                    container.style.display = '';
-                } else {
-                    throw new Error('sentencesContainer 元素未找到');
-                }
-                window.SentenceRenderer.setSentencesData(sentences, {});
-                window.SentenceRenderer.renderAll();
-
-                // 文章难度徽标（B2）：在句子列表上方展示难度等级 + Flesch 分数 + CEFR
-                renderReadabilityBadge(text, container);
-
-                // 显示右栏（句子卡片）
-                const twoColumnContainer = document.querySelector('.two-column-container');
-                if (twoColumnContainer) {
-                    twoColumnContainer.classList.add('show-right', 'has-sentences');
-                    const rightColumn = twoColumnContainer.querySelector('.right-column');
-                    if (rightColumn) rightColumn.classList.add('visible');
-                }
-
-                // 调用全文翻译
-                if (window.FullTranslation) {
-                    await window.FullTranslation.fetch(text);
-                }
-                
-                // 更新按钮图标为向左箭头
-                updateParseButtonIcon(true);
-                
-                // 绑定折叠按钮事件
-                bindCollapseButton();
                 
                 // 不再触发 analysisCompleted 事件，避免自动保存历史记录
                 // EventBus.emit('analysisCompleted', { text });

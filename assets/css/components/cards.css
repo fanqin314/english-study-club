@@ -388,6 +388,33 @@
     margin-bottom: 6px;
 }
 
+/* ========== 加载中状态（详情面板/跳转翻译共用） ========== */
+.loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 2px;
+    font-family: var(--study-font-sans, var(--font-body));
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.loading::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--study-primary) 18%, transparent);
+    border-top-color: var(--study-primary);
+    animation: study-spin 0.8s linear infinite;
+}
+
+@keyframes study-spin {
+    to { transform: rotate(360deg); }
+}
+
 /* ========== 暗色模式 ========== */
 
 [data-theme="dark"] .sentence-card {

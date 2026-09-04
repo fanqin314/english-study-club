@@ -62,6 +62,31 @@
             return !!(el && String(el.value || '').trim());
         }
 
+        // 将 AI 返回的翻译段对齐到原文句子数：
+        // 模型常把分号/冒号子句也当作句子边界多拆（段数 > 句子数），导致逐句翻译错位。
+        // 按每个原文句子的分号/冒号子句数贪婪归并，多拆段并入对应句子，保证与句子卡片逐一对齐。
+        function alignTranslationsToSentences(translations, sentences) {
+            const m = sentences.length;
+            if (m === 0 || translations.length === m) return translations;
+            if (translations.length < m) return translations; // 段数不足无法补全，保留原样由上层告警
+            const clauseCounts = sentences.map(s =>
+                Math.max(1, (String(s).match(/;/g) || []).length + (String(s).match(/:/g) || []).length + 1));
+            const merged = [];
+            let p = 0;
+            for (let i = 0; i < m && p < translations.length; i++) {
+                // 为剩余句子至少各留一段，避免吞掉后续句子的翻译
+                const maxTake = translations.length - p - (m - i - 1);
+                const take = Math.max(1, Math.min(clauseCounts[i], maxTake));
+                merged.push(translations.slice(p, p + take).join('；'));
+                p += take;
+            }
+            // 模型仍多拆的零头并入最后一句
+            if (p < translations.length && merged.length > 0) {
+                merged[merged.length - 1] += '；' + translations.slice(p).join('；');
+            }
+            return merged;
+        }
+
         function init() {
             translationArea = document.getElementById('fullTranslationArea');
             translationTextSpan = document.getElementById('fullTranslationText');
@@ -76,6 +101,24 @@
             }
         }
 
+        // 在全文翻译区域显示加载状态（旋转指示 + 段落骨架），等待 AI 翻译返回
+        function showTranslationLoading() {
+            if (!translationTextSpan) return;
+            translationTextSpan.innerHTML =
+                '<div class="translation-loading"><span class="translation-loading-spinner"></span><span>正在翻译全文…</span></div>' +
+                '<div class="translation-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div>';
+            if (translationArea) translationArea.style.display = 'block';
+        }
+
+        // 翻译失败时清除加载骨架，避免动画残留
+        function clearTranslationLoading() {
+            if (!translationTextSpan) return;
+            if (translationTextSpan.querySelector('.translation-loading, .translation-skeleton')) {
+                translationTextSpan.innerHTML = '';
+            }
+            if (translationArea) translationArea.style.display = 'none';
+        }
+
         const fetchFullTranslation = ErrorHandler.wrapAsyncFunction(async function(text) {
             if (!text || text.trim() === '') {
                 ErrorHandler.handleValidationError('请输入文章内容');
@@ -87,6 +130,8 @@
                 return null;
             }
             try {
+                // 翻译期间显示加载动画
+                showTranslationLoading();
                 const rawTranslation = await window.APIRequest.requestFullTranslation(text);
                 if (rawTranslation) {
                     const DELIMITER = '[SENTENCE_END]';
@@ -97,6 +142,12 @@
                         sentenceTranslations = rawTranslation.split(DELIMITER)
                             .map(s => s.trim())
                             .filter(s => s.length > 0);
+                        // 对齐到原文句子数：AI 常把分号/冒号子句当句子边界多拆，
+                        // 按原文子句数贪婪归并，保证编号列表与逐句翻译和句子卡片对齐
+                        const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];
+                        if (alignedSentences.length > 0) {
+                            sentenceTranslations = alignTranslationsToSentences(sentenceTranslations, alignedSentences);
+                        }
                         displayTranslation = sentenceTranslations.join('\n');
                     }
 
@@ -124,11 +175,13 @@
                     return displayTranslation;
                 } else {
                     ErrorHandler.showError('翻译失败，请稍后重试');
+                    clearTranslationLoading();
                     return null;
                 }
             } catch (error) {
                 // API 错误已在 requestFullTranslation 中通过 handleApiError 记录
                 // 不再重复抛出，避免误导性错误信息
+                clearTranslationLoading();
                 return null;
             }
         });

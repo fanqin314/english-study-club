@@ -46,3 +46,14 @@
 #secondRowContainer .secondary span:last-child {
     display: none;
 }
+
+/* 解析按钮加载状态：旋转图标 + 防重入 */
+#parseBtn.is-loading {
+    opacity: 1;
+    pointer-events: none;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+#parseBtn.is-loading svg {
+    animation: study-spin 0.9s linear infinite;
+}
