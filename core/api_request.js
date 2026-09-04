@@ -345,54 +345,63 @@
 
             // 使用缓存（缓存键基于整句，AI 结果与本地结果合并后整体缓存）
             const cacheKey = generateCacheKey('pos', sentence);
-            const merged = await Performance.cacheAPIRequest(cacheKey, async () => {
-                // 只让 AI 补测未命中的难词，并强制按原词序返回
-                const missingPrompt = {
-                    messages: [
-                        {
-                            role: 'system',
-                            content:
-                                '你是英语词典助手。请对下面给出的每个单词返回词性。返回JSON格式：\n{"pos": [{"word": "单词", "pos": "n/v/adj/adv/pron/prep/conj/interj/art/num", "meaning": "中文释义"}]}\n只返回JSON，不要其他文字，顺序与输入一致。'
-                        },
-                        { role: 'user', content: '为以下单词标注词性（按给定顺序，逐词给出）：' + missing.join(', ') }
-                    ],
-                    maxTokens: 1000,
-                    temperature: 0
-                };
+            let merged = null;
+            try {
+                merged = await Performance.cacheAPIRequest(cacheKey, async () => {
+                    // 只让 AI 补测未命中的难词，并强制按原词序返回
+                    const missingPrompt = {
+                        messages: [
+                            {
+                                role: 'system',
+                                content:
+                                    '你是英语词典助手。请对下面给出的每个单词返回词性。返回JSON格式：\n{"pos": [{"word": "单词", "pos": "n/v/adj/adv/pron/prep/conj/interj/art/num", "meaning": "中文释义"}]}\n只返回JSON，不要其他文字，顺序与输入一致。'
+                            },
+                            { role: 'user', content: '为以下单词标注词性（按给定顺序，逐词给出）：' + missing.join(', ') }
+                        ],
+                        maxTokens: 1000,
+                        temperature: 0
+                    };
 
-                // 空结果时自动重试一次（模型可能临时返回空数组）
-                for (let attempt = 0; attempt < 2; attempt++) {
-                    try {
-                        const content = await callAPI(missingPrompt.messages, { maxTokens: missingPrompt.maxTokens, temperature: missingPrompt.temperature });
+                    // 空结果时自动重试一次（模型可能临时返回空数组）
+                    for (let attempt = 0; attempt < 2; attempt++) {
+                        try {
+                            const content = await callAPI(missingPrompt.messages, { maxTokens: missingPrompt.maxTokens, temperature: missingPrompt.temperature });
 
-                        const result = extractAndParseJSON(content, 'pos');
-                        const aiPos = (result && Array.isArray(result.pos)) ? result.pos : [];
-                        if (aiPos.length > 0) {
-                            // 合并：本地命中在前，AI 补测难度词在后
-                            return { pos: hits.concat(aiPos) };
-                        }
+                            const result = extractAndParseJSON(content, 'pos');
+                            const aiPos = (result && Array.isArray(result.pos)) ? result.pos : [];
+                            if (aiPos.length > 0) {
+                                // 合并：本地命中在前，AI 补测难度词在后
+                                return { pos: hits.concat(aiPos) };
+                            }
 
-                        if (attempt === 0) {
-                            // 第一次返回空结果，短暂延迟后重试
-                            if (window.DEBUG_MODE) console.log('[pos] 返回空结果，1秒后重试...');
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                            continue;
+                            if (attempt === 0) {
+                                // 第一次返回空结果，短暂延迟后重试
+                                if (window.DEBUG_MODE) console.log('[pos] 返回空结果，1秒后重试...');
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                continue;
+                            }
+                            // AI 未返回任何词性（空结果）→ 视为失败，抛出不写入缓存
+                            throw new Error('AI 未返回词性数据');
+                        } catch (error) {
+                            if (attempt === 0 && error.message === 'MODEL_OVERLOAD') {
+                                // 模型过载，延迟后重试
+                                await new Promise(resolve => setTimeout(resolve, 1500));
+                                continue;
+                            }
+                            // 失败不缓存：向上抛出，避免不完整的 {pos:hits} 被写入 5 分钟缓存，
+                            // 否则词库分片加载完成后重查仍会读到旧的部分结果
+                            throw error;
                         }
-                        return { pos: hits };
-                    } catch (error) {
-                        if (attempt === 0 && error.message === 'MODEL_OVERLOAD') {
-                            // 模型过载，延迟后重试
-                            await new Promise(resolve => setTimeout(resolve, 1500));
-                            continue;
-                        }
-                        ErrorHandler.handleApiError(error);
-                        return { pos: hits };
                     }
-                }
-                return { pos: hits };
-            });
-            // 即便 AI 失败，本地已命中的词性也应返回；missRec 为空则返回空数组提示
-            return merged && Array.isArray(merged.pos) ? merged : { pos: hits };
+                    throw new Error('AI 未返回词性数据');
+                });
+            } catch (error) {
+                ErrorHandler.handleApiError(error);
+            }
+            // 即便 AI 失败，本地已命中的词性也应返回；但存在本地未命中且 AI 未补测到的词，
+            // 结果不完整 → 标记 incomplete 让上层不写缓存，用户后续点击可重新查询
+            // （分片词典加载完成后即可获得完整词性，避免需反复点刷新才能看到高频词）
+            return merged && Array.isArray(merged.pos) ? merged : { pos: hits, incomplete: true };
         });
 
         /**

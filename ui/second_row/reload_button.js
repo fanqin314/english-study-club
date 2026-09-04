@@ -31,6 +31,18 @@
             });
         }
         
+        // 重置该句所有分析按钮的激活状态：否则刷新后按钮仍处于 active，
+        // 再次点击「词性」等按钮会走「折叠面板」分支而不重新解析，需连点两次才生效
+        const card = (sentenceDiv && sentenceDiv.closest('.sentence-card')) ||
+                     document.querySelector(`.sentence-card[data-index="${idx}"]`);
+        if (card) {
+            card.querySelectorAll('.sentence-buttons button[data-type]').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = '';
+                btn.style.color = '';
+            });
+        }
+        
         // 如果高亮开关是开启状态，且词性数据被清除，需要提示用户
         if (window.HighlightSwitch && window.HighlightSwitch.isEnabled()) {
             showToast(`已清除第 ${idx + 1} 句缓存，高亮已移除。点击"词性"按钮重新解析后高亮会恢复。`);

@@ -19,19 +19,25 @@
   var DictLookup = (Shared.DictLookup = Shared.DictLookup || {});
   var VocabLibrary = Shared.VocabLibrary || global.VocabLibrary;
 
-  var DICT_VERSION = 2;   // 词库结构版本，变化时使 IndexedDB 缓存整体失效
+  var DICT_VERSION = 3;   // 词库结构版本，变化时使 IndexedDB 缓存整体失效
   var INDEX_URL = global.Mobile ? '../data/dict/index.json' : 'data/dict/index.json';
   var SHARD_PREFIX = global.Mobile ? '../data/dict/shard_' : 'data/dict/shard_';
+  // 核心词表低频档（core_low）懒加载分片：与高频常驻档互补，保证「词库优先，AI 兜底」覆盖全部考试词
+  var CORE_LOW_INDEX_URL = global.Mobile ? '../data/dict_core/index.json' : 'data/dict_core/index.json';
+  var CORE_LOW_SHARD_PREFIX = global.Mobile ? '../data/dict_core/shard_' : 'data/dict_core/shard_';
 
   var HOT_THRESHOLD = 3;  // 查询计数达到该值 → 升入内存热缓存
   var HOT_CAP = 500;      // 内存热缓存 LRU 容量上限
   var DB_NAME = 'esc-dict';
-  var DB_VER = 1;
+  var DB_VER = 2;
 
   var _index = null;        // { n, map:{word:shard} }；null 表示未加载/加载失败
   var _indexStatus = 'idle'; // idle | loading | ready | error
   var _coreReady = false;   // 核心词表是否已尝试加载（惰性 init，幂等）
   var _shards = {};         // 内存分片缓存 { shardIndex: { words } }
+  var _coreLowIndex = null;        // core_low 低频档索引 { n, map }（null=未加载/失败）
+  var _coreLowIndexStatus = 'idle';// idle | loading | ready | error
+  var _coreLowShards = {};         // core_low 内存分片缓存
   var _hot = new Map();     // 内存热缓存 word -> entry（LRU）
   var _counts = {};         // 内存查询计数 word -> n（防抖批量写 IndexedDB）
   var _countTimer = null;
@@ -98,6 +104,7 @@
       req.onupgradeneeded = function () {
         var db = req.result;
         if (!db.objectStoreNames.contains('shards')) db.createObjectStore('shards', { keyPath: 'n' });
+        if (!db.objectStoreNames.contains('core_low')) db.createObjectStore('core_low', { keyPath: 'n' });
         if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'k' });
       };
       req.onsuccess = function () { _db = req.result; resolve(_db); };
@@ -147,6 +154,22 @@
     });
   }
 
+  /* ---------- file:// 内联兜底 ----------
+     fetch 在 file:// 协议下被 CORS 阻止，分片/索引无法经 fetch 加载。
+     与核心词库一致：动态注入同目录的 .data.js（<script> 不走 fetch CORS），
+     取回后立即清空全局键释放引用。srcUrl 由调用方由 .json 派生。 */
+  function loadInlineData(srcUrl, globalKey) {
+    return new Promise(function (resolve) {
+      if (!global.document || !global.document.createElement) return resolve(null);
+      if (global[globalKey] != null) { var v0 = global[globalKey]; global[globalKey] = null; resolve(v0); return; }
+      var s = global.document.createElement('script');
+      s.src = srcUrl;
+      s.onload = function () { var v = global[globalKey] != null ? global[globalKey] : null; global[globalKey] = null; resolve(v); };
+      s.onerror = function () { resolve(null); };
+      global.document.head.appendChild(s);
+    });
+  }
+
   /* ---------- 索引加载（懒加载 + IndexedDB 缓存 + 版本失效） ---------- */
   async function ensureIndex() {
     if (_index) return _index;
@@ -169,6 +192,13 @@
       idbPut('meta', { k: 'index', v: DICT_VERSION, data: idx });
       return _index;
     } catch (e) {
+      // fetch 失败（如 file://）→ 注入索引内联 data.js 兜底
+      var inlineIdx = await loadInlineData(INDEX_URL.replace(/\.json$/, '.data.js'), '__DICT_INDEX__');
+      if (inlineIdx && inlineIdx.n && inlineIdx.map) {
+        _index = inlineIdx;
+        _indexStatus = 'ready';
+        return _index;
+      }
       _index = null;
       _indexStatus = 'error';
       console.warn('[DictLookup] 索引加载失败：', (e && e.message) ? e.message : String(e));
@@ -193,12 +223,77 @@
         idbPut('shards', data);
         return data;
       } catch (e) {
+        // fetch 失败（如 file://）→ 注入分片内联 data.js 兜底
+        var pad = String(n).padStart(3, '0');
+        var inlineData = await loadInlineData(SHARD_PREFIX + pad + '.data.js', '__DICT_SHARD_' + pad + '__');
+        if (inlineData && inlineData.words) { _shards[n] = inlineData; return inlineData; }
         console.warn('[DictLookup] 分片 ' + n + ' 加载失败：', (e && e.message) ? e.message : String(e));
         return null;
       }
     })();
     _shardLoading[n] = p;
     var done = function () { if (_shardLoading[n] === p) delete _shardLoading[n]; };
+    p.then(done, done);
+    return p;
+  }
+
+  /* ---------- core_low 低频档索引/分片（与 dict 分片机制一致：内存 → IndexedDB → fetch） ---------- */
+  async function ensureCoreLowIndex() {
+    if (_coreLowIndex) return _coreLowIndex;
+    if (_coreLowIndexStatus === 'loading') { while (_coreLowIndexStatus === 'loading') await new Promise((r) => setTimeout(r, 20)); return _coreLowIndex; }
+    _coreLowIndexStatus = 'loading';
+    var cached = await idbGet('meta', 'core_low_index');
+    if (cached && cached.v === DICT_VERSION) { _coreLowIndex = cached.data; _coreLowIndexStatus = 'ready'; return _coreLowIndex; }
+    if (cached) { try { await idbClear('core_low'); } catch (e) { /* 清理失败不影响主流程 */ } }
+    try {
+      var res = await fetch(CORE_LOW_INDEX_URL + '?v=' + DICT_VERSION);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var idx = await res.json();
+      if (!idx || !idx.n || !idx.map) throw new Error('索引结构异常');
+      _coreLowIndex = idx;
+      _coreLowIndexStatus = 'ready';
+      idbPut('meta', { k: 'core_low_index', v: DICT_VERSION, data: idx });
+      return _coreLowIndex;
+    } catch (e) {
+      // fetch 失败（如 file://）→ 注入 core_low 索引内联 data.js 兜底
+      var inlineCli = await loadInlineData(CORE_LOW_INDEX_URL.replace(/\.json$/, '.data.js'), '__CORE_LOW_INDEX__');
+      if (inlineCli && inlineCli.n && inlineCli.map) {
+        _coreLowIndex = inlineCli;
+        _coreLowIndexStatus = 'ready';
+        return _coreLowIndex;
+      }
+      _coreLowIndex = null;
+      _coreLowIndexStatus = 'error';
+      console.warn('[DictLookup] core_low 索引加载失败：', (e && e.message) ? e.message : String(e));
+      return null;
+    }
+  }
+  var _coreLowLoading = {}; // shardIndex -> Promise，同一分片并发只拉一次
+  function getCoreLowShard(n) {
+    if (_coreLowShards[n]) return Promise.resolve(_coreLowShards[n]);
+    if (_coreLowLoading[n]) return _coreLowLoading[n];
+    var p = (async () => {
+      var cached = await idbGet('core_low', n);
+      if (cached && cached.words) { _coreLowShards[n] = cached; return cached; }
+      try {
+        var res = await fetch(CORE_LOW_SHARD_PREFIX + String(n).padStart(3, '0') + '.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        if (!data || !data.words) throw new Error('分片结构异常');
+        _coreLowShards[n] = data;
+        idbPut('core_low', data);
+        return data;
+      } catch (e) {
+        // fetch 失败（如 file://）→ 注入 core_low 分片内联 data.js 兜底
+        var cpad = String(n).padStart(3, '0');
+        var cinline = await loadInlineData(CORE_LOW_SHARD_PREFIX + cpad + '.data.js', '__CORE_LOW_SHARD_' + cpad + '__');
+        if (cinline && cinline.words) { _coreLowShards[n] = cinline; return cinline; }
+        console.warn('[DictLookup] core_low 分片 ' + n + ' 加载失败：', (e && e.message) ? e.message : String(e));
+        return null;
+      }
+    })();
+    _coreLowLoading[n] = p;
+    var done = function () { if (_coreLowLoading[n] === p) delete _coreLowLoading[n]; };
     p.then(done, done);
     return p;
   }
@@ -297,6 +392,29 @@
     if (sw && (sw.pos || sw.meaning)) {
       return { word: key, pos: sw.pos || '', meaning: sw.meaning || '', source: 'static' };
     }
+    // 2.7) 核心词表低频档（core_low）懒加载分片：常驻高频档未命中时按需拉取，保证词库优先覆盖全部考试词
+    var cli = await ensureCoreLowIndex();
+    if (cli) {
+      var csn = cli.map[key];
+      if (csn != null) {
+        var cshard = await getCoreLowShard(csn);
+        var ce = cshard && cshard.words ? cshard.words[key] : null;
+        if (ce) {
+          var centry = {
+            word: ce.word || key,
+            pos: ce.pos || '',
+            meaning: ce.meaning || '',
+            phonetic: ce.phonetic,
+            example: ce.example, exampleCn: ce.exampleCn,
+            tags: ce.tags, cefr: ce.cefr,
+            source: 'core_low'
+          };
+          touch(key);
+          if (_counts[key] >= HOT_THRESHOLD) promote(key, centry);
+          return centry;
+        }
+      }
+    }
     // 3) 分片（需索引）
     var idx = await ensureIndex();
     if (idx) {
@@ -327,8 +445,10 @@
    */
   DictLookup.reset = async function () {
     _index = null; _indexStatus = 'idle'; _shards = {}; _hot = new Map(); _counts = {};
+    _coreLowIndex = null; _coreLowIndexStatus = 'idle'; _coreLowShards = {};
     if (_countTimer) { clearTimeout(_countTimer); _countTimer = null; }
     await idbClear('shards');
+    await idbClear('core_low');
     await idbClear('meta');
   };
 

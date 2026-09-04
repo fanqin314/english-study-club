@@ -567,7 +567,7 @@
       onOpen: (dlg, close) => {
         const body = dlg.querySelector('.esc-vquiz-body');
         const lib = Mobile.VocabLibrary;
-        lib.load().then((res) => {
+        lib.ensureFull().then((res) => {
           if (!res || !res.ok) { body.innerHTML = '<p class="esc-nbpick-sub" style="text-align:center;padding:20px 0">词库加载失败，请稍后重试</p>'; return; }
           runQuiz(body, lib, close);
         }).catch(() => {
@@ -719,7 +719,7 @@
       onOpen: (dlg, close) => {
         const body = dlg.querySelector('.esc-vlib-body');
         const lib = Mobile.VocabLibrary;
-        lib.load().then((res) => {
+        lib.ensureFull().then((res) => {
           if (!res || !res.ok) {
             body.innerHTML = '<p class="esc-nbpick-sub" style="text-align:center;padding:20px 0">词库加载失败，请稍后重试</p>';
             return;

@@ -14,8 +14,10 @@
   var Shared = (global.EnglishStudyShared = global.EnglishStudyShared || {});
   var VocabLibrary = (Shared.VocabLibrary = Shared.VocabLibrary || {});
 
-  // 默认数据相对路径：桌面 index.html（根）→ data/；移动 mobile/index.html → ../data/
-  var DEFAULT_URL = global.Mobile ? '../data/vocab_library.json' : 'data/vocab_library.json';
+  // 数据路径：高频核心档（常驻内存）+ 全量档（档位/自测按需整载，file:// 内联回退）
+  // 桌面 index.html（根）→ data/；移动 mobile/index.html → ../data/
+  var HIGH_URL = global.Mobile ? '../data/vocab_core_high.json' : 'data/vocab_core_high.json';
+  var FULL_URL = global.Mobile ? '../data/vocab_library.json' : 'data/vocab_library.json';
 
   // 档位元数据（静态），词量由 tags 聚合实时派生
   var LEVEL_META = [
@@ -26,36 +28,165 @@
     { id: 'exam-sat',    name: 'SAT',                cefr: 'C1-C2', description: 'SAT 高阶词汇，覆盖阅读/写作精深词汇，难度约 C1–C2' }
   ];
 
-  var _data = null;       // 已解析的词库 { version, words[] }
+  var _data = null;       // 已解析词库元信息 { version }（不再持有 words 大数组）
   var _status = 'idle';   // idle | loading | ready | error
+  var _full = false;      // 是否已整载全量档（高频常驻 + 低频已并入；档位/自测依赖全量）
+
+  // 紧凑列式存储：并行数组 + 枚举内化（pos/cefr），取代「14270 个全字段对象」以降低常驻内存。
+  // 对外仍由 _entryAt(i) 按需重建兼容的 { word,pos,meaning,phonetic,tags,cefr,example,exampleCn }。
+  var _words = null;      // 原文大小写的 word（按小写有序，与 _ord 平行）
+  var _ord = null;        // 小写 word（二分查找用），与 _words 同序
+  var _pos = null;        // pos 内化码（null 表示无）
+  var _meaning = null;    // meaning 或 null
+  var _phon = null;       // phonetic 或 null
+  var _tags = null;       // tags 数组引用或 null
+  var _cefr = null;       // cefr 内化码或 null
+  var _ex = null;         // example 或 null（string/对象原样保留）
+  var _exCn = null;       // exampleCn 或 null
+  var _posTable = [];
+  var _cefrTable = [];
+
+  // 把原始 words 大数组压缩为并行紧凑数组（同时 interning pos/cefr），随后即可丢弃原数组释放内存
+  function _buildCompact(rows) {
+    var n = rows.length;
+    _words = new Array(n); _ord = new Array(n);
+    _pos = new Array(n);   _meaning = new Array(n); _phon = new Array(n);
+    _tags = new Array(n);  _cefr = new Array(n);    _ex = new Array(n); _exCn = new Array(n);
+    _posTable = []; _cefrTable = [];
+    var posIdx = {}, cefrIdx = {};
+    for (var i = 0; i < n; i++) {
+      var r = rows[i];
+      _words[i] = r.word;
+      _ord[i] = String(r.word).toLowerCase();
+      _meaning[i] = r.meaning != null ? r.meaning : null;
+      _phon[i] = r.phonetic != null ? r.phonetic : null;
+      _tags[i] = r.tags || null;
+      _ex[i] = r.example != null ? r.example : null;
+      _exCn[i] = r.exampleCn != null ? r.exampleCn : null;
+      var p = r.pos;
+      if (p != null && p !== '') {
+        if (posIdx[p] === undefined) { posIdx[p] = _posTable.length; _posTable.push(p); }
+        _pos[i] = posIdx[p];
+      } else { _pos[i] = null; }
+      var c = r.cefr;
+      if (c != null && c !== '') {
+        if (cefrIdx[c] === undefined) { cefrIdx[c] = _cefrTable.length; _cefrTable.push(c); }
+        _cefr[i] = cefrIdx[c];
+      } else { _cefr[i] = null; }
+    }
+    return n;
+  }
+
+  // 按索引重建兼容词条对象（字段值与原始对象一致；缺失字段为 undefined）
+  function _entryAt(i) {
+    if (!_words) return null;
+    return {
+      word: _words[i],
+      pos: _pos[i] == null ? undefined : _posTable[_pos[i]],
+      meaning: _meaning[i] == null ? undefined : _meaning[i],
+      phonetic: _phon[i] == null ? undefined : _phon[i],
+      tags: _tags[i] || undefined,
+      cefr: _cefr[i] == null ? undefined : _cefrTable[_cefr[i]],
+      example: _ex[i] == null ? undefined : _ex[i],
+      exampleCn: _exCn[i] == null ? undefined : _exCn[i]
+    };
+  }
+
+  // 词是否命中标签（命中 tags 含 tag）
+  function _tagAt(i, tag) {
+    var t = _tags[i];
+    return !!t && t.indexOf(tag) >= 0;
+  }
+
+  /* ---- 紧凑结果 IndexedDB 缓存：二次加载直接还原，免 fetch + 免 JSON 解析 ----
+     仅浏览器可用；任何失败/不可用都静默降级为常规加载（不抛错） */
+  var CACHE_VERSION = 3;  // 数据格式版本，变化时使旧缓存失效
+  function _openDB() {
+    return new Promise(function (resolve, reject) {
+      if (!global.indexedDB) { reject(new Error('no idb')); return; }
+      var req = global.indexedDB.open('esc-vocab', 1);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('core')) db.createObjectStore('core');
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function _dbGet(db, key) {
+    return new Promise(function (res, rej) {
+      var t = db.transaction('core', 'readonly').objectStore('core').get(key);
+      t.onsuccess = function () { res(t.result); };
+      t.onerror = function () { rej(t.error); };
+    });
+  }
+  function _dbPut(db, key, val) {
+    return new Promise(function (res, rej) {
+      var t = db.transaction('core', 'readwrite').objectStore('core').put(val, key);
+      t.onsuccess = function () { res(); };
+      t.onerror = function () { rej(t.error); };
+    });
+  }
+  async function _restoreFromCache() {
+    if (!global.indexedDB) return false;
+    try {
+      var db = await _openDB();
+      var r = await _dbGet(db, 'compact');
+      db.close();
+      if (!r || r.v !== CACHE_VERSION || !Array.isArray(r.words)) return false;
+      _words = r.words; _ord = r.ord; _pos = r.pos; _meaning = r.meaning; _phon = r.phon;
+      _tags = r.tags; _cefr = r.cefr; _ex = r.ex; _exCn = r.exCn; _posTable = r.posTable; _cefrTable = r.cefrTable;
+      _data = { version: 'cached' }; _status = 'ready';
+      return true;
+    } catch (e) { return false; }
+  }
+  function _saveCompactCache() {
+    if (!global.indexedDB || !_words) return;
+    _openDB().then(function (db) {
+      return _dbPut(db, 'compact', {
+        v: CACHE_VERSION, words: _words, ord: _ord, pos: _pos, meaning: _meaning, phon: _phon,
+        tags: _tags, cefr: _cefr, ex: _ex, exCn: _exCn, posTable: _posTable, cefrTable: _cefrTable
+      }).then(function () { db.close(); });
+    }).catch(function () {});
+  }
+
+  // 取走注入的内联数据构建紧凑结构（调用方负责清空全局引用以释放对象包装内存）
+  function _takeInlineData(src) {
+    if (!src) return;
+    _buildCompact(src.words);
+    _data = { version: src.version };
+    _status = 'ready';
+  }
 
   /**
-   * 加载词库数据（可指定 URL，缺省按平台推断相对路径）
+   * 加载高频核心档（常驻内存）。低频词由 DictLookup 懒拉分片；档位/自测/导入请调 ensureFull()。
    * 失败/损坏 → status=error 且 _data 置 null，不抛未捕获错误
    */
   async function load(url) {
-    if (_status === 'ready' && url == null) return { ok: true, status: _status };
+    if (_status === 'ready' && url == null) return { ok: true, status: _status, levels: _full ? listLevels() : [] };
     _status = 'loading';
-    // 优先使用已注入的内联数据（避免重复 fetch/动态加载）
-    if (!url && global.__VOCAB_LIBRARY_DATA__ && validate(global.__VOCAB_LIBRARY_DATA__).ok) {
-      _data = global.__VOCAB_LIBRARY_DATA__;
-      _status = 'ready';
-      return { ok: true, status: _status, levels: listLevels() };
+    // 优先使用已注入的高频内联数据（避免重复 fetch/动态加载）
+    if (!url && global.__VOCAB_CORE_HIGH_DATA__ && validate(global.__VOCAB_CORE_HIGH_DATA__).ok) {
+      var inline = global.__VOCAB_CORE_HIGH_DATA__;
+      global.__VOCAB_CORE_HIGH_DATA__ = null;
+      _takeInlineData(inline);
+      return { ok: true, status: _status, levels: _full ? listLevels() : [] };
     }
     try {
-      const res = await fetch(url || DEFAULT_URL);
+      const res = await fetch(url || HIGH_URL);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       const data = JSON.parse(text);
       const v = validate(data);
       if (!v.ok) throw new Error(v.reason);
-      _data = data;
+      _buildCompact(data.words);
+      _data = { version: data.version };
       _status = 'ready';
-      return { ok: true, status: _status, levels: listLevels() };
+      return { ok: true, status: _status, levels: _full ? listLevels() : [] };
     } catch (e) {
-      // fetch 失败（如 file:// 协议下 CORS 阻止）→ 尝试动态加载内联数据 JS 兜底
-      if (!url && await loadInlineData()) {
-        return { ok: true, status: _status, levels: listLevels() };
+      // fetch 失败（如 file:// 协议下 CORS 阻止）→ 动态加载高频内联 data.js 兜底
+      if (!url && await loadInlineData(HIGH_URL.replace(/vocab_core_high\.json$/, 'vocab_core_high.data.js'), '__VOCAB_CORE_HIGH_DATA__')) {
+        return { ok: true, status: _status, levels: _full ? listLevels() : [] };
       }
       _data = null;
       _status = 'error';
@@ -65,23 +196,70 @@
   }
 
   /**
-   * 动态加载 data/vocab_library.data.js（<script> 不走 fetch CORS，file:// 下可用）
+   * 按需整载全量档（高频 + 低频合并为完整 14,270 词），供档位浏览/词汇量自测/整档导入。
+   * 幂等：已整载则直接返回。任何失败/不可用都返回 { ok:false }，不抛错。
+   */
+  async function ensureFull() {
+    if (_full) return { ok: true, status: _status, levels: listLevels() };
+    // 1) 优先全量内联数据（file:// 注入）
+    if (global.__VOCAB_LIBRARY_DATA__ && validate(global.__VOCAB_LIBRARY_DATA__).ok) {
+      var inline = global.__VOCAB_LIBRARY_DATA__;
+      global.__VOCAB_LIBRARY_DATA__ = null;
+      _takeInlineData(inline);
+      _full = true;
+      return { ok: true, status: _status, levels: listLevels() };
+    }
+    // 2) IndexedDB 紧凑缓冲还原（免 fetch + 免 JSON 解析）
+    if (await _restoreFromCache()) { _full = true; return { ok: true, status: _status, levels: listLevels() }; }
+    // 3) fetch 全量 JSON
+    _status = 'loading';
+    try {
+      const res = await fetch(FULL_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const data = JSON.parse(text);
+      const v = validate(data);
+      if (!v.ok) throw new Error(v.reason);
+      _buildCompact(data.words);
+      _data = { version: data.version };
+      _status = 'ready';
+      _full = true;
+      _saveCompactCache();
+      return { ok: true, status: _status, levels: listLevels() };
+    } catch (e) {
+      // 4) 全量内联 data.js 兜底（file:// 下 fetch 不可用）
+      if (await loadInlineData(FULL_URL.replace(/vocab_library\.json$/, 'vocab_library.data.js'), '__VOCAB_LIBRARY_DATA__')) {
+        _full = true;
+        return { ok: true, status: _status, levels: listLevels() };
+      }
+      _data = null;
+      _status = 'error';
+      console.warn('[VocabLibrary] 全量词库加载失败：', (e && e.message) ? e.message : String(e));
+      return { ok: false, status: _status, reason: e && e.message ? e.message : String(e) };
+    }
+  }
+
+  /**
+   * 动态加载内联数据 data.js（<script> 不走 fetch CORS，file:// 下可用）
    * 成功且校验通过 → 置 _data/_status 为 ready；否则置 error
+   * @param {string} srcUrl 内联脚本 URL
+   * @param {string} globalKey 注入用的全局键名（如 __VOCAB_CORE_HIGH_DATA__）
    * @returns {Promise<boolean>}
    */
-  function loadInlineData() {
+  function loadInlineData(srcUrl, globalKey) {
     return new Promise(function (resolve) {
-      if (global.__VOCAB_LIBRARY_DATA__) { finalize(); resolve(finalize.ok); return; }
+      if (global[globalKey]) { finalize(); resolve(finalize.ok); return; }
       var s = document.createElement('script');
-      s.src = DEFAULT_URL.replace(/vocab_library\.json$/, 'vocab_library.data.js');
+      s.src = srcUrl;
       s.onload = function () { finalize(); resolve(finalize.ok); };
       s.onerror = function () { _status = 'error'; resolve(false); };
       document.head.appendChild(s);
     });
     function finalize() {
-      var v = validate(global.__VOCAB_LIBRARY_DATA__);
+      var src = global[globalKey];
+      var v = validate(src);
       finalize.ok = !!v.ok;
-      if (v.ok) { _data = global.__VOCAB_LIBRARY_DATA__; _status = 'ready'; }
+      if (v.ok) { global[globalKey] = null; _takeInlineData(src); }
       else { _data = null; _status = 'error'; }
     }
   }
@@ -114,18 +292,12 @@
 
   /** 拥有某标签的词数 */
   function countByTag(tag) {
-    if (!_data) return 0;
+    if (!_words) return 0;
     var n = 0;
-    for (var i = 0; i < _data.words.length; i++) {
-      if (hasTag(_data.words[i], tag)) n++;
+    for (var i = 0; i < _words.length; i++) {
+      if (_tagAt(i, tag)) n++;
     }
     return n;
-  }
-
-  /** 词是否命中标签（tags 含 tag 或为空数组时视为不属于任何档） */
-  function hasTag(w, tag) {
-    var t = w && w.tags;
-    return !!t && t.indexOf(tag) >= 0;
   }
 
   /**
@@ -133,12 +305,12 @@
    * words 为该标签累计并集（tags ⊇ {id}），不存在元数据时返回 null
    */
   function getLevel(id) {
-    if (!_data) return null;
+    if (!_words) return null;
     for (var i = 0; i < LEVEL_META.length; i++) {
       if (LEVEL_META[i].id === id) {
         var words = [];
-        for (var j = 0; j < _data.words.length; j++) {
-          if (hasTag(_data.words[j], id)) words.push(_data.words[j]);
+        for (var j = 0; j < _words.length; j++) {
+          if (_tagAt(j, id)) words.push(_entryAt(j));
         }
         return { id: LEVEL_META[i].id, name: LEVEL_META[i].name, cefr: LEVEL_META[i].cefr, description: LEVEL_META[i].description, words: words };
       }
@@ -154,8 +326,12 @@
    * @returns {Promise<{ok:boolean, added:number, skipped:number, reason?:string}>}
    */
   async function importToNotebook(levelId, bulkFn) {
-    if (!_data) return { ok: false, added: 0, skipped: 0, reason: '词库未加载' };
     if (typeof bulkFn !== 'function') return { ok: false, added: 0, skipped: 0, reason: '缺少写入回调' };
+    // 整档导入依赖全量档位数据，未整载时先按需加载
+    if (!_full) {
+      var fullRes = await ensureFull();
+      if (!fullRes.ok) return { ok: false, added: 0, skipped: 0, reason: fullRes.reason || '词库未加载' };
+    }
     var lv = getLevel(levelId);
     if (!lv) return { ok: false, added: 0, skipped: 0, reason: '档位不存在：' + levelId };
     var words = lv.words.map(function (w) {
@@ -169,6 +345,7 @@
   }
 
   VocabLibrary.load = load;
+  VocabLibrary.ensureFull = ensureFull;
   VocabLibrary.validate = validate;
   VocabLibrary.listLevels = listLevels;
   VocabLibrary.getLevel = getLevel;
@@ -180,15 +357,15 @@
    * @returns {object|null} 词条目（含 word/pos/meaning/tags/cefr/可含 phonetic/example）或 null
    */
   VocabLibrary.findWord = function (word) {
-    if (!_data || !word) return null;
+    if (!_words || !word) return null;
     var key = String(word).toLowerCase();
-    var lo = 0, hi = _data.words.length - 1;
+    var lo = 0, hi = _words.length - 1;
     while (lo <= hi) {
       var mid = (lo + hi) >> 1;
-      var wk = _data.words[mid].word.toLowerCase();
+      var wk = _ord[mid];
       if (wk < key) lo = mid + 1;
       else if (wk > key) hi = mid - 1;
-      else return _data.words[mid];
+      else return _entryAt(mid);
     }
     return null;
   };

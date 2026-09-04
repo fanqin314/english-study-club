@@ -996,9 +996,9 @@
             overlay.appendChild(panel);
             document.body.appendChild(overlay);
 
-            // 加载词库
+            // 加载全量词库（档位列表/预览依赖完整档位数据）
             status.textContent = '正在加载词库…';
-            library.load().then(res => {
+            library.ensureFull().then(res => {
                 if (!res || !res.ok) {
                     status.textContent = '词库加载失败，请稍后重试';
                     return;
@@ -1275,9 +1275,9 @@
                 } catch (e) { /* 静默 */ }
             }
 
-            // 载入词库并开始
+            // 载入全量词库并开始（自测按档位逐档出题，依赖完整档位数据）
             body.innerHTML = '<div style="padding:18px 4px;color:var(--study-muted,#6b7280);">正在加载词库…</div>';
-            library.load().then((res) => {
+            library.ensureFull().then((res) => {
                 if (!res || !res.ok) { _showToast('词库加载失败'); close(); return; }
                 quiz = library.prepareQuiz();
                 if (!quiz.length) { _showToast('词库为空'); close(); return; }

@@ -582,7 +582,9 @@
             }
 
             isEmptyResult(result) {
-                return !result || !result.pos || result.pos.length === 0;
+                // 不完整结果（存在本地未命中词且 AI 未能补测）视为空结果，不写入缓存：
+                // 否则分片词典加载完成前的高频词缺失结果被持久化，需反复刷新才能看到完整词性
+                return !result || !result.pos || result.pos.length === 0 || result.incomplete === true;
             }
 
             async callApi(sentence) {

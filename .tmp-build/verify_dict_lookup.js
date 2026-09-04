@@ -12,6 +12,8 @@ const files = {
   'data/dict/index.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/index.json'), 'utf8')),
   'data/dict/shard_000.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/shard_000.json'), 'utf8')),
   'data/dict/shard_008.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict/shard_008.json'), 'utf8')),
+  'data/dict_core/index.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict_core/index.json'), 'utf8')),
+  'data/dict_core/shard_000.json': JSON.parse(fs.readFileSync(path.join(root, 'data/dict_core/shard_000.json'), 'utf8')),
 };
 global.fetch = async (url) => {
   const clean = String(url).split('?')[0];
@@ -19,8 +21,8 @@ global.fetch = async (url) => {
   return { ok: false, status: 404, json: async () => null };
 };
 
-// 模拟 VocabLibrary.findWord：从核心词表二分查找
-const core = JSON.parse(fs.readFileSync(path.join(root, 'data/vocab_library.json'), 'utf8'));
+// 模拟 VocabLibrary.findWord：从高频常驻档（CET4 4544 词）二分查找，贴合阶段B 真实常驻态
+const core = JSON.parse(fs.readFileSync(path.join(root, 'data/vocab_core_high.json'), 'utf8'));
 global.VocabLibrary = {
   findWord(word) {
     let lo = 0, hi = core.words.length - 1;
@@ -56,16 +58,22 @@ require(path.join(root, 'core/shared/dict_lookup.js'));
   const shardHit = await DL.lookup('world');
   ok(shardHit && shardHit.source === 'shard', '分片词命中 shard');
 
-  // 3.1) 分片词缺失独立 pos 时从释义前缀解析（the → pos=art, meaning 剥离前缀）
+  // 3.1) 高频功能词静态兜底（the → art；file:// 下无需分片即命中）
   const theHit = await DL.lookup('the');
-  ok(theHit && theHit.pos === 'art', '分片词 pos 前缀解析(the)');
-  ok(theHit && theHit.meaning === '那', '分片词释义前缀剥离(the)');
+  ok(theHit && theHit.source === 'static', '静态兜底命中(the)');
+  ok(theHit && theHit.pos === 'art', '静态兜底词性(the→art)');
+  ok(theHit && !!theHit.meaning, '静态兜底释义(the)');
 
-  // 3.2) 补丁分片（be 变形等高频缺词）
+  // 3.2) 补丁分片（be 变形等高频缺词）——现由静态兜底优先命中
   const isHit = await DL.lookup('is');
-  ok(isHit && isHit.source === 'shard' && isHit.pos === 'v' && !!isHit.meaning, '补丁分片命中(is)');
+  ok(isHit && isHit.source === 'static' && isHit.pos === 'v' && !!isHit.meaning, '静态兜底命中(is)');
   const areHit = await DL.lookup('are');
-  ok(areHit && areHit.pos === 'v', '补丁分片命中(are)');
+  ok(areHit && areHit.pos === 'v', '静态兜底命中(are)');
+
+  // 3.3) core_low 低频档懒加载分片（abalone 在 core_low shard_000，不在高频常驻）
+  const lowHit = await DL.lookup('abalone');
+  ok(lowHit && lowHit.source === 'core_low', 'core_low 分片命中(abalone)');
+  ok(lowHit && !!lowHit.meaning, 'core_low 释义(abalone)');
 
   // 4) 未命中 → null
   const miss = await DL.lookup('zzzqqqzzz');

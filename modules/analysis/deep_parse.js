@@ -188,6 +188,13 @@
                 
                 // 保存句子数据和原始文本到缓存管理器
                 if (window.CacheManager) {
+                    // 换文（新文章）时清除旧文章的逐句分析缓存：sentenceData 按句索引进位缓存，
+                    // 换文后同索引句子会命中上一篇文章的分析数据，导致词性/语法等面板显示残留内容。
+                    // 仅文本变化时清除，保证同一文章的解析结果在界面切换间得以保留。
+                    if (typeof window.CacheManager.getOriginalText === 'function'
+                        && window.CacheManager.getOriginalText() !== text) {
+                        window.CacheManager.clearAllSentenceCache();
+                    }
                     window.CacheManager.setSentences(sentences);
                     window.CacheManager.setOriginalText(text);
                 }
