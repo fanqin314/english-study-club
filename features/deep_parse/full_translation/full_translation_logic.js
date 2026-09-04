@@ -56,6 +56,12 @@
             ).join('');
         }
 
+        // 输入框是否已有文章内容：空则视为"未解析/已清空"，不显示翻译区
+        function hasArticleText() {
+            const el = document.getElementById('articleInput');
+            return !!(el && String(el.value || '').trim());
+        }
+
         function init() {
             translationArea = document.getElementById('fullTranslationArea');
             translationTextSpan = document.getElementById('fullTranslationText');
@@ -64,7 +70,8 @@
                 if (cached) {
                     currentTranslation = cached;
                     renderNumberedTranslation(cached);
-                    if (translationArea) translationArea.style.display = 'block';
+                    // 输入框为空时不自动显示（缓存数据保留，待输入内容后经 input 监听恢复显示）
+                    if (translationArea) translationArea.style.display = hasArticleText() ? 'block' : 'none';
                 }
             }
         }
@@ -164,6 +171,16 @@
         } else {
             init();
         }
+
+        // 输入框内容变化时联动翻译区显隐：空（清空/未解析）→ 隐藏；有内容且有已缓存翻译 → 恢复显示
+        document.addEventListener('input', (e) => {
+            if (e.target && e.target.id === 'articleInput') {
+                if (translationArea) {
+                    translationArea.style.display =
+                        (String(e.target.value || '').trim() && currentTranslation) ? 'block' : 'none';
+                }
+            }
+        });
 
         // 导出全局接口（保持向后兼容）
         window.FullTranslation = {

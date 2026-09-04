@@ -254,6 +254,8 @@
   DictLookup.init = async function () {
     if (VocabLibrary && typeof VocabLibrary.load === 'function') {
       try { await VocabLibrary.load(); } catch (e) { /* 忽略 */ }
+      // 无论成败都视为已尝试；成功则后续 lookup 不再重复 init（幂等）
+      _coreReady = true;
     }
     return true;
   };

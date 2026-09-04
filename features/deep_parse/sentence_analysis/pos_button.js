@@ -58,19 +58,16 @@
 
         // 打开添加单词气泡
         async function openAddWordBubble(word, pos, meaning, targetElement, detailObj) {
-            // 关闭已存在的气泡（会自动清除之前的高亮）
+            // 关闭已存在的气泡（会自动清除之前的高亮），保证同一时刻至多一个气泡
             closeCurrentBubble();
+            if (!targetElement || !targetElement.isConnected) return;
 
-            // 本地词典优先、AI 兜底：命中本地（核心词/热缓存/分片）用本地释义/音标/例句
+            // 先用已解析的词性/释义立即渲染气泡，不阻塞等待本地词典——
+            // 避免网页端首次查词需联网拉词库/索引/分片导致气泡迟迟不出现、或快速连点时多个异步气泡叠加残留而无法关闭。
+            // 词典命中仅作增强（音标/更优释义），异步补充到显示区。
+            const live = { pos: pos || '', gloss: meaning || '' };
+            let phon = '';
             let dict = null;
-            try {
-                if (window.DictLookup && typeof window.DictLookup.lookup === 'function') {
-                    dict = await window.DictLookup.lookup(word);
-                }
-            } catch (e) { dict = null; }
-            const gloss = (dict && dict.meaning) || meaning || '';
-            const phon = (dict && dict.phonetic) || '';
-            const pos2 = (dict && dict.pos) || pos || '';
             
             // 从点击的元素向上遍历找到句子卡片，获取正确的句子索引
             let sentenceIndex = null;
@@ -127,13 +124,14 @@
             // 精读洞察（C4）：AI 词根/搭配/同反义优先，无则本地词根规则降级；全无则隐藏
             const detailHTML = buildInsightHTML(word, detailObj);
 
-            // 构建气泡内容（安全方式）
-            const defBlock = gloss
+            // 构建气泡内容（安全方式）；defBlockHTML 复用，便于词典命中后就地刷新音标/词性/释义
+            const defBlockHTML = (w, ph, p2, gl) => gl
                 ? `<div class="bubble-def">
-                      <div class="bubble-def-head"><b>${Security.escapeHtml(word)}</b>${phon ? ' <span style="color:var(--study-muted,#6b7280)">/' + Security.escapeHtml(phon) + '/</span>' : ''}${pos2 ? ' <span style="color:#3b82f6">[' + Security.escapeHtml(pos2) + ']</span>' : ''}</div>
-                      ${gloss ? '<div class="bubble-def-gloss">' + Security.escapeHtml(gloss) + '</div>' : ''}
+                      <div class="bubble-def-head"><b>${Security.escapeHtml(w)}</b>${ph ? ' <span style="color:var(--study-muted,#6b7280)">/' + Security.escapeHtml(ph) + '/</span>' : ''}${p2 ? ' <span style="color:#3b82f6">[' + Security.escapeHtml(p2) + ']</span>' : ''}</div>
+                      <div class="bubble-def-gloss">${Security.escapeHtml(gl)}</div>
                   </div>`
                 : '';
+            const defBlock = defBlockHTML(word, phon, live.pos, live.gloss);
             const bubbleHTML = `
                 <div class="bubble-arrow"></div>
                 <div class="bubble-inner">
@@ -179,7 +177,7 @@
                     e.stopPropagation();
                     const notebookId = btn.dataset.id;
                     const notebookName = btn.dataset.name;
-                    handleAddToNotebook(notebookId, notebookName, word, pos2, gloss, btn, bubble);
+                    handleAddToNotebook(notebookId, notebookName, word, live.pos, live.gloss, btn, bubble);
                 });
             });
             
@@ -261,8 +259,8 @@
                         // 自动添加单词
                         const addResult = vocabData.addWord(newNotebookId, {
                             word: word,
-                            pos: pos2,
-                            meaning: gloss,
+                            pos: live.pos,
+                            meaning: live.gloss,
                             context: '',
                             timestamp: Date.now()
                         });
@@ -282,6 +280,19 @@
                     errorDiv.style.display = 'block';
                 }
             });
+
+            // 异步增强：本地词典命中则就地刷新音标/词性/释义（仅当气泡仍是当前气泡）
+            if (window.DictLookup && typeof window.DictLookup.lookup === 'function') {
+                window.DictLookup.lookup(word).then(function (res) {
+                    if (!currentBubble || currentBubble !== bubble) return; // 已被关闭或替换
+                    dict = res;
+                    if (dict && dict.meaning) live.gloss = dict.meaning;
+                    if (dict && dict.pos) live.pos = dict.pos;
+                    if (dict && dict.phonetic) phon = dict.phonetic;
+                    const defEl = bubble.querySelector('.bubble-def');
+                    if (defEl) defEl.outerHTML = defBlockHTML(word, phon, live.pos, live.gloss);
+                }).catch(function () {});
+            }
         }
         
         // 定位气泡

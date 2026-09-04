@@ -174,6 +174,11 @@
       Mobile.FolderSync.bindStore();
       Mobile.FolderSync.syncOnStartup();
     }
+    // 后台预加载本地词库（非阻塞）：首次点击/解析查词不再被联网拉取卡住
+    var mDL = Mobile.DictLookup;
+    if (mDL && typeof mDL.init === 'function') {
+      try { mDL.init().catch(function () {}); } catch (e) { /* 忽略 */ }
+    }
   }
 
   if (document.readyState === 'loading') {
