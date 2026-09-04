@@ -65,6 +65,18 @@
 
         // 安全获取API配置
         function getApiConfig() {
+            // 默认魔搭AI 模式（defaultAIMode !== 'false'）：始终返回内置魔搭免费配置，
+            // 忽略自定义模式下残留的 Base URL / API Key / 模型。
+            // 否则切回默认模式后仍会命中旧的自定义 DeepSeek 配置（失效 Key → 401），
+            // 表现为「默认模式也连不上 AI」（历史上设置界面只隐藏输入框、并未清除已保存的自定义配置）。
+            if (localStorage.getItem('defaultAIMode') !== 'false') {
+                return {
+                    baseUrl: 'https://api-inference.modelscope.cn/v1',
+                    apiKey: DEFAULT_API_KEY,
+                    model: 'Qwen/Qwen3.5-35B-A3B',
+                    proxyUrl: ''
+                };
+            }
             const encryptedBaseUrl = localStorage.getItem(API_BASE_STORAGE_KEY);
             const encryptedModelName = localStorage.getItem(MODEL_NAME_STORAGE_KEY);
             
