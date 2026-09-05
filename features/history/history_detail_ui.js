@@ -50,11 +50,25 @@
         isSecondaryAnalysis = false;
         currentHistoryItem = null;
         clearCache();
+        // 清除历史记录高亮
+        if (window.HistoryHighlight && window.HistoryHighlight.clearHighlight) {
+            window.HistoryHighlight.clearHighlight();
+        }
+        // 清除 CacheManager 中的历史数据，避免影响深度解析界面
+        if (window.CacheManager) {
+            window.CacheManager.setSentences([]);
+            window.CacheManager.setOriginalText('');
+            window.CacheManager.setFullTranslation('');
+            if (window.CacheManager.resetAllCache) window.CacheManager.resetAllCache();
+        }
         // 恢复侧边栏显示（离开历史详情/二级分析视图）
         document.body.classList.remove('mode-sub-interface');
-        
-        // 调用 MainButtonManager 的 showHistoryMode 方法
-        if (window.MainButtonManager && window.MainButtonManager.switchMode) {
+
+        // 直接调用 showHistoryMode 重建历史列表视图。
+        // 注意不能调用 switchMode('history')：currentMode 已是 'history' 时会提前 return，导致视图不刷新。
+        if (window.MainButtonManager && window.MainButtonManager.showHistoryMode) {
+            window.MainButtonManager.showHistoryMode();
+        } else if (window.MainButtonManager && window.MainButtonManager.switchMode) {
             window.MainButtonManager.switchMode('history');
         }
     }

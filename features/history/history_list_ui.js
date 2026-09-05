@@ -293,38 +293,9 @@
             }
         }
         
-        // 5. 绑定二级界面的返回按钮
-        const backButton = document.getElementById('backButton');
-        if (backButton) {
-            backButton.onclick = function() {
-                // 恢复侧边栏显示（离开历史详情视图）
-                document.body.classList.remove('mode-sub-interface');
-                // 清除历史记录高亮
-                if (window.HistoryHighlight) {
-                    window.HistoryHighlight.clearHighlight();
-                }
-                // 清除 CacheManager 中的历史数据，避免影响深度解析界面
-                if (window.CacheManager) {
-                    window.CacheManager.setSentences([]);
-                    window.CacheManager.setOriginalText('');
-                    window.CacheManager.setFullTranslation('');
-                    window.CacheManager.resetAllCache();
-                }
-                const header = document.getElementById('app-header');
-                if (header) header.style.display = '';
-                const secondaryContainer = document.getElementById('secondaryAnalysisContainer');
-                if (secondaryContainer) secondaryContainer.style.display = 'none';
-                const deepParseSection = document.getElementById('deep-parse-section');
-                if (deepParseSection) deepParseSection.style.display = '';
-                const contentSection = document.getElementById('content-section');
-                if (contentSection) contentSection.style.display = '';
-                if (window.MainButtonManager && window.MainButtonManager.switchMode) {
-                    window.MainButtonManager.switchMode('history');
-                }
-            };
-        }
-        
-        // 6. 绑定折叠按钮
+        // 返回按钮由 history_detail_ui.js 统一绑定（handleBackButtonClick），
+        // 避免双重绑定 + switchMode 提前 return 导致无法返回历史列表视图。
+        // 绑定折叠按钮
         const collapseBtn = document.getElementById('collapseInfoBtn');
         if (collapseBtn) {
             collapseBtn.onclick = function() {

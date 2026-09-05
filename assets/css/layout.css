@@ -866,3 +866,48 @@ template {
     0% { background-position: 100% 50%; }
     100% { background-position: 0 50%; }
 }
+
+/* ========== 一键回到顶部按钮 ========== */
+.back-to-top-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--study-border);
+    background: var(--study-card);
+    color: var(--study-muted-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 90;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    transition: opacity 0.25s ease, transform 0.25s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.back-to-top-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.back-to-top-btn:hover {
+    background: var(--study-primary);
+    color: var(--study-primary-foreground);
+}
+
+.back-to-top-btn:focus-visible {
+    outline: 2px solid var(--study-ring);
+    outline-offset: 2px;
+}
+
+.back-to-top-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+

@@ -5,7 +5,9 @@
         ModuleRegistry.register('CacheManager', [], function() {
             // 缓存键名
             const SENTENCE_DATA_KEY = 'sentenceDataCache';
-            const FULL_TRANSLATION_KEY = 'fullTranslationCache';
+            // v5：全文翻译持久缓存键升级，绕开旧版（v3/v4）可能存留的被切碎/串句译文，
+            // 避免页面加载时把历史乱码重新渲染出来
+            const FULL_TRANSLATION_KEY = 'fullTranslationCache_v5';
             const SAVE_TIMEOUT_DELAY = 1000; // 提取魔法数字为常量
             
             let saveTimeout = null;
@@ -268,7 +270,8 @@
         
         // 缓存键名
         const SENTENCE_DATA_KEY = 'sentenceDataCache';
-        const FULL_TRANSLATION_KEY = 'fullTranslationCache';
+        // v5：全文翻译持久缓存键升级，绕开旧版（v3/v4）可能存留的被切碎/串句译文
+        const FULL_TRANSLATION_KEY = 'fullTranslationCache_v5';
         const SAVE_TIMEOUT_DELAY = 1000; // 提取魔法数字为常量
         
         let saveTimeout = null;

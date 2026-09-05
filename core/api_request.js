@@ -611,24 +611,139 @@
          * 全文翻译输出归一化：
          * 新契约要求模型返回 JSON 数组（逐句翻译按原文顺序排列，数组长度等于句子数）。
          * 这里解析数组并按行拼接为纯文本，保证所有调用方拿到干净的逐行译文
-         * （避免把 JSON 原样展示给用户）；兼容模型用 ```json 代码块包裹的情况；
-         * 非 JSON 输出则原样返回，由上层继续按分隔符提取。
+         * （避免把 JSON 原样展示给用户）；兼容模型用 ```json 代码块包裹的情况。
+         * 采用多级稳健解析：直接 JSON.parse → 修复后解析 → 兜底剥离脚手架与序号，
+         * 即使模型输出并非合法 JSON（混入分号/括号/序号等），也不会把符号错位暴露给用户。
          */
         function normalizeFullTranslation(content) {
             const raw = String(content || '').trim();
             if (!raw) return raw;
+
+            // 去除 ```json 代码块包裹
             const jsonText = raw
                 .replace(/^```(?:json)?\s*/i, '')
                 .replace(/```\s*$/, '')
                 .trim();
+
+            // 1) 直接 JSON.parse
             try {
                 const parsed = JSON.parse(jsonText);
-                if (Array.isArray(parsed)) {
-                    const lines = parsed.map(s => String(s).trim()).filter(s => s.length > 0);
-                    if (lines.length > 0) return lines.join('\n');
+                if (Array.isArray(parsed)) return arrayToLines(parsed);
+            } catch (e) { /* 继续尝试修复 */ }
+
+            // 2) 带序号的逐行格式：每行形如  [17] 译文 / 17、译文 / 17. 译文
+            //    模型在不输出合法 JSON 时常退化为这种带序号列表，按序号归位最稳。
+            const numbered = parseNumberedLines(raw);
+            if (numbered && numbered.length > 0) return numbered.join('\n');
+
+            // 3) 稳健数组切分：不依赖合法 JSON。
+            //    模型常在译文字符串内误用半角引号（如 "guide RNA"），导致 JSON.parse 失败。
+            //    按顶层半角逗号/换行切分恢复逐条译文，并清洗其中的序号前缀与引号噪音。
+            const tokens = tokenizeArray(jsonText);
+            if (tokens && tokens.length > 0) return tokens.join('\n');
+
+            // 4) 修复后 JSON.parse（处理尾随逗号、代码块、字符串内裸换行）
+            const repaired = repairArrayJSON(jsonText);
+            if (repaired) {
+                try {
+                    const parsed = JSON.parse(repaired);
+                    if (Array.isArray(parsed)) return arrayToLines(parsed);
+                } catch (e) { /* 继续兜底 */ }
+            }
+
+            // 5) 兜底：从原始内容中剥离 JSON 脚手架、序号与分隔符，尽力还原逐条译文
+            return salvageTranslations(raw);
+        }
+
+        // 清洗单条译文：剥离首尾引号/标点噪音，再去开头序号前缀
+        function cleanTranslationUnit(s) {
+            return String(s || '')
+                .replace(/^["“”'[\],{}()；;：:，,\s]+/, '')      // 去前导引号/标点噪音
+                .replace(/["“”'[\],{}()；;：:，,\s]+$/, '')      // 去尾部引号/标点噪音
+                .replace(/^\s*\d+\s*[、.．:：)）]\s*/, '')     // 去开头序号（17、/17.）
+                .trim();
+        }
+
+        // 是否仅含序号/标点/括号/引号等脚手架（无真实内容）
+        function isScaffold(s) {
+            return /^[\d\s"“”'[\],{}();；，,:：·、]+$/.test(s);
+        }
+
+        // 数组字符串 → 每条一行纯文本（逐条清洗序号与噪音）
+        function arrayToLines(arr) {
+            const lines = arr.map(s => cleanTranslationUnit(String(s))).filter(s => s.length > 0);
+            return lines.length > 0 ? lines.join('\n') : '';
+        }
+
+        // 带序号的逐行格式解析：每行形如  [17] 译文 / 17、译文 / 17. 译文。
+        // 返回按序号从小到大排好序、去噪后的译文数组；无任何序号行则返回 null。
+        function parseNumberedLines(raw) {
+            const lines = String(raw).split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+            const entries = [];
+            for (const line of lines) {
+                const m = line.match(/^\s*(?:\[(\d+)\]|(\d+)\s*[、.．:：)）]\s*)(.*)$/);
+                if (!m) continue;
+                const n = parseInt(m[1] || m[2], 10);
+                const text = cleanTranslationUnit(m[3] || '');
+                if (n >= 1 && text) entries.push({ n, text });
+            }
+            if (entries.length === 0) return null;
+            const minN = Math.min(...entries.map(e => e.n));
+            const out = [];
+            for (const e of entries) {
+                const idx = e.n - minN;
+                while (out.length <= idx) out.push('');
+                out[idx] = e.text;
+            }
+            return out.filter(s => s.length > 0);
+        }
+
+        // 稳健数组切分：恢复逐条译文。
+        // 只在「顶层」（不在任何引号内）按半角逗号/分号/换行切分，
+        // 从而即使译文内部含未转义引号（如 "guide RNA"）或句内标点也不会误拆。
+        // 清洗阶段丢弃纯序号/纯标点噪音片段（模型常把 17、 与译文拆成独立数组元素）。
+        function tokenizeArray(text) {
+            const start = text.indexOf('[');
+            const end = text.lastIndexOf(']');
+            if (start === -1 || end === -1 || end <= start) return null;
+            const inner = text.substring(start + 1, end);
+            const parts = [];
+            let cur = '';
+            let quote = ''; // 当前引号类型：'"' / "'" / '“' / '”'，空串表示不在引号内
+            for (let i = 0; i < inner.length; i++) {
+                const ch = inner[i];
+                if (ch === '"' || ch === "'" || ch === '“' || ch === '”') {
+                    if (quote && quote === ch) quote = '';     // 关闭同类型引号
+                    else if (!quote) quote = ch;               // 进入引号
+                    cur += ch;
+                } else if ((ch === ',' || ch === ';' || ch === '\n' || ch === '\r') && !quote) {
+                    parts.push(cur);
+                    cur = '';
+                } else {
+                    cur += ch;
                 }
-            } catch (e) { /* 非 JSON，原样返回 */ }
-            return raw;
+            }
+            parts.push(cur);
+            const out = [];
+            for (const part of parts) {
+                let s = cleanTranslationUnit(part);
+                if (!s || isScaffold(s)) continue;   // 丢弃纯序号（17、）、纯标点（，；）等噪音
+                out.push(s);
+            }
+            return out.length > 0 ? out : null;
+        }
+
+        // 兜底提取：把括号统一转为分隔符，只按句子边界切分——
+        // 换行（\n）、句末标点（。！？）与分号（；;）。绝不按中文逗号（，）切分，
+        // 因为逗号几乎总是句内标点，切分会把一条完整译文拦腰截断、进而引发跨句错位。
+        // 清洗每条译文并丢弃纯序号/纯标点等脚手架片段。
+        function salvageTranslations(raw) {
+            const tokenized = String(raw)
+                .replace(/[\[\]{}]/g, '；')
+                .split(/(?<=[。！？])|[\n;；]+/)
+                .map(s => cleanTranslationUnit(s))
+                .filter(s => s.length > 0 && !isScaffold(s));
+            return tokenized.join('\n');
         }
 
         /**
@@ -650,8 +765,9 @@
             }
 
             // 使用缓存
-            // v2：全文翻译输出改为 JSON 数组契约，缓存键升级以绕开旧版按段落连写的缓存
-            const cacheKey = generateCacheKey('full_translation_v2', text);
+            // v5：全文翻译解析升级为“JSON数组 / 带序号列表 / 稳健切分”多级清洗，
+            // 可还原模型把序号、引号噪音拆成独立片段的情况；缓存键升级绕开旧版（v4）缓存。
+            const cacheKey = generateCacheKey('full_translation_v5', text);
             return Performance.cacheAPIRequest(cacheKey, async () => {
                 const messages = Shared.buildFullTranslationMessages(text);
 

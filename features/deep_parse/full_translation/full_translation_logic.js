@@ -69,33 +69,22 @@
         }
 
         // 将 AI 返回的翻译段对齐到原文句子数：
-        // 模型常把分号/冒号子句也当作句子边界多拆（段数 > 句子数），导致逐句翻译错位。
-        // 优先按原文子句数贪婪归并（分号/冒号场景）；若 AI 任意多拆仍有多余段，
-        // 改为轮转分摊到各句，避免全部塞进最后一条造成异常臃肿（长文章尤为明显）。
+        // 模型偶会过度拆分（把一句译文里的分句当多条）或多拆成多于句数的片段。
+        // 这里采用「顺序归并」：保持片段原有先后顺序，多余片段并入靠后的句子，
+        // 而不是按原文分号/冒号猜测并轮转分散——后者会把不同句子的译文打散串到错误句子（跨句错位）。
+        // 段数不足时不做编造，原样返回由上层告警。
         function alignTranslationsToSentences(translations, sentences) {
             const m = sentences.length;
             if (m === 0 || translations.length === m) return translations;
-            if (translations.length < m) return translations; // 段数不足无法补全，保留原样由上层告警
-            const clauseCounts = sentences.map(s =>
-                Math.max(1, (String(s).match(/;/g) || []).length + (String(s).match(/:/g) || []).length + 1));
-            const merged = [];
-            let p = 0;
-            for (let i = 0; i < m && p < translations.length; i++) {
-                // 为剩余句子至少各留一段，避免吞掉后续句子的翻译
-                const maxTake = translations.length - p - (m - i - 1);
-                const take = Math.max(1, Math.min(clauseCounts[i], maxTake));
-                merged.push(translations.slice(p, p + take).join('；'));
-                p += take;
+            if (translations.length < m) return translations; // 段数不足：不补全、不编造
+            // 段数多于句数：保留前 m 条，多余片段按顺序并入靠后的句子，杜绝跨句串句
+            const result = translations.slice(0, m);
+            const leftover = translations.slice(m);
+            let idx = m - leftover.length;
+            for (let j = 0; j < leftover.length; j++) {
+                result[idx + j] = (result[idx + j] || '') + '；' + leftover[j];
             }
-            // 仍有零头（AI 任意多拆、非分号/冒号场景）：轮转分摊到各条，
-            // 不让最后一条翻译异常臃肿，各句长度大致均衡
-            if (p < translations.length && merged.length > 0) {
-                const leftover = translations.slice(p);
-                for (let j = 0; j < leftover.length; j++) {
-                    merged[j % merged.length] += '；' + leftover[j];
-                }
-            }
-            return merged;
+            return result;
         }
 
         function init() {
@@ -107,11 +96,14 @@
                     currentTranslation = cached;
                     renderNumberedTranslation(cached);
                     // 自愈：用缓存全译按行回填逐句翻译缓存，修复“全译在、逐句空”的历史遗留不一致状态
-                    //（仅当输入与已解析原文一致时执行，避免把旧文翻译写到当前句子上）
+                    //（仅当输入与已解析原文一致时执行，避免把旧文翻译写到当前句子上；
+                    //  且仅当行数与句子数一致时才回填——数量不一致说明缓存全译本身不可靠/已串句，
+                    //  回填会污染逐句缓存，此时跳过并留待用户重新点“全文翻译”刷新。）
                     if (inputMatchesParsed() && window.CacheManager
                         && typeof window.CacheManager.batchSetSentenceCache === 'function') {
                         const lines = String(cached).split('\n').map(s => s.trim()).filter(s => s.length > 0);
-                        if (lines.length > 0) {
+                        const sents = window.CacheManager.getSentences() || [];
+                        if (lines.length > 0 && lines.length === sents.length) {
                             window.CacheManager.batchSetSentenceCache(
                                 lines.map((line, i) => ({ idx: i, type: 'translation', data: line })));
                         }
@@ -140,31 +132,6 @@
             if (translationArea) translationArea.style.display = 'none';
         }
 
-        // 从 AI 原始输出中提取翻译段：
-        // 模型在长文章翻译时常漏掉部分 [SENTENCE_END]，且常按段落输出；
-        // 段内句子可能以换行、中文分号（；）或中文句末标点（。！？）分隔——
-        // 全部进一步拆分以恢复逐句翻译，再交给 alignTranslationsToSentences 按原文句数归并。
-        function extractTranslations(rawTranslation) {
-            const DELIMITER = '[SENTENCE_END]';
-            let parts = String(rawTranslation || '').split(DELIMITER)
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
-            const finer = [];
-            parts.forEach(p => {
-                p.split(/\n+/).forEach(line => {
-                    // 先按中文句末标点切分（保留标点），再按中/英文分号切分
-                    line.split(/(?<=[。！？])/).forEach(seg => {
-                        seg.split(/[；;]/).forEach(sub => {
-                            const t = sub.trim();
-                            if (t) finer.push(t);
-                        });
-                    });
-                });
-            });
-            if (finer.length > parts.length) parts = finer;
-            return parts;
-        }
-
         const fetchFullTranslation = ErrorHandler.wrapAsyncFunction(async function(text) {
             if (!text || text.trim() === '') {
                 ErrorHandler.handleValidationError('请输入文章内容');
@@ -180,20 +147,36 @@
                 showTranslationLoading();
                 const rawTranslation = await window.APIRequest.requestFullTranslation(text);
                 if (rawTranslation) {
-                    const DELIMITER = '[SENTENCE_END]';
                     let displayTranslation = rawTranslation;
                     let sentenceTranslations = [];
 
-                    // requestFullTranslation 已将 JSON 数组契约归一为“每条翻译一行”的纯文本；
-                    // 这里按分隔符提取逐句翻译（兼容换行/中文句末标点/分号分隔）
-                    if (rawTranslation.includes(DELIMITER) || rawTranslation.includes('\n') || /[；;。！？]/.test(rawTranslation)) {
-                        sentenceTranslations = extractTranslations(rawTranslation);
+                    // requestFullTranslation 已将模型输出归一为「每条翻译一行」的纯文本。
+                    // 优先按行直接对应：行数 == 原文句子数时说明模型按契约逐句输出，
+                    // 直接逐行对应即可，避免二次切分（长句译文里的分号/句号被误切）再归并导致的错位。
+                    const lines = String(rawTranslation || '').split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                    const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];
+                    if (alignedSentences.length > 0 && lines.length === alignedSentences.length) {
+                        sentenceTranslations = lines;
+                    } else if (alignedSentences.length > 0 && lines.length < alignedSentences.length) {
+                        // 段数不足（模型把多句译文合并进同一条）：在句子边界处保守补切，
+                        // 仅按句末标点（。！？）/分号/换行切分，绝不按中文逗号（句内标点）切分
+                        const finer = [];
+                        lines.forEach(line => {
+                            line.split(/(?<=[。！？])|[\n;；]+/).forEach(seg => {
+                                const t = seg.trim();
+                                if (t) finer.push(t);
+                            });
+                        });
+                        sentenceTranslations = finer.length > lines.length ? finer : lines;
+                    } else {
+                        // 段数等于或多于句数：保持顺序直接使用，交由下方对齐做顺序归并
+                        sentenceTranslations = lines;
                     }
 
-                    // 统一对齐到原文句子数：AI 常把分号/冒号子句当句子边界多拆，
-                    // 按原文子句数贪婪归并，保证编号列表与逐句翻译和句子卡片对齐
-                    const alignedSentences = window.CacheManager ? window.CacheManager.getSentences() : [];
-                    if (alignedSentences.length > 0 && sentenceTranslations.length > 0) {
+                    // 统一对齐到原文句子数：数量不一致时按顺序归并（不轮转分散），保证
+                    // 编号列表与逐句翻译和句子卡片对齐，杜绝跨句串句错位
+                    if (alignedSentences.length > 0 && sentenceTranslations.length > 0
+                        && sentenceTranslations.length !== alignedSentences.length) {
                         sentenceTranslations = alignTranslationsToSentences(sentenceTranslations, alignedSentences);
                     }
                     if (sentenceTranslations.length > 0) {

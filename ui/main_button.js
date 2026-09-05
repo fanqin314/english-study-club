@@ -63,6 +63,7 @@
                 this.deepParseModule = null;
                 this.vocabModule = null;
                 this.memoryModule = null;
+                this.scrollPositions = {}; // 各界面模式下的滚动位置，切换时保存/恢复
             }
 
             getElement(id) {
@@ -132,6 +133,12 @@
             }
 
             switchMode(mode) {
+                // 记录当前模式的滚动位置，切回该界面时恢复
+                const mainContent = this.getElement('main-content');
+                if (mainContent && this.scrollPositions) {
+                    this.scrollPositions[this.currentMode] = mainContent.scrollTop;
+                }
+
                 if (mode === this.currentMode) return;
                 this.currentMode = mode;
                 this.updateButtonHighlight();
@@ -147,7 +154,19 @@
                 const handler = modeHandlers[mode];
                 if (handler) {
                     handler();
+                    // 内容渲染后恢复目标模式的滚动位置
+                    this.restoreModeScroll();
                 }
+            }
+
+            // 恢复目标界面的滚动位置（内容渲染可能异步，用 rAF 确保高度已更新）
+            restoreModeScroll() {
+                const mainContent = this.getElement('main-content');
+                if (!mainContent || !this.scrollPositions) return;
+                const target = this.scrollPositions[this.currentMode] || 0;
+                requestAnimationFrame(() => {
+                    mainContent.scrollTop = target;
+                });
             }
 
             hideAllInterfaces() {
@@ -201,6 +220,12 @@
             removeDeepParseSection() {
                 const section = this.getElement('deep-parse-section');
                 this.safeRemove(section);
+            }
+
+            // 隐藏深度解析区但保留其 DOM（输入内容、句子卡片、面板状态不丢失），
+            // 用于切换到其它界面时保留深度解析内容，返回分析界面时原样恢复。
+            hideDeepParseSection() {
+                this.safeSetStyle(this.getElement('deep-parse-section'), 'display', 'none');
             }
 
             ensureContentSection() {
@@ -268,6 +293,8 @@
                 const twoColumn = section.querySelector('.two-column-container');
                 const inputPanel = section.querySelector('#inputPanel');
 
+                // 若此前切到其它界面时深度解析区被隐藏，返回时恢复显示并保留原内容
+                this.safeSetStyle(section, 'display', '');
                 this.safeSetStyle(twoColumn, 'display', 'flex');
                 this.safeSetStyle(inputPanel, 'display', 'block');
                 this.ensureTextarea();
@@ -338,13 +365,25 @@
             restoreCachedContent() {
                 if (!window.CacheManager) return;
 
+                const container = document.getElementById('deepParseSentencesContainer');
+
+                // 深度解析区若已渲染出句子卡片（此前切换界面时仅隐藏、未删除），
+                // 保持原样返回，避免重新 renderAll 导致已展开的面板与原文语法标注被重置。
+                // 仅当容器为空（如页面刷新后首次进入 / 首次切换回来）时才从缓存重建。
+                if (container && container.querySelector('.sentence-card')) {
+                    const twoColumnContainer = document.querySelector('.two-column-container');
+                    if (twoColumnContainer) {
+                        twoColumnContainer.classList.add('show-right', 'has-sentences');
+                    }
+                    return;
+                }
+
                 // 不自动回填原文到输入框：避免刷新/重进界面时默认带出上次文章内容。
                 // 解析结果（句子卡片等）仍会恢复，满足"应用未退出时切换界面保留解析数据"。
 
                 // 恢复句子解析结果
                 const sentences = window.CacheManager.getSentences();
                 const sentenceData = window.CacheManager.getAllSentenceData();
-                const container = document.getElementById('deepParseSentencesContainer');
                 if (container && sentences && sentences.length > 0 && window.SentenceRenderer) {
                     window.SentenceRenderer.setContainer(container);
                     window.SentenceRenderer.setSentencesData(sentences, sentenceData || {});
@@ -364,7 +403,7 @@
             }
 
             showVocabMode() {
-                this.removeDeepParseSection();
+                this.hideDeepParseSection();
                 this.ensureContentSection();
 
                 // 安全网：切换到生词本模式时恢复侧边栏显示
@@ -376,7 +415,7 @@
             }
 
             showMemoryMode() {
-                this.removeDeepParseSection();
+                this.hideDeepParseSection();
                 this.ensureContentSection();
 
                 this.hideAllInterfaces();
@@ -397,7 +436,7 @@
             }
 
             showHistoryMode() {
-                this.removeDeepParseSection();
+                this.hideDeepParseSection();
                 this.ensureContentSection();
 
                 // 安全网：切换到历史模式时恢复侧边栏显示（若此前因二级/子界面遗留隐藏状态）
@@ -405,6 +444,8 @@
 
                 this.hideAllInterfaces();
 
+                // 确保父级 content-section 恢复显示（从历史详情返回时其 display 被置为 none）
+                this.safeSetStyle(this.getElement('content-section'), 'display', '');
                 this.safeSetStyle(this.getElement('contentArea'), 'display', '');
                 this.renderHistoryInterface();
 
@@ -515,9 +556,37 @@
                 this.setupEventListeners();
                 this.updateButtonHighlight();
                 this.updateMemoryModeButtonState();
+                this.initBackToTop();
                 this.showAnalysisMode();
                 // 默认折叠侧边栏
                 this.setSidebarCollapsed(true);
+            }
+
+            // 一键回到顶部按钮：滚动超过阈值显示，点击平滑回到顶部
+            initBackToTop() {
+                const btn = this.getElement('backToTopBtn');
+                if (!btn) return;
+                const mainContent = this.getElement('main-content');
+                const scrollable = mainContent || window;
+
+                const update = () => {
+                    const top = mainContent ? mainContent.scrollTop
+                        : (window.pageYOffset || document.documentElement.scrollTop || 0);
+                    btn.classList.toggle('visible', top > 400);
+                };
+
+                scrollable.addEventListener('scroll', update, { passive: true });
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (mainContent) {
+                        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+
+                update();
             }
 
             // 移动端：侧边栏抽屉开关（汉堡按钮 / 遮罩 / Esc / 模式切换后自动关闭）
@@ -575,7 +644,9 @@
             setVocabModule: (module) => manager.setVocabModule(module),
             setMemoryModule: (module) => manager.setMemoryModule(module),
             showAnalysisMode: () => manager.showAnalysisMode(),
-            showVocabMode: () => manager.showVocabMode()
+            showVocabMode: () => manager.showVocabMode(),
+            showHistoryMode: () => manager.showHistoryMode(),
+            showMemoryMode: () => manager.showMemoryMode()
         };
 
         return window.MainButtonManager;
