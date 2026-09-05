@@ -37,6 +37,15 @@
             })();
         }
 
+        // 是否处于历史/精读（二级分析）视图：该视图的句子来自历史记录项，
+        // 与当前 CacheManager 缓存未必同文，翻译只能读逐句缓存，不能拿全译兜底
+        function isSecondaryAnalysis() {
+            return !!(
+                (window.HistoryDetail && window.HistoryDetail.isSecondaryAnalysis && window.HistoryDetail.isSecondaryAnalysis()) ||
+                (window.HistoryAnalysisRenderer && window.HistoryAnalysisRenderer.isSecondaryAnalysis && window.HistoryAnalysisRenderer.isSecondaryAnalysis())
+            );
+        }
+
         function onLoadTranslation(idx, panel) {
             return ErrorHandler.wrapAsyncFunction(async function() {
                 const cacheManager = GlobalManager.getGlobalObject('CacheManager');
@@ -44,6 +53,16 @@
 
                 if (cacheManager) {
                     translation = cacheManager.getSentenceCache(idx, 'translation');
+                    // 兜底：逐句翻译缓存缺失时（历史遗留/换文后未重生成），
+                    // 从全文翻译缓存按行号取该句译文——全文翻译编号列表与句子卡片序号一一对应。
+                    // 仅主视图启用：历史/精读视图的句子来自历史记录项，与当前 CacheManager 的
+                    // 全文翻译未必同文，不能拿它兜底，否则会把别的文章的译文显示到历史句子上。
+                    if (!translation && !isSecondaryAnalysis()
+                        && typeof cacheManager.getFullTranslation === 'function') {
+                        const lines = String(cacheManager.getFullTranslation() || '')
+                            .split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                        if (lines[idx]) translation = lines[idx];
+                    }
                 }
 
                 if (panel) {

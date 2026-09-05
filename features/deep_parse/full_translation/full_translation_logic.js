@@ -106,6 +106,16 @@
                 if (cached) {
                     currentTranslation = cached;
                     renderNumberedTranslation(cached);
+                    // 自愈：用缓存全译按行回填逐句翻译缓存，修复“全译在、逐句空”的历史遗留不一致状态
+                    //（仅当输入与已解析原文一致时执行，避免把旧文翻译写到当前句子上）
+                    if (inputMatchesParsed() && window.CacheManager
+                        && typeof window.CacheManager.batchSetSentenceCache === 'function') {
+                        const lines = String(cached).split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                        if (lines.length > 0) {
+                            window.CacheManager.batchSetSentenceCache(
+                                lines.map((line, i) => ({ idx: i, type: 'translation', data: line })));
+                        }
+                    }
                     // 输入框为空或不匹配已解析原文时不自动显示（缓存数据保留，待输入原文一致后经 input 监听恢复显示）
                     if (translationArea) translationArea.style.display = inputMatchesParsed() ? 'block' : 'none';
                 }
