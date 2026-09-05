@@ -273,6 +273,9 @@
                 this.ensureTextarea();
                 this.renderSecondRowButtons();
 
+                // 安全网：切换到深度解析模式时恢复侧边栏显示
+                document.body.classList.remove('mode-sub-interface');
+
                 // 恢复缓存的内容
                 this.restoreCachedContent();
 
@@ -364,6 +367,9 @@
                 this.removeDeepParseSection();
                 this.ensureContentSection();
 
+                // 安全网：切换到生词本模式时恢复侧边栏显示
+                document.body.classList.remove('mode-sub-interface');
+
                 this.hideAllInterfaces();
 
                 this.renderVocabInterface();
@@ -393,6 +399,9 @@
             showHistoryMode() {
                 this.removeDeepParseSection();
                 this.ensureContentSection();
+
+                // 安全网：切换到历史模式时恢复侧边栏显示（若此前因二级/子界面遗留隐藏状态）
+                document.body.classList.remove('mode-sub-interface');
 
                 this.hideAllInterfaces();
 
@@ -461,6 +470,9 @@
 
                 this.safeSetStyle(this.getElement('contentArea'), 'display', 'none');
                 this.safeSetStyle(this.getElement('sentencesContainer'), 'display', 'none');
+
+                // 进入二级分析视图：隐藏侧边栏，主内容区占满整行
+                document.body.classList.add('mode-sub-interface');
 
                 this.safeSetStyle(this.getElement('secondaryAnalysisContainer'), 'display', 'block');
 

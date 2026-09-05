@@ -258,6 +258,9 @@
         const contentSection = document.getElementById('content-section');
         if (contentSection) contentSection.style.display = 'none';
         
+        // 进入历史详情（二级分析）时隐藏侧边栏，主内容区占满整行（与记忆模式子界面一致）
+        document.body.classList.add('mode-sub-interface');
+        
         const secondaryContainer = document.getElementById('secondaryAnalysisContainer');
         if (secondaryContainer) secondaryContainer.style.display = 'block';
         
@@ -294,6 +297,8 @@
         const backButton = document.getElementById('backButton');
         if (backButton) {
             backButton.onclick = function() {
+                // 恢复侧边栏显示（离开历史详情视图）
+                document.body.classList.remove('mode-sub-interface');
                 // 清除历史记录高亮
                 if (window.HistoryHighlight) {
                     window.HistoryHighlight.clearHighlight();

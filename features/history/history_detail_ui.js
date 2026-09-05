@@ -50,6 +50,8 @@
         isSecondaryAnalysis = false;
         currentHistoryItem = null;
         clearCache();
+        // 恢复侧边栏显示（离开历史详情/二级分析视图）
+        document.body.classList.remove('mode-sub-interface');
         
         // 调用 MainButtonManager 的 showHistoryMode 方法
         if (window.MainButtonManager && window.MainButtonManager.switchMode) {
