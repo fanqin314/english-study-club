@@ -56,10 +56,16 @@
             ).join('');
         }
 
-        // 输入框是否已有文章内容：空则视为"未解析/已清空"，不显示翻译区
-        function hasArticleText() {
+        // 输入框内容是否与「已解析原文」一致：
+        // 全文翻译/句子分析等结果属于当初解析的那篇文章，仅当输入仍与该原文一致时才允许展示，
+        // 避免在输入框粘贴/输入新文章时残留上一篇文章的翻译结果（仅显隐，不清除缓存数据）。
+        function inputMatchesParsed() {
             const el = document.getElementById('articleInput');
-            return !!(el && String(el.value || '').trim());
+            const input = el ? String(el.value || '').trim() : '';
+            if (!input) return false;
+            const parsed = (window.CacheManager && typeof window.CacheManager.getOriginalText === 'function')
+                ? String(window.CacheManager.getOriginalText() || '').trim() : '';
+            return input === parsed;
         }
 
         // 将 AI 返回的翻译段对齐到原文句子数：
@@ -100,8 +106,8 @@
                 if (cached) {
                     currentTranslation = cached;
                     renderNumberedTranslation(cached);
-                    // 输入框为空时不自动显示（缓存数据保留，待输入内容后经 input 监听恢复显示）
-                    if (translationArea) translationArea.style.display = hasArticleText() ? 'block' : 'none';
+                    // 输入框为空或不匹配已解析原文时不自动显示（缓存数据保留，待输入原文一致后经 input 监听恢复显示）
+                    if (translationArea) translationArea.style.display = inputMatchesParsed() ? 'block' : 'none';
                 }
             }
         }
@@ -258,12 +264,14 @@
             init();
         }
 
-        // 输入框内容变化时联动翻译区显隐：空（清空/未解析）→ 隐藏；有内容且有已缓存翻译 → 恢复显示
+        // 输入框内容变化时联动翻译区显隐：
+        // 仅当输入与「已解析原文」一致且已有缓存翻译时才恢复显示，
+        // 空/未解析/已换成新文章 → 隐藏，防止残留上一篇文章的翻译结果
         document.addEventListener('input', (e) => {
             if (e.target && e.target.id === 'articleInput') {
                 if (translationArea) {
                     translationArea.style.display =
-                        (String(e.target.value || '').trim() && currentTranslation) ? 'block' : 'none';
+                        (inputMatchesParsed() && currentTranslation) ? 'block' : 'none';
                 }
             }
         });
